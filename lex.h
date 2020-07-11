@@ -9,7 +9,10 @@
 namespace jhin
 {
 /* NodeId of non-terminator must be less than TERMINATOR */
-#define TERMINATOR 65537
+#define TERMINATOR  65537
+
+/* define EPSILON as '#' */
+#define EPSILON     35
 
 /* the order in VKeyWords must be the same with that in EKeyWords */
 /* any change to keyWords should be synchronized to the file lexical.lex */
@@ -159,8 +162,8 @@ pNFAPair genOrByRange(char start, char end)
         pNFANode p1 = new NFANode();
         pNFANode p2 = new NFANode();
         p1->mNodes[c] = std::vector<pNFANode>{p2};
-        p2->mNodes['#'] = std::vector<pNFANode>{pEnd};
-        pStart->mNodes['#'].push_back(p1);
+        p2->mNodes[EPSILON] = std::vector<pNFANode>{pEnd};
+        pStart->mNodes[EPSILON].push_back(p1);
     }
 
     return std::make_pair(pStart, pEnd);
@@ -187,8 +190,8 @@ pNFAPair genOrByString(const std::string& s)
         pNFANode p1 = new NFANode();
         pNFANode p2 = new NFANode();
         p1->mNodes[c] = std::vector<pNFANode>{p2};
-        p2->mNodes['#'] = std::vector<pNFANode>{pEnd};
-        pStart->mNodes['#'].push_back(p1);
+        p2->mNodes[EPSILON] = std::vector<pNFANode>{pEnd};
+        pStart->mNodes[EPSILON].push_back(p1);
     }
 
     return std::make_pair(pStart, pEnd);
@@ -212,9 +215,9 @@ pNFAPair genStar(const pNFAPair& M)
 {
     pNFANode pStart = new NFANode();
     pNFANode pEnd = new NFANode();
-    pStart->mNodes['#'] = std::vector<pNFANode>{pEnd};
-    pEnd->mNodes['#'] = std::vector<pNFANode>{M.first};
-    M.second->mNodes['#'] = std::vector<pNFANode>{pEnd};
+    pStart->mNodes[EPSILON] = std::vector<pNFANode>{pEnd};
+    pEnd->mNodes[EPSILON] = std::vector<pNFANode>{M.first};
+    M.second->mNodes[EPSILON] = std::vector<pNFANode>{pEnd};
 
     return std::make_pair(pStart, pEnd);
 }
@@ -222,7 +225,7 @@ pNFAPair genStar(const pNFAPair& M)
 pNFAPair connectAndNodes(const pNFAPair& M1, const pNFAPair& M2)
 {
     assert(M1 != M2);
-    M1.second->mNodes['#'].push_back(M2.first);
+    M1.second->mNodes[EPSILON].push_back(M2.first);
 
     return std::make_pair(M1.first, M2.second);
 }
@@ -231,9 +234,9 @@ pNFAPair connectOrNodes(const pNFAPair& M1, const pNFAPair& M2)
 {
     pNFANode pStart = new NFANode();
     pNFANode pEnd = new NFANode();
-    pStart->mNodes['#'] = std::vector<pNFANode>{M1.first, M2.first};
-    M1.second->mNodes['#'].push_back(pEnd);
-    M2.second->mNodes['#'].push_back(pEnd);
+    pStart->mNodes[EPSILON] = std::vector<pNFANode>{M1.first, M2.first};
+    M1.second->mNodes[EPSILON].push_back(pEnd);
+    M2.second->mNodes[EPSILON].push_back(pEnd);
 
     return std::make_pair(pStart, pEnd);
 }
@@ -243,8 +246,8 @@ pNFAPair connectOrNodesV(const std::vector<pNFAPair>& M)
     pNFANode pStart = new NFANode();
     pNFANode pEnd = new NFANode();
     for (const pNFAPair& m: M) {
-        pStart->mNodes['#'].push_back(m.first);
-        m.second->mNodes['#'].push_back(pEnd);
+        pStart->mNodes[EPSILON].push_back(m.first);
+        m.second->mNodes[EPSILON].push_back(pEnd);
     }
 
     return std::make_pair(pStart, pEnd);
