@@ -371,8 +371,9 @@ class Lex
 
             /* gen key words and symbols */
             for (const std::string& s: VKeyWords) {
-                genAndByString(s);
-                //
+                pNFAPair = genAndByString(s);
+
+
             }
             /* gen re */
 
