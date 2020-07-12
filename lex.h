@@ -8,11 +8,24 @@
 
 namespace jhin
 {
+namespace lex
+{
 /* NodeId of non-terminator must be less than TERMINATOR */
 #define TERMINATOR  65537
 
 /* define EPSILON as '#' */
 #define EPSILON     35
+
+/* initial id is 0 */
+enum EInitialId
+{
+    INITIALID = 0,
+};
+
+enum EError
+{
+    ERROR = 0,
+};
 
 /* the order in VKeyWords must be the same with that in EKeyWords */
 /* any change to keyWords should be synchronized to the file lexical.lex */
@@ -87,7 +100,7 @@ enum EKeyWords
     NOT,
 };
 
-std::vector<std::string> VKeyWords =
+const std::vector<std::string> VKeyWords =
 {
     "class", "inherits", "this", "Object", "Bool", "Int", "Float", "Double", "Long", "String", "Void", "Type", "main",
     "lambda", "let", "in", "while", "do", "if", "elif", "else", "case", "of", "otherwise", "new",
@@ -121,6 +134,12 @@ struct NFANode
         assert(id < TERMINATOR);
     }
 
+    /* initial node */
+    NFANode(EInitialId initialId)
+    {
+        id = (unsigned int)initialId;
+    }
+
     /* terminal node */
     NFANode(EKeyWords terminalId)
     {
@@ -137,12 +156,6 @@ unsigned int NFANode::maxId = 0;
 using pNFANode = NFANode*;
 using pNFAPair = std::pair<pNFANode, pNFANode>;
 
-/*
- * INT     [0-9]+
- * DECIMAL [0-9]+.[0-9]*(e(+|-)?[0-9]+)?   -- may be float or double
- * ID      [a-z](a-zA-Z0-9|_)*
- * VALUE   [A-Z](a-zA-Z|_)*  -- value constructor
- * */
 
 pNFAPair genSingle(char c)
 {
@@ -151,6 +164,11 @@ pNFAPair genSingle(char c)
     pStart->mNodes[c] = std::vector<pNFANode>{pEnd};
 
     return std::make_pair(pStart, pEnd);
+}
+
+pNFAPair genEpsilon()
+{
+    return genSingle(EPSILON);
 }
 
 /* 0-9 a-z A-Z */
@@ -211,6 +229,13 @@ pNFAPair genAndByString(const std::string& s)
     return std::make_pair(pStart, p2);
 }
 
+/* [a-z]? OR c?, aka. M | EPSILON */
+pNFAPair genExist(const pNFAPair& M)
+{
+    pNFAPair ME = genEpsilon();
+    return connectOrNodes(M, ME);
+}
+
 pNFAPair genStar(const pNFAPair& M)
 {
     pNFANode pStart = new NFANode();
@@ -230,6 +255,23 @@ pNFAPair connectAndNodes(const pNFAPair& M1, const pNFAPair& M2)
     return std::make_pair(M1.first, M2.second);
 }
 
+pNFAPair connectAndNodesV(const std::vector<pNFAPair>&& M)
+{
+    int n = M.size();
+    assert(n >= 2);
+
+    const pNFAPair& p1 = M[0];
+    const pNFAPair& p2 = M[1];
+    p1.second->mNodes[EPSILON].push_back(p2.first);
+    for (int i = 2; i < n; i++) {
+        p1 = p2;
+        p2 = M[i];
+        p1.second->mNodes[EPSILON].push_back(p2.first);
+    }
+
+    return std::make_pair(M[0].first, M[n-1].second);
+}
+
 pNFAPair connectOrNodes(const pNFAPair& M1, const pNFAPair& M2)
 {
     pNFANode pStart = new NFANode();
@@ -241,8 +283,10 @@ pNFAPair connectOrNodes(const pNFAPair& M1, const pNFAPair& M2)
     return std::make_pair(pStart, pEnd);
 }
 
-pNFAPair connectOrNodesV(const std::vector<pNFAPair>& M)
+pNFAPair connectOrNodesV(const std::vector<pNFAPair>&& M)
 {
+    assert(M.size() >= 2);
+
     pNFANode pStart = new NFANode();
     pNFANode pEnd = new NFANode();
     for (const pNFAPair& m: M) {
@@ -253,6 +297,68 @@ pNFAPair connectOrNodesV(const std::vector<pNFAPair>& M)
     return std::make_pair(pStart, pEnd);
 }
 
+/*
+ * INT     [0-9]+
+ * DECIMAL [0-9]+.[0-9]*(e(+|-)?[0-9]+)?   -- may be float or double
+ * ID      [a-z](a-zA-Z0-9|_)*
+ * VALUE   [A-Z](a-zA-Z|_)*  -- value constructor
+ * */
+pNFAPair genReINT()
+{
+    pNFAPair M1 = genOrByRange(GENTYPE_DIGITS);
+    pNFAPair M2 = genOrByRange(GENTYPE_DIGITS);
+    pNFAPair M2Star = genStar(M2);
+
+    return connectAndNodes(M1, M2Star);
+}
+
+pNFAPair genReDECIMAL()
+{
+    pNFAPair M1 = genReINT();
+    pNFAPair M2 = genSingle('.');
+    pNFAPair M3 = genStar(genOrByRange(GENTYPE_DIGITS));
+
+    pNFAPair t0 = genSingle('e');
+    pNFAPair t1 = genOrByString("+-");
+    pNFAPair t2 = genExist(t1);
+    pNFAPair t3 = genReINT();
+    pNFAPair t4 = connectAndNodesV({t0, t2, t3});
+    pNFAPair M4 = genExist(t4);
+
+    pNFAPair M = connectAndNodesV({M1, M2, M3, M4});
+
+    return M;
+}
+
+pNFAPair genReID()
+{
+    pNFAPair M1 = genOrByRange(GENTYPE_LOWERC);
+
+    pNFAPair t0 = genOrByRange(GENTYPE_LOWERC);
+    pNFAPair t1 = genOrByRange(GENTYPE_UPPERC);
+    pNFAPair t2 = genOrByRange(GENTYPE_DIGITS);
+    pNFAPair t3 = genSingle('_');
+    pNFAPair t4 = connectOrNodesV({t0, t1, t2, t3});
+
+    pNFAPair M2 = genStar(t4);
+
+    return connectAndNodes(M1, M2);
+}
+
+pNFAPair genReVALUE()
+{
+    pNFAPair M1 = genOrByRange(GENTYPE_UPPERC);
+
+    pNFAPair t0 = genOrByRange(GENTYPE_LOWERC);
+    pNFAPair t1 = genOrByRange(GENTYPE_UPPERC);
+    pNFAPair t2 = genSingle('_');
+    pNFAPair t3 = connectOrNodesV({t0, t1, t2});
+
+    pNFAPair M2 = genStar(t3);
+
+    return connectAndNodes(M1, M2);
+}
+
 class Lex
 {
     public:
@@ -260,7 +366,17 @@ class Lex
 
         void genNFA()
         {
+            /* gen initial node by node id 0 */
+            pNFANode init = new NFANode(INITIALID);
 
+            /* gen key words and symbols */
+            for (const std::string& s: VKeyWords) {
+                genAndByString(s);
+                //
+            }
+            /* gen re */
+
+            /* gen errors */
         }
 
         void NFA2DFA()
@@ -274,6 +390,7 @@ class Lex
         }
 };
 
+};  /* namespace lex */
 };  /* namespace jhin */
 #endif
 
