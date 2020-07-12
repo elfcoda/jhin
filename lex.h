@@ -11,7 +11,11 @@ namespace jhin
 namespace lex
 {
 /* NodeId of non-terminator must be less than TERMINATOR */
-#define TERMINATOR  65537
+#define TERMINATOR      65537
+/* number of KeyWords must be less than MAX_KEY_WORDS */
+#define MAX_KEY_WORDS   512
+/* Regular rule symbol */
+#define TERMINATOR_RE   (TERMINATOR + MAX_KEY_WORDS)
 
 /* define EPSILON as '#' */
 #define EPSILON     35
@@ -27,11 +31,23 @@ enum EError
     ERROR = 0,
 };
 
+enum ERESymbol
+{
+    RE_INT = TERMINATOR_RE + 1,
+    RE_DECIMAL,
+    RE_ID,
+    RE_VALUE,
+};
+
 /* the order in VKeyWords must be the same with that in EKeyWords */
 /* any change to keyWords should be synchronized to the file lexical.lex */
 enum EKeyWords
 {
-    CLASS = TERMINATOR + 1,
+    /* start mark, not a keyword */
+    START_MARK = TERMINATOR,
+
+    /* keywords */
+    CLASS,
     INHERITS,
     THIS,
     OBJECT,
@@ -98,6 +114,9 @@ enum EKeyWords
     COMMENT,
     DOUQUO,
     NOT,
+
+    /* final mark, not a keyword */
+    FINAL_MARK,
 };
 
 const std::vector<std::string> VKeyWords =
@@ -147,9 +166,10 @@ struct NFANode
     }
 
     /* switch normal node to terminal node */
-    void setId(EKeyWords terminalId)
+    /* by EKeyWords */
+    void setId(unsigned int terminalId)
     {
-        id = (unsigned int)terminalId;
+        id = terminalId;
     }
 };
 unsigned int NFANode::maxId = 0;
@@ -359,6 +379,11 @@ pNFAPair genReVALUE()
     return connectAndNodes(M1, M2);
 }
 
+void genREAndConnectSet(pNFANode init, pNFAPair M, unsigned int terminalId)
+{
+
+}
+
 class Lex
 {
     public:
@@ -366,16 +391,24 @@ class Lex
 
         void genNFA()
         {
+            /* make sure that EKeyWords and ERESymbol won't overlap each other */
+            assert(EKeyWords::FINAL_MARK - EKeyWords::START_MARK < MAX_KEY_WORDS - 5);
+
             /* gen initial node by node id 0 */
             pNFANode init = new NFANode(INITIALID);
 
             /* gen key words and symbols */
-            for (const std::string& s: VKeyWords) {
-                pNFAPair = genAndByString(s);
-
-
+            for (int i = 0; i < VKeyWords.size(); i++) {
+                const std::string& s = VKeyWords[i];
+                pNFAPair MKeyWords = genAndByString(s);
+                init->mNodes[EPSILON].push_back(MKeyWords.first);
+                /* EKeyWords */
+                MKeyWords.second->setId(TERMINATOR + 1 + i);
             }
+
             /* gen re */
+            pNFAPair MRE_0 = genReINT();
+
 
             /* gen errors */
         }
