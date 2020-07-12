@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <cassert>
+#include <unordered_set>
 
 namespace jhin
 {
@@ -18,7 +19,11 @@ namespace lex
 #define TERMINATOR_RE   (TERMINATOR + MAX_KEY_WORDS)
 
 /* define EPSILON as '#' */
-#define EPSILON     35
+#define EPSILON         35
+/* define NOT_IN_CHARSET, deal with illegal chars appears outside string */
+#define NOT_IN_CHARSET  20
+/* define CHAR_NOT_DOUQUO for any char used in strings but '\"', and we should handle baskslash case */
+#define CHAR_NOT_DOUQUO 21
 
 /* initial id is 0 */
 enum EInitialId
@@ -117,6 +122,7 @@ enum ERESymbol
     RE_DECIMAL,
     RE_ID,
     RE_VALUE,
+    RE_STRING,
 
     RE_FINAL_MARK,
 };
@@ -138,13 +144,16 @@ const std::vector<std::string> VKeyWords =
     ".", "%", "@", "--", "\"", "!"
 };
 
+/* NFA definition */
 struct NFANode
 {
     /* current max normal node id */
-    /* maxId maintain the old value even if normal node id is modified */
+    /* maxId maintain the old value even if normal node id is updated */
     static unsigned int maxId;
+
     /* 0~65536: normal node, 65538~MAXINT: terminal node */
     unsigned int id;
+
     /*
      * edges, and Epsilon is representd as '#'
      * but '#' is not a chacracter of this language
@@ -392,16 +401,59 @@ pNFAPair genReVALUE()
     return connectAndNodes(M1, M2);
 }
 
+pNFAPair genReSTRING()
+{
+    pNFANode p1 = new NFANode();
+    pNFANode p2 = new NFANode();
+    pNFANode p3 = new NFANode();
+    p1->mNodes['\"'].push_back(p2);
+    p2->mNodes['\"'].push_back(p3);
+    p2->mNodes[CHAR_NOT_DOUQUO].push_back(p2);
+
+    return std::make_pair(p1, p3);
+}
+
 void connectAndSetRe(pNFANode init, pNFAPair M, ERESymbol terminalId)
 {
     init->mNodes[EPSILON].push_back(M.first);
     M.second->setId((unsigned int)terminalId);
 }
 
+
+/* DFA definition */
+struct DFANode
+{
+    /* record max node id*/
+    static unsigned int maxId;
+
+    /* node id */
+    unsigned int id;
+
+    /* node id in NFA(normal and terminal) */
+    std::vector<unsigned int> vNodeData;
+
+    /* edges */
+    std::map<char, DFANode*> mEdges;
+
+    DFANode()
+    {
+        /* id starts from 1 */
+        maxId += 1;
+        id = maxId;
+        assert(id < UINT_MAX);
+    }
+
+};
+unsigned int DFANode::maxId = 0;
+using pDFANode = DFANode*;
+
+
 class Lex
 {
     public:
-        Lex() {}
+        Lex() {
+            m_charSet = initCharSet();
+        }
 
         void genNFA()
         {
@@ -426,20 +478,62 @@ class Lex
             connectAndSetRe(init, genReDECIMAL(), RE_DECIMAL);
             connectAndSetRe(init, genReID(), RE_ID);
             connectAndSetRe(init, genReVALUE(), RE_VALUE);
+            connectAndSetRe(init, genReSTRING(), RE_STRING);
 
             /* gen errors */
             pNFANode pErr = new NFANode(ERR_ERROR);
+            init->mNodes[NOT_IN_CHARSET].push_back(pErr);
         }
 
-        void NFA2DFA()
+        void NFA2DFA(pNFANode init)
         {
-            //
+            /* NFA2DFA */
+
         }
 
         void drivenByDFATable()
         {
 
         }
+    private:
+        std::unordered_set<char> m_charSet;
+
+        bool isInCharSet(char c)
+        {
+            if (m_charSet.find(c) == m_charSet.end()) return false;
+            return true;
+        }
+
+        std::unordered_set<char> initCharSet()
+        {
+            std::unordered_set<char> s = {'_', ':', ';', ',', '<', '=', '>', '+', '-', '*', '/', '\\', '(', ')', '{', '}', '[', ']', '|', '.', '%', '@', '\"', '!'};
+            for (char c = 'a'; c <= 'z'; c++) s.insert(c);
+            for (char c = 'A'; c <= 'Z'; c++) s.insert(c);
+            for (char c = '0'; c <= '9'; c++) s.insert(c);
+
+            return s;
+        }
+
+        bool is_NOT_IN_CHARSET()
+        {
+            //
+        }
+
+        bool is_CHAR_NOT_DOUQUO()
+        {
+            //
+        }
+
+        void handleBaskslash()
+        {
+            //
+        }
+
+        void handleError()
+        {
+            //
+        }
+
 };
 
 };  /* namespace lex */
