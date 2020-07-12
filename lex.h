@@ -26,21 +26,9 @@ enum EInitialId
     INITIALID = 0,
 };
 
-enum EError
-{
-    ERROR = 0,
-};
-
-enum ERESymbol
-{
-    RE_INT = TERMINATOR_RE + 1,
-    RE_DECIMAL,
-    RE_ID,
-    RE_VALUE,
-};
-
 /* the order in VKeyWords must be the same with that in EKeyWords */
 /* any change to keyWords should be synchronized to the file lexical.lex */
+/* 65537 ~ 65537+512 */
 enum EKeyWords
 {
     /* start mark, not a keyword */
@@ -119,6 +107,26 @@ enum EKeyWords
     FINAL_MARK,
 };
 
+/* regular expression */
+/* 65537+512+1 ~ ? */
+enum ERESymbol
+{
+    RE_START_MARK = TERMINATOR_RE + 1,
+
+    RE_INT,
+    RE_DECIMAL,
+    RE_ID,
+    RE_VALUE,
+
+    RE_FINAL_MARK,
+};
+
+/* TERMINATOR_RE+128 ~ ?, must be greater than RE_FINAL_MARK */
+enum EError
+{
+    ERR_ERROR = TERMINATOR_RE + 128,
+};
+
 const std::vector<std::string> VKeyWords =
 {
     "class", "inherits", "this", "Object", "Bool", "Int", "Float", "Double", "Long", "String", "Void", "Type", "main",
@@ -165,8 +173,13 @@ struct NFANode
         id = (unsigned int)terminalId;
     }
 
+    /* error node */
+    NFANode(EError terminalId)
+    {
+        id = (unsigned int)terminalId;
+    }
+
     /* switch normal node to terminal node */
-    /* by EKeyWords */
     void setId(unsigned int terminalId)
     {
         id = terminalId;
@@ -379,9 +392,10 @@ pNFAPair genReVALUE()
     return connectAndNodes(M1, M2);
 }
 
-void genREAndConnectSet(pNFANode init, pNFAPair M, unsigned int terminalId)
+void connectAndSetRe(pNFANode init, pNFAPair M, ERESymbol terminalId)
 {
-
+    init->mNodes[EPSILON].push_back(M.first);
+    M.second->setId((unsigned int)terminalId);
 }
 
 class Lex
@@ -391,8 +405,9 @@ class Lex
 
         void genNFA()
         {
-            /* make sure that EKeyWords and ERESymbol won't overlap each other */
+            /* make sure that EKeyWords and ERESymbol and EError won't overlap each other */
             assert(EKeyWords::FINAL_MARK - EKeyWords::START_MARK < MAX_KEY_WORDS - 5);
+            assert(EError::ERR_ERROR > ERESymbol::RE_FINAL_MARK);
 
             /* gen initial node by node id 0 */
             pNFANode init = new NFANode(INITIALID);
@@ -407,15 +422,18 @@ class Lex
             }
 
             /* gen re */
-            pNFAPair MRE_0 = genReINT();
-
+            connectAndSetRe(init, genReINT(), RE_INT);
+            connectAndSetRe(init, genReDECIMAL(), RE_DECIMAL);
+            connectAndSetRe(init, genReID(), RE_ID);
+            connectAndSetRe(init, genReVALUE(), RE_VALUE);
 
             /* gen errors */
+            pNFANode pErr = new NFANode(ERR_ERROR);
         }
 
         void NFA2DFA()
         {
-
+            //
         }
 
         void drivenByDFATable()
