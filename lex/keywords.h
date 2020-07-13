@@ -22,6 +22,15 @@ namespace lex
 /* define CHAR_NOT_DOUQUO for any char used in strings but '\"', and we should handle baskslash case */
 #define CHAR_NOT_DOUQUO 21
 
+
+/* parse status */
+enum ELexStatus
+{
+    LEX_STATUS_NORMAL = 0,  /* normal parse */
+    LEX_STATUS_STRING,      /* parse string starting with '\"', see also CHAR_NOT_DOUQUO */
+    LEX_STATUS_INITIAL,     /* parse not in charset error, ses also NOT_IN_CHARSET */
+};
+
 /* initial id is 0 */
 enum EInitialId
 {

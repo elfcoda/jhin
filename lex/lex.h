@@ -21,13 +21,14 @@ namespace lex
 class Lex
 {
     public:
-        Lex() {
+        Lex()
+        {
             m_charSet = initCharSet();
         }
 
-        void genNFA()
+        pNFANode genNFA()
         {
-            /* make sure that EKeyWords and ERESymbol and EError won't overlap each other */
+            /* pre-check: make sure that EKeyWords and ERESymbol and EError won't overlap each other */
             assert(EKeyWords::FINAL_MARK - EKeyWords::START_MARK < MAX_KEY_WORDS - 5);
             assert(static_cast<unsigned int>(EError::ERR_ERROR) > static_cast<unsigned int>(ERESymbol::RE_FINAL_MARK));
 
@@ -53,29 +54,36 @@ class Lex
             /* gen errors */
             pNFANode pErr = new NFANode(ERR_ERROR);
             init->mNodes[NOT_IN_CHARSET].push_back(pErr);
+
+            return init;
         }
 
-        void NFA2DFA(pNFANode init)
+        pDFANode NFA2DFA(pNFANode init)
         {
-            pDFANode pDFA = new DFANode();
-            std::queue<pNFANode> qWorkList;
-            qWorkList.push(init);
-            while (!qWorkList.empty()) {
-                pNFANode node = qWorkList.front();
-                qWorkList.pop();
-                for (const auto& it: node->mNodes) {
-                    char c = it.first;
-                    for (pNFANode p: it.second) {
+            std::queue<pNFANode> qu;
+            qu.push(init);
+            std::set<pNFANode> sNFA = genEPClosure(qu);
+            unsigned int startHash = jhin::tools::genHash(sNFA);
+            /* create first DFA node */
+            pDFANode pStart = new DFANode(startHash, sNFA);
+            propagateDFA(pStart);
 
-                    }
-                }
-            }
+            return pStart;
+        }
 
+        bool parse(const std::string& source)
+        {
+            pDFANode dfaInit = NFA2DFA(genNFA());
+
+            return true;
         }
 
         void drivenByDFATable()
         {
-
+            /*
+             * TODO
+             * NOT NECESSARY
+             * */
         }
     private:
         std::unordered_set<char> m_charSet;

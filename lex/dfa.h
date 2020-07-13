@@ -17,10 +17,10 @@ namespace lex
 /* a DFANode can be generated only if the sNodeData is compatible with that in 'static mHash' */
 struct DFANode
 {
-    /* hash map */
+    /* hash map, (hash value of sNodeData) -> (DFA set) */
     static std::map<unsigned int, std::set<DFANode*>> mHash;
 
-    /* record max node id*/
+    /* record max node id to increase id */
     static unsigned int maxId;
 
     /* node id */
@@ -38,13 +38,14 @@ struct DFANode
     /* edges */
     std::map<char, DFANode*> mEdges;
 
-    DFANode(unsigned int hash)
+    DFANode(unsigned int hash, std::set<pNFANode> sNFA)
     {
         /* id starts from 1 */
         maxId += 1;
         id = maxId;
         this->hash = hash;
-        assert();
+        sNodeData = sNFA;
+        mHash[hash].insert(this);
         assert(id < UINT_MAX);
     }
 };
@@ -76,17 +77,17 @@ bool DFAConflict(pDFANode p1, pDFANode p2)
 }
 
 /* return nullptr if s is compatible with mHash, unless return pNFANode */
-pDFANode findSameNFASet(const std::set<pNFANode>& s)
+std::pair<pDFANode, unsigned int> findSameNFASet(const std::set<pNFANode>& s)
 {
     unsigned int hash = jhin::tool::genHash(s);
-    if (DFANode::mHash.find(hash) == DFANode::mHash.end()) return nullptr;
+    if (DFANode::mHash.find(hash) == DFANode::mHash.end()) return make_pair(nullptr, hash);
     for (pDFANode p: DFANode::mHash[hash]) {
         if (isSetEqual(p->sNodeData, s)) {
-            return p;
+            return make_pair(p, hash);
         }
     }
 
-    return nullptr;
+    return make_pair(nullptr, hash);
 }
 
 std::set<pNFANode> genEPClosure(std::queue<pNFANode>& qu)
@@ -107,39 +108,55 @@ std::set<pNFANode> genEPClosure(std::queue<pNFANode>& qu)
     return se;
 }
 
-/* handle a DFA data */
-std::map<char, std::queue<pNFANode>> getAvailableChar(pDFANode pDFA)
+
+/* handle DFA nodes, input a init node */
+void propagateDFA(pDFANode init)
 {
-    const std::set<pNFANode>& s = pDFA->sNodeData;
-    std::map<char, std::set<pNFANode>> m;
-    std::map<char, std::queue<pNFANode>> mqu;
-    for (pNFANode p: s) {
-        for (const auto& it: p->mNodes) {
-            if (it.first != EPSILON) {
-                for (pNFANode pNode: it.second) {
-                    m[it.first].insert(pNode);
+    std::queue<pDFANode> quDFAs;
+    quDFAs.push(init);
+
+    while (!quDFAs.empty()) {
+        pDFANode pDFA = quDFAs.front();
+        quDFAs.pop();
+
+        const std::set<pNFANode>& s = pDFA->sNodeData;
+        std::map<char, std::set<pNFANode>> m;
+        for (pNFANode p: s) {
+            for (const auto& it: p->mNodes) {
+                if (it.first != EPSILON) {
+                    for (pNFANode pNode: it.second) {
+                        m[it.first].insert(pNode);
+                    }
                 }
             }
         }
-    }
 
-    for (const auto& it: m) {
-        for (pNFANode pNode: it.second) {
-            mqu[it.first].push(pNode);
+        std::map<char, std::queue<pNFANode>> mqu;
+        for (const auto& it: m) {
+            for (pNFANode pNode: it.second) {
+                mqu[it.first].push(pNode);
+            }
+        }
+
+
+        /* check compatibility everytime gen a new DFA node */
+        for (const auto& it: mqu) {
+            std::set<pNFANode> sNFA = genEPClosure(it.second);
+            std::pair<pDFANode, unsigned int> pa = findSameNFASet(sNFA);
+            if (pa.first == nullptr) {
+                /* gen new DFA node, connect and add to worklist */
+                pDFANode pNew = new DFANode(pa.second, sNFA);
+                pDFA->mEdges[it.first] = pNew;
+                /* add new node to the worklist */
+                quDFAs.push(pNew);
+            } else {
+                /* if the node is already exist, do not add to the worklist */
+                pDFA->mEdges[it.first] = pa.first;
+            }
         }
     }
-
-    return mqu;
 }
 
-/* check compatibility everytime gen a new DFA node */
-
-
-
-std::set<pNFANode> genStepClosure(pNFANode node, char c)
-{
-    return std::set<pNFANode>{};
-}
 
 };  /* namespace lex */
 };  /* namespace jhin */

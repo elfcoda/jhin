@@ -4,13 +4,20 @@
 #include <set>
 #include "nfa.h"
 
-unsigned genHash(const std::set<pNFANode>& vNodeData)
+namespace jhin
 {
-    unsigned ans = 1;
-    for (pNFANode p: vNodeData) ans *= p->id;
+    namespace tool
+    {
+        unsigned int genHash(const std::set<pNFANode>& vNodeData)
+        {
+            unsigned ans = 1;
+            for (pNFANode p: vNodeData) ans *= p->id;
 
-    return ans;
-}
+            return ans;
+        }
+
+    };  /* namespace tool*/
+};  /* namespace jhin */
 
 
 

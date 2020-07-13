@@ -207,6 +207,7 @@ pNFAPair connectOrNodesV(const std::vector<pNFAPair>&& M)
  * DECIMAL [0-9]+.[0-9]*(e(+|-)?[0-9]+)?   -- may be float or double
  * ID      [a-z](a-zA-Z0-9|_)*
  * VALUE   [A-Z](a-zA-Z|_)*  -- value constructor
+ * STRING  "$<any_but_douquo>*"
  * */
 pNFAPair genReINT()
 {
