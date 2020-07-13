@@ -13,6 +13,10 @@
 #include "dfa.h"
 
 
+namespace jhin
+{
+namespace lex
+{
 
 class Lex
 {

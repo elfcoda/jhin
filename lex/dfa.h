@@ -108,8 +108,8 @@ std::set<pNFANode> genStepClosure(pNFANode node, char c)
     return std::set<pNFANode>{};
 }
 
-};
-};
+};  /* namespace lex */
+};  /* namespace jhin */
 
 
 
