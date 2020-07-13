@@ -50,8 +50,8 @@ struct DFANode
     }
 };
 unsigned int DFANode::maxId = 0;
-std::map<unsigned int, std::set<pNFANode>> DFANode::mHash = {};
 using pDFANode = DFANode*;
+std::map<unsigned int, std::set<pDFANode>> DFANode::mHash = {};
 
 
 template <class T>
@@ -80,14 +80,14 @@ bool DFAConflict(pDFANode p1, pDFANode p2)
 std::pair<pDFANode, unsigned int> findSameNFASet(const std::set<pNFANode>& s)
 {
     unsigned int hash = jhin::tools::genHash(s);
-    if (DFANode::mHash.find(hash) == DFANode::mHash.end()) return make_pair(nullptr, hash);
+    if (DFANode::mHash.find(hash) == DFANode::mHash.end()) return std::make_pair(nullptr, hash);
     for (pDFANode p: DFANode::mHash[hash]) {
         if (isSetEqual(p->sNodeData, s)) {
-            return make_pair(p, hash);
+            return std::make_pair(p, hash);
         }
     }
 
-    return make_pair(nullptr, hash);
+    return std::make_pair(nullptr, hash);
 }
 
 std::set<pNFANode> genEPClosure(std::queue<pNFANode>& qu)
@@ -140,7 +140,7 @@ void propagateDFA(pDFANode init)
 
 
         /* check compatibility everytime gen a new DFA node */
-        for (const auto& it: mqu) {
+        for (auto& it: mqu) {
             std::set<pNFANode> sNFA = genEPClosure(it.second);
             std::pair<pDFANode, unsigned int> pa = findSameNFASet(sNFA);
             if (pa.first == nullptr) {
