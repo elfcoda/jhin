@@ -5,15 +5,21 @@
 #include <map>
 #include <queue>
 #include "nfa.h"
+#include "../tools/hash.h"
 
 namespace jhin
 {
 namespace lex
 {
 
+
 /* DFA definition */
+/* a DFANode can be generated only if the sNodeData is compatible with that in 'static mHash' */
 struct DFANode
 {
+    /* hash map */
+    static std::map<unsigned int, std::set<DFANode*>> mHash;
+
     /* record max node id*/
     static unsigned int maxId;
 
@@ -21,26 +27,29 @@ struct DFANode
     unsigned int id;
 
     /* node in NFA(normal and terminal) */
-    /* std::set<unsigned int> vNodeData; */
-    /* {1, 3, 23, 57}  should be same with {1, 23, 57, 3}, so vNodeData should be ordered for equality comparation */
+    /* std::set<unsigned int> sNodeData; */
+    /* {1, 3, 23, 57}  should be same with {1, 23, 57, 3}, so sNodeData should be ordered for equality comparation */
     /* if pNFANode is ordered, pNFANode->id is in particular order as well */
-    std::set<pNFANode> vNodeData;
+    std::set<pNFANode> sNodeData;
 
-    /* md5sum, used to compare vNodeData */
+    /* md5sum, used to compare sNodeData */
+    unsigned int hash;
 
     /* edges */
     std::map<char, DFANode*> mEdges;
 
-    DFANode()
+    DFANode(unsigned int hash)
     {
         /* id starts from 1 */
         maxId += 1;
         id = maxId;
+        this->hash = hash;
+        assert();
         assert(id < UINT_MAX);
     }
-
 };
 unsigned int DFANode::maxId = 0;
+std::map<unsigned int, std::set<pNFANode>> DFANode::mHash = {};
 using pDFANode = DFANode*;
 
 
@@ -58,6 +67,27 @@ bool isSetEqual(const std::set<T>& s1, const std::set<T>& s2)
     return true;
 }
 
+bool DFAConflict(pDFANode p1, pDFANode p2)
+{
+    if (p1->hash != p2->hash) return false;
+    if (isSetEqual(p1->sNodeData, p2->sNodeData))
+        return true;
+    return false;
+}
+
+/* return nullptr if s is compatible with mHash, unless return pNFANode */
+pDFANode findSameNFASet(const std::set<pNFANode>& s)
+{
+    unsigned int hash = jhin::tool::genHash(s);
+    if (DFANode::mHash.find(hash) == DFANode::mHash.end()) return nullptr;
+    for (pDFANode p: DFANode::mHash[hash]) {
+        if (isSetEqual(p->sNodeData, s)) {
+            return p;
+        }
+    }
+
+    return nullptr;
+}
 
 std::set<pNFANode> genEPClosure(std::queue<pNFANode>& qu)
 {
@@ -78,8 +108,9 @@ std::set<pNFANode> genEPClosure(std::queue<pNFANode>& qu)
 }
 
 /* handle a DFA data */
-std::map<char, std::queue<pNFANode>> getAvailableChar(const std::set<pNFANode>& s)
+std::map<char, std::queue<pNFANode>> getAvailableChar(pDFANode pDFA)
 {
+    const std::set<pNFANode>& s = pDFA->sNodeData;
     std::map<char, std::set<pNFANode>> m;
     std::map<char, std::queue<pNFANode>> mqu;
     for (pNFANode p: s) {
@@ -100,6 +131,8 @@ std::map<char, std::queue<pNFANode>> getAvailableChar(const std::set<pNFANode>& 
 
     return mqu;
 }
+
+/* check compatibility everytime gen a new DFA node */
 
 
 

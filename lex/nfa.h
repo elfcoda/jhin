@@ -12,6 +12,7 @@ namespace lex
 {
 
 /* NFA definition */
+/* different NFANode address must corresponse to different node id */
 struct NFANode
 {
     /* current max normal node id */
