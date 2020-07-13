@@ -4,8 +4,10 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <set>
 #include <cassert>
 #include <unordered_set>
+#include <queue>
 
 namespace jhin
 {
@@ -173,19 +175,19 @@ struct NFANode
     /* initial node */
     NFANode(EInitialId initialId)
     {
-        id = (unsigned int)initialId;
+        id = static_cast<unsigned int>(initialId);
     }
 
     /* terminal node */
     NFANode(EKeyWords terminalId)
     {
-        id = (unsigned int)terminalId;
+        id = static_cast<unsigned int>(terminalId);
     }
 
     /* error node */
     NFANode(EError terminalId)
     {
-        id = (unsigned int)terminalId;
+        id = static_cast<unsigned int>(terminalId);
     }
 
     /* switch normal node to terminal node */
@@ -271,13 +273,6 @@ pNFAPair genAndByString(const std::string& s)
     return std::make_pair(pStart, p2);
 }
 
-/* [a-z]? OR c?, aka. M | EPSILON */
-pNFAPair genExist(const pNFAPair& M)
-{
-    pNFAPair ME = genEpsilon();
-    return connectOrNodes(M, ME);
-}
-
 pNFAPair genStar(const pNFAPair& M)
 {
     pNFANode pStart = new NFANode();
@@ -302,13 +297,8 @@ pNFAPair connectAndNodesV(const std::vector<pNFAPair>&& M)
     int n = M.size();
     assert(n >= 2);
 
-    const pNFAPair& p1 = M[0];
-    const pNFAPair& p2 = M[1];
-    p1.second->mNodes[EPSILON].push_back(p2.first);
-    for (int i = 2; i < n; i++) {
-        p1 = p2;
-        p2 = M[i];
-        p1.second->mNodes[EPSILON].push_back(p2.first);
+    for (int i = 1; i < n; i++) {
+        M[i-1].second->mNodes[EPSILON].push_back(M[i].first);
     }
 
     return std::make_pair(M[0].first, M[n-1].second);
@@ -323,6 +313,13 @@ pNFAPair connectOrNodes(const pNFAPair& M1, const pNFAPair& M2)
     M2.second->mNodes[EPSILON].push_back(pEnd);
 
     return std::make_pair(pStart, pEnd);
+}
+
+/* [a-z]? OR c?, aka. M | EPSILON */
+pNFAPair genExist(const pNFAPair& M)
+{
+    pNFAPair ME = genEpsilon();
+    return connectOrNodes(M, ME);
 }
 
 pNFAPair connectOrNodesV(const std::vector<pNFAPair>&& M)
@@ -416,7 +413,7 @@ pNFAPair genReSTRING()
 void connectAndSetRe(pNFANode init, pNFAPair M, ERESymbol terminalId)
 {
     init->mNodes[EPSILON].push_back(M.first);
-    M.second->setId((unsigned int)terminalId);
+    M.second->setId(static_cast<unsigned int>(terminalId));
 }
 
 
@@ -430,7 +427,7 @@ struct DFANode
     unsigned int id;
 
     /* node id in NFA(normal and terminal) */
-    std::vector<unsigned int> vNodeData;
+    std::set<unsigned int> vNodeData;
 
     /* edges */
     std::map<char, DFANode*> mEdges;
@@ -448,6 +445,45 @@ unsigned int DFANode::maxId = 0;
 using pDFANode = DFANode*;
 
 
+template <class T>
+bool isSetEqual(const std::set<T>& s1, const std::set<T>& s2)
+{
+    auto it1 = s1.begin();
+    auto it2 = s2.begin();
+    unsigned n1 = s1.size(), n2 = s2.size();
+    if (n1 != n2) return false;
+    for (; it1 != s1.end() && it2 != s2.end(); it1++, it2++) {
+        if (*it1 != *it2) return false;
+    }
+
+    return true;
+}
+
+std::set<pNFANode> genEPClosure(pNFANode node)
+{
+    std::queue<pNFANode> qu;
+    std::set<pNFANode> se;
+    qu.push(node);
+    while (!qu.empty()) {
+        pNFANode n = qu.front();
+        qu.pop();
+        const std::vector<pNFANode>& v = n->mNodes[EPSILON];
+        for (pNFANode p: v) {
+            if (se.find(p) == se.end()) {
+                qu.push(p);
+            }
+        }
+        se.insert(n);
+    }
+
+    return se;
+}
+
+std::set<pNFANode> genClosure(pNFANode node, char c)
+{
+
+}
+
 class Lex
 {
     public:
@@ -459,7 +495,7 @@ class Lex
         {
             /* make sure that EKeyWords and ERESymbol and EError won't overlap each other */
             assert(EKeyWords::FINAL_MARK - EKeyWords::START_MARK < MAX_KEY_WORDS - 5);
-            assert(EError::ERR_ERROR > ERESymbol::RE_FINAL_MARK);
+            assert(static_cast<unsigned int>(EError::ERR_ERROR) > static_cast<unsigned int>(ERESymbol::RE_FINAL_MARK));
 
             /* gen initial node by node id 0 */
             pNFANode init = new NFANode(INITIALID);
@@ -487,7 +523,19 @@ class Lex
 
         void NFA2DFA(pNFANode init)
         {
-            /* NFA2DFA */
+            pDFANode pDFA = new DFANode();
+            std::queue<pNFANode> qWorkList;
+            qWorkList.push(init);
+            while (!qWorkList.empty()) {
+                pNFANode node = qWorkList.front();
+                qWorkList.pop();
+                for (const auto& it: node->mNodes) {
+                    char c = it.first;
+                    for (pNFANode p: it.second) {
+
+                    }
+                }
+            }
 
         }
 
@@ -517,11 +565,13 @@ class Lex
         bool is_NOT_IN_CHARSET()
         {
             //
+            return false;
         }
 
         bool is_CHAR_NOT_DOUQUO()
         {
             //
+            return false;
         }
 
         void handleBaskslash()
