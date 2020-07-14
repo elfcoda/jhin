@@ -23,7 +23,16 @@ class Lex
     public:
         Lex()
         {
+            row = 0;
+            col = 0;
+        }
+
+        bool LexInit()
+        {
+            setTokenId2String();
             m_charSet = initCharSet();
+
+            return true;
         }
 
         pNFANode genNFA()
@@ -71,21 +80,78 @@ class Lex
             return pStart;
         }
 
-        bool parse(const std::string& source)
+        std::pair<bool, std::string> parse(const std::string& source)
         {
-            pDFANode dfaInit = NFA2DFA(genNFA());
+            /* init first */
+            if (LexInit() == false) return std::make_pair(false, "ERROR: Lex init error");
 
-            return true;
+            pDFANode dfaInit = NFA2DFA(genNFA());
+            pDFANode pCur = dfaInit;
+            status = LEX_STATUS_NORMAL;
+            bool backslash = false;
+
+            TOKEN lastToken = UINT_MAX;;
+            std::string parseStr = "";
+            std::vector<std::pair<std::string, std::string>> parseResult;
+
+            for (char c: source) {
+                char origin_c = c;
+                if (c == EOF) continue;
+
+                if (c != '\n') { col ++; }
+                else { row++; col = 0; }
+
+                if (c == '\\') {
+                    if (status != LEX_STATUS_STRING) return std::make_pair(false, "ERROR: backslash");
+                    backslash = true;
+                    continue;
+                }
+                if (backslash == true) {
+                    c = CHAR_NOT_DOUQUO;
+                    backslash = false;
+                }
+
+                /* backslash is false, handle char c */
+                c = switchChar(c);
+
+                /* feed char c to next dfa node */
+                if (pCur->mEdges.find(c) == pCur->mEdges.end()) {
+                    /* match token, continue */
+                    //
+                    /* match blank, skip */
+                    /* match error node, aka. not in charset, return false */
+                    /* other, unknown error, return false */
+                } else {
+                    pCur = pCur->mEdges[c];
+                    parseStr.push_back(origin_c);
+                }
+
+                /* switch status */
+                if (status == LEX_STATUS_NORMAL && c == '\"') status = LEX_STATUS_STRING;
+                else if (status == LEX_STATUS_STRING && c == '\"') status = LEX_STATUS_NORMAL;
+            }
+
+            /* end with backslash */
+            if (backslash == true) {
+                return std::make_pair(false, "ERROR: file end with backslash; incomplete String");
+            }
+
+            return std::make_pair(true, "");
         }
 
-        void drivenByDFATable()
+        void drivenByDFATable(pDFANode init)
         {
             /*
              * TODO
              * NOT NECESSARY
              * */
         }
+
     private:
+        char status;
+        /* char's position in src code file */
+        int row;
+        int col;
         std::unordered_set<char> m_charSet;
 
         bool isInCharSet(char c)
@@ -101,29 +167,34 @@ class Lex
             for (char c = 'A'; c <= 'Z'; c++) s.insert(c);
             for (char c = '0'; c <= '9'; c++) s.insert(c);
 
+            /* add blank char */
+            s.insert(' ');
+            s.insert('\n');
+            s.insert('\t');
+
             return s;
         }
 
-        bool is_NOT_IN_CHARSET()
+        bool is_NOT_IN_CHARSET(char c)
         {
-            //
-            return false;
+            return !isInCharSet(c);
         }
 
-        bool is_CHAR_NOT_DOUQUO()
+        char switchChar(char c)
         {
-            //
-            return false;
-        }
+            if (status == LEX_STATUS_NORMAL) {
+                if (is_NOT_IN_CHARSET(c)) return NOT_IN_CHARSET;
+                else return c;
+            } else if (status == LEX_STATUS_STRING) {
+                if (c == '\"') {
+                    return c;
+                } else {
+                    return CHAR_NOT_DOUQUO;
+                }
+            }
 
-        void handleBaskslash()
-        {
-            //
-        }
-
-        void handleError()
-        {
-            //
+            /* unreachable*/
+            return 0;
         }
 
 };

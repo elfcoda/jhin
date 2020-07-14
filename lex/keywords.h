@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 namespace jhin
 {
@@ -24,12 +25,12 @@ namespace lex
 
 
 /* parse status */
-enum ELexStatus
-{
-    LEX_STATUS_NORMAL = 0,  /* normal parse */
-    LEX_STATUS_STRING,      /* parse string starting with '\"', see also CHAR_NOT_DOUQUO */
-    LEX_STATUS_INITIAL,     /* parse not in charset error, ses also NOT_IN_CHARSET */
-};
+#define LEX_STATUS_NORMAL   1    /* normal parse */
+#define LEX_STATUS_STRING   2    /* parse string starting with '\"', see also CHAR_NOT_DOUQUO */
+// #define LEX_STATUS_INITIAL  4    /* parse not in charset error, ses also NOT_IN_CHARSET */
+
+/* can not find a token string by token id */
+#define TOKEN_NOT_FOUND     "NOT_A_TOKEN"
 
 /* initial id is 0 */
 enum EInitialId
@@ -37,9 +38,11 @@ enum EInitialId
     INITIALID = 0,
 };
 
+
 /* the order in VKeyWords must be the same with that in EKeyWords */
 /* any change to keyWords should be synchronized to the file lexical.md */
 /* 65537 ~ 65537+512 */
+/* any change must synchronized to v1 */
 enum EKeyWords
 {
     /* start mark, not a keyword */
@@ -120,6 +123,7 @@ enum EKeyWords
 
 /* regular expression */
 /* 65537+512+1 ~ ? */
+/* any change must synchronized to v2 */
 enum ERESymbol
 {
     RE_START_MARK = TERMINATOR_RE + 1,
@@ -134,13 +138,39 @@ enum ERESymbol
 };
 
 /* TERMINATOR_RE+128 ~ ?, must be greater than RE_FINAL_MARK */
+/* not-in-charset error */
+/* any change must synchronized to v3 */
 enum EError
 {
+    /* not in charset */
     ERR_ERROR = TERMINATOR_RE + 128,
 };
 
-const std::vector<std::string> VKeyWords =
-{
+using TOKEN = unsigned int;
+
+/* *
+ * TOKEN kind:
+ * EKeyWords
+ * ERESymbol
+ * EError
+ */
+// /* unmatched */
+// enum EUINTMAX
+// {
+//     E_UINT_MAX = UINT_MAX,
+// };
+//
+// /* TOKEN */
+// union TOKEN
+// {
+//     EKeyWords   token_keywords;
+//     ERESymbol   token_re;
+//     EError      token_error;
+//     EUINTMAX    token_max;
+// };
+
+/* any change must synchronized to EKeyWords */
+const std::vector<std::string> VKeyWords = {
     "class", "inherits", "this", "Object", "Bool", "Int", "Float", "Double", "Long", "String", "Void", "Type", "main",
     "lambda", "let", "in", "while", "do", "if", "elif", "else", "case", "of", "otherwise", "new",
     "True", "False", "isvoid", "data", "return", "callcc", "break", "try", "catch", "except",
@@ -149,6 +179,49 @@ const std::vector<std::string> VKeyWords =
     "+", "-", "*", "/", "\\", "(", ")", "{", "}", "[", "]", "|",
     ".", "%", "@", "--", "\"", "!"
 };
+
+
+/* FOR DEBUGGING */
+/* get Token String By Id */
+std::unordered_map<unsigned int, std::string> tokenId2String = {};
+
+/* start from TERMINATOR+1 */
+static const std::vector<std::string> v1 = {
+    /* keywords */
+    "CLASS", "INHERITS", "THIS", "OBJECT", "BOOL", "INT", "FLOAT", "DOUBLE", "LONG", "STRING", "VOID", "TYPE", "MAIN", "LAMBDA", "LET", "IN", "WHILE", "DO", "IF", "ELIF", "ELSE",
+    "CASE", "OF", "OTHERWISE", "NEW", "TRUE", "FALSE", "ISVOID", "DATA", "RETURN", "CALLCC", "BREAK", "TRY", "CATCH", "EXCEPT",
+    /* symbol */
+    "UNDERS", "COLON", "SEMICO", "COMMA", "ASSIGN", "EQ", "GT", "GE", "LT", "LE", "ARROW", "INFER", "PLUS", "MINUS", "STAR", "SLASH", "BACKSLA", "LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK",
+    "RBRACK", "VBAR", "DOT", "PERCENT", "AT", "COMMENT", "DOUQUO", "NOT"
+};
+
+/* start from TERMINATOR_RE+2 */
+static const std::vector<std::string> v2 = {
+    "RE_INT", "RE_DECIMAL", "RE_ID", "RE_VALUE", "RE_STRING"
+};
+
+/* start from TERMINATOR_RE+128 */
+static const std::vector<std::string> v3 = {
+    "ERR_ERROR"
+};
+
+void setTokenId2String()
+{
+    unsigned idx = TERMINATOR + 1;
+    for (std::string s: v1) tokenId2String[idx++] = s;
+    idx = TERMINATOR_RE + 2;
+    for (std::string s: v2) tokenId2String[idx++] = s;
+    idx = TERMINATOR_RE + 128;
+    for (std::string s: v3) tokenId2String[idx++] = s;
+}
+
+std::string getStringByTokenId(unsigned id)
+{
+    if (tokenId2String.find(id) == tokenId2String.end()) return TOKEN_NOT_FOUND;
+    return tokenId2String[id];
+}
+
+
 
 };  /* namespace lex */
 };  /* namespace jhin */

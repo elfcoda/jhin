@@ -23,7 +23,7 @@ struct DFANode
     /* record max node id to increase id */
     static unsigned int maxId;
 
-    /* node id */
+    /* dfa node id */
     unsigned int id;
 
     /* node in NFA(normal and terminal) */
@@ -31,6 +31,10 @@ struct DFANode
     /* {1, 3, 23, 57}  should be same with {1, 23, 57, 3}, so sNodeData should be ordered for equality comparation */
     /* if pNFANode is ordered, pNFANode->id is in particular order as well */
     std::set<pNFANode> sNodeData;
+
+    /* nfa terminal node id  */
+    /* non-terminal node if terminalId == UINT_MAX */
+    unsigned int terminalId;
 
     /* md5sum, used to compare sNodeData */
     unsigned int hash;
@@ -45,8 +49,24 @@ struct DFANode
         id = maxId;
         this->hash = hash;
         sNodeData = sNFA;
+        setTerminalId();
         mHash[hash].insert(this);
         assert(id < UINT_MAX);
+    }
+
+    void setTerminalId()
+    {
+        terminalId = UINT_MAX;
+        for (pNFANode p: sNodeData) {
+            /* ERROR first, not in charset error */
+            if (p->id == static_cast<unsigned int>(ERR_ERROR)) {
+                terminalId = p->id;
+                return;
+            }
+            if (p->id > TERMINATOR && p->id < terminalId) {
+                terminalId = p->id;
+            }
+        }
     }
 };
 unsigned int DFANode::maxId = 0;
