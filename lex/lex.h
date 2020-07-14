@@ -101,6 +101,7 @@ class Lex
                 if (c != '\n') { col ++; }
                 else { row++; col = 0; }
 
+                /* handle backslash */
                 if (c == '\\') {
                     if (status != LEX_STATUS_STRING) return std::make_pair(false, "ERROR: backslash");
                     backslash = true;
@@ -115,15 +116,34 @@ class Lex
                 c = switchChar(c);
 
                 /* feed char c to next dfa node */
+handle_non_blank:
                 if (pCur->mEdges.find(c) == pCur->mEdges.end()) {
+                    /* unknown error, return false */
+                    if (pCur == dfaInit && !isBlank(c)) return std::make_pair(false, "ERROR: unknown error, initial dfa node can not accept non-blank char");
+
                     /* match token, continue */
-                    //
+                    if (lastToken != UINT_MAX) {
+                        /* normal token */
+                        parseResult.push_back(std::make_pair(getStringByTokenId(lastToken), parseStr));
+                        pCur = dfaInit;
+                        lastToken = UINT_MAX;
+                        parseStr = "";
+                    }
                     /* match blank, skip */
-                    /* match error node, aka. not in charset, return false */
-                    /* other, unknown error, return false */
+                    if (!isBlank(c)) {
+                        /* how to remove this goto? */
+                        goto handle_non_blank;
+                    }
                 } else {
                     pCur = pCur->mEdges[c];
                     parseStr.push_back(origin_c);
+                    lastToken = pCur->terminalId;
+                    if (lastToken == UINT_MAX) return std::make_pair(false, "ERROR: unknown error");
+                    else if (lastToken == static_cast<unsigned int>(ERR_ERROR)) {
+                        /* match error node, aka. not in charset, return false */
+                        return std::make_pair(false, "ERROR: not in charset error");
+                    }
+                    /* normal terminalId*/
                 }
 
                 /* switch status */
@@ -178,6 +198,12 @@ class Lex
         bool is_NOT_IN_CHARSET(char c)
         {
             return !isInCharSet(c);
+        }
+
+        bool isBlank(char c)
+        {
+            if (c == ' ' || c == '\t' || c == '\n') return true;
+            return false;
         }
 
         char switchChar(char c)
