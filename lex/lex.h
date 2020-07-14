@@ -131,7 +131,7 @@ handle_non_blank:
                     }
                     /* match blank, skip */
                     if (!isBlank(c)) {
-                        /* how to remove this goto? */
+                        /* and now pCur is definitely dfaInit, we goto handle_non_blank to redo char c again. pCur should accept it, or compiler will raise an error. */
                         goto handle_non_blank;
                     }
                 } else {
