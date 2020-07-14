@@ -95,11 +95,10 @@ class Lex
             std::vector<std::pair<std::string, std::string>> parseResult;
 
             for (char c: source) {
-/* handle_non_blank: */
                 char origin_c = c;
                 if (c == EOF) continue;
 
-                if (c != '\n') { col ++; }
+                if (c != '\n') { col++; }
                 else { row++; col = 0; }
 
                 /* handle backslash */
@@ -135,8 +134,7 @@ handle_non_blank:
 
                     /* match blank, skip */
                     if (!isBlank(c)) {
-                        /* and now pCur is definitely dfaInit, we goto handle_non_blank to redo char c again. pCur should accept it, or compiler will raise an error. */
-                        /* we should have goto origin_c to redo the char, but we don't have to rehandle char c, so we goto handle_non_blank */
+                        /* and now pCur is definitely dfaInit, we goto handle_non_blank to redo non-blank char c again. pCur should accept it, or compiler will raise an error. */
                         goto handle_non_blank;
                     }
                 } else {
