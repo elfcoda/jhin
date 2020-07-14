@@ -95,6 +95,7 @@ class Lex
             std::vector<std::pair<std::string, std::string>> parseResult;
 
             for (char c: source) {
+/* handle_non_blank: */
                 char origin_c = c;
                 if (c == EOF) continue;
 
@@ -129,9 +130,13 @@ handle_non_blank:
                         lastToken = UINT_MAX;
                         parseStr = "";
                     }
+
+                    if (pCur != dfaInit) return std::make_pair(false, "ERROR: pCur should be dfaInit when lastToken is UINT_MAX");
+
                     /* match blank, skip */
                     if (!isBlank(c)) {
                         /* and now pCur is definitely dfaInit, we goto handle_non_blank to redo char c again. pCur should accept it, or compiler will raise an error. */
+                        /* we should have goto origin_c to redo the char, but we don't have to rehandle char c, so we goto handle_non_blank */
                         goto handle_non_blank;
                     }
                 } else {
