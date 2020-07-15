@@ -23,6 +23,8 @@ namespace lex
 /* define CHAR_NOT_DOUQUO for any char used in strings but '\"', and we should handle baskslash case */
 #define CHAR_NOT_DOUQUO 21
 
+/* #define UNACCEPTABLE_START  '=' */
+
 
 /* parse status */
 #define LEX_STATUS_NORMAL   1    /* normal parse */
@@ -117,6 +119,9 @@ enum EKeyWords
     DOUQUO,
     NOT,
 
+    /* unacceptable symbol */
+    CLASSIC_ASSIGN,
+
     /* final mark, not a keyword */
     FINAL_MARK,
 };
@@ -177,7 +182,13 @@ const std::vector<std::string> VKeyWords = {
     /* symbol */
     "_", ":", ";", ",", "<-", "==", ">", ">=", "<", "<=", "->", "=>",
     "+", "-", "*", "/", "\\", "(", ")", "{", "}", "[", "]", "|",
-    ".", "%", "@", "--", "\"", "!"
+    ".", "%", "@", "--", "\"", "!",
+    /* unacceptable symbol.
+     * when dealing with "==", first '=' would go to non-terminal node
+     * for the purpose that dfaInit should accept any non-blank char to terminal status
+     * however '=' is basically not defined in this language
+     * */
+    "="
 };
 
 
@@ -192,7 +203,9 @@ static const std::vector<std::string> v1 = {
     "CASE", "OF", "OTHERWISE", "NEW", "TRUE", "FALSE", "ISVOID", "DATA", "RETURN", "CALLCC", "BREAK", "TRY", "CATCH", "EXCEPT",
     /* symbol */
     "UNDERS", "COLON", "SEMICO", "COMMA", "ASSIGN", "EQ", "GT", "GE", "LT", "LE", "ARROW", "INFER", "PLUS", "MINUS", "STAR", "SLASH", "BACKSLA", "LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK",
-    "RBRACK", "VBAR", "DOT", "PERCENT", "AT", "COMMENT", "DOUQUO", "NOT"
+    "RBRACK", "VBAR", "DOT", "PERCENT", "AT", "COMMENT", "DOUQUO", "NOT",
+    /* unacceptable symbol */
+    "CLASSIC_ASSIGN"
 };
 
 /* start from TERMINATOR_RE+2 */

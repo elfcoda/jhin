@@ -57,6 +57,9 @@ COMMENT --
 DOUQUO  "
 NOT     !
 
+-- unacceptable
+CLASSICASSIGN  =
+
 ERROR
 
 

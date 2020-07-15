@@ -8,6 +8,7 @@
 #include <cassert>
 #include <unordered_set>
 #include <queue>
+#include <ctime>
 #include "keywords.h"
 #include "nfa.h"
 #include "dfa.h"
@@ -80,11 +81,12 @@ class Lex
             return pStart;
         }
 
-        std::pair<bool, std::string> parse(const std::string& source)
+        std::pair<bool, std::string> parse(const std::string& source, std::vector<std::pair<std::string, std::string>>& parseResult)
         {
             /* init first */
             if (LexInit() == false) return std::make_pair(false, "ERROR: Lex init error");
 
+            /* about 2 seconds to generate NFA and DFA nodes */
             pDFANode dfaInit = NFA2DFA(genNFA());
             pDFANode pCur = dfaInit;
             status = LEX_STATUS_NORMAL;
@@ -92,7 +94,7 @@ class Lex
 
             TOKEN lastToken = UINT_MAX;;
             std::string parseStr = "";
-            std::vector<std::pair<std::string, std::string>> parseResult;
+            parseResult.clear();
 
             for (char c: source) {
                 char origin_c = c;
@@ -141,10 +143,14 @@ handle_non_blank:
                     pCur = pCur->mEdges[c];
                     parseStr.push_back(origin_c);
                     lastToken = pCur->terminalId;
-                    if (lastToken == UINT_MAX) return std::make_pair(false, "ERROR: unknown error");
-                    else if (lastToken == static_cast<unsigned int>(ERR_ERROR)) {
+                    if (lastToken == UINT_MAX) {
+                        return std::make_pair(false, "ERROR: unknown error, char: " + std::to_string(origin_c) + ", row: " + std::to_string(row) + ", col: " + std::to_string(col) +  ".");
+                    } else if (lastToken == static_cast<unsigned int>(ERR_ERROR)) {
                         /* match error node, aka. not in charset, return false */
                         return std::make_pair(false, "ERROR: not in charset error");
+                    } else if (lastToken >= static_cast<unsigned int>(CLASSIC_ASSIGN) && lastToken < static_cast<unsigned int>(FINAL_MARK)) {
+                        /* there is no definition for unacceptable symbols, in this case, '=', in this language */
+                        return std::make_pair(false, "ERROR: pattern \"" + VKeyWords[lastToken - TERMINATOR - 1] + "\" is not defined in this language.");
                     }
                     /* normal terminalId*/
                 }
@@ -157,6 +163,15 @@ handle_non_blank:
             /* end with backslash */
             if (backslash == true) {
                 return std::make_pair(false, "ERROR: file end with backslash; incomplete String");
+            }
+
+            /* deal with last token */
+            if (lastToken != UINT_MAX) {
+                /* normal token */
+                parseResult.push_back(std::make_pair(getStringByTokenId(lastToken), parseStr));
+                pCur = dfaInit;
+                lastToken = UINT_MAX;
+                parseStr = "";
             }
 
             return std::make_pair(true, "");
