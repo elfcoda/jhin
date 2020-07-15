@@ -59,7 +59,8 @@ COMMENT --
 DOUQUO  "
 NOT     !
 
--- unacceptable
+-- unacceptable, 词法的定义从短到长，有=才能有==，有==才能有===，可以保证每个非开始DFA节点都是终止节点，这样实现会优雅一些。
+-- !!!
 CLASSICASSIGN  =
 
 ERROR

@@ -190,6 +190,12 @@ bool releaseDFANodes(pDFANode init)
     return true;
 }
 
+/* minimal DFA */
+void minimalDFA()
+{
+    // TODO
+}
+
 
 };  /* namespace lex */
 };  /* namespace jhin */

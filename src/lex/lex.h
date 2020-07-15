@@ -24,7 +24,7 @@ class Lex
     public:
         Lex()
         {
-            row = 0;
+            row = 1;
             col = 0;
         }
 
@@ -105,6 +105,11 @@ class Lex
             for (char c: source) {
                 char origin_c = c;
 
+                if (c == EOF) continue;
+
+                if (c != '\n') { col++; }
+                else { row++; col = 0; }
+
                 /* handle COMMENT case */
                 if (commentFlag == true) {
                     if (origin_c == '\n') {
@@ -112,11 +117,6 @@ class Lex
                     }
                     continue;
                 }
-
-                if (c == EOF) continue;
-
-                if (c != '\n') { col++; }
-                else { row++; col = 0; }
 
                 /* handle backslash */
                 if (c == '\\') {
@@ -223,7 +223,7 @@ handle_non_blank:
 
         std::string getErrorMsg(std::string msg, const std::string& filename)
         {
-            return "ERROR in [" + std::to_string(row) + ", " + std::to_string(col) + "]: " + msg + " of " + filename;
+            return "ERROR in [" + std::to_string(row) + ", " + std::to_string(col) + "] of " + filename + ": " + msg;
         }
 
         std::unordered_set<char> initCharSet()
