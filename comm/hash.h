@@ -2,7 +2,7 @@
 #define __HASH_H__
 
 #include <set>
-#include "../lex/nfa.h"
+#include "../src/lex/nfa.h"
 
 namespace jhin
 {

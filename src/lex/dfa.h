@@ -177,6 +177,19 @@ void propagateDFA(pDFANode init)
     }
 }
 
+/*
+ * need to release the dfa node pointers
+ * recursive reference
+ * OR IT WILL TAKE TOO MUCH MEMORY
+ * */
+bool releaseDFANodes(pDFANode init)
+{
+    // TODO
+    // 后面再慢慢优化吧，代码要写不完惹QAQ
+    // weak_ptr?
+    return true;
+}
+
 
 };  /* namespace lex */
 };  /* namespace jhin */

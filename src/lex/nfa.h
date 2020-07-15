@@ -283,6 +283,19 @@ void connectAndSetRe(pNFANode init, pNFAPair M, ERESymbol terminalId)
     M.second->setId(static_cast<unsigned int>(terminalId));
 }
 
+/*
+ * need to release nfa node pointers
+ * recursive reference
+ * OR IT WILL TAKE TOO MUCH MEMORY
+ * */
+bool releaseNFANodes(pNFANode init)
+{
+    // TODO
+    // 后面再慢慢优化吧，代码要写不完惹QAQ
+    // weak_ptr?
+    return true;
+}
+
 
 };  /* namespace lex */
 };  /* namespace jhin */

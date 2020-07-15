@@ -1,5 +1,6 @@
 import pack;
 
+-- Animal is RE_VALUE, aka. value constructor
 class Animal {
     x1: Int;
     x2: String;

@@ -81,16 +81,22 @@ class Lex
             return pStart;
         }
 
-        std::pair<bool, std::string> parse(const std::string& source, std::vector<std::pair<std::string, std::string>>& parseResult)
+        std::pair<bool, std::string> parse(const std::string& source, const std::string& filename, std::vector<std::pair<std::string, std::string>>& parseResult)
+        {
+            return parseSrc(source, filename, parseResult);
+        }
+
+        std::pair<bool, std::string> parseSrc(const std::string& source, const std::string& filename, std::vector<std::pair<std::string, std::string>>& parseResult)
         {
             /* init first */
-            if (LexInit() == false) return std::make_pair(false, "ERROR: Lex init error");
+            if (LexInit() == false) return std::make_pair(false, getErrorMsg("Lex init error", filename));
 
             /* about 2 seconds to generate NFA and DFA nodes */
             pDFANode dfaInit = NFA2DFA(genNFA());
             pDFANode pCur = dfaInit;
             status = LEX_STATUS_NORMAL;
             bool backslash = false;
+            bool commentFlag = false;
 
             TOKEN lastToken = UINT_MAX;;
             std::string parseStr = "";
@@ -98,6 +104,15 @@ class Lex
 
             for (char c: source) {
                 char origin_c = c;
+
+                /* handle COMMENT case */
+                if (commentFlag == true) {
+                    if (origin_c == '\n') {
+                        commentFlag = false;
+                    }
+                    continue;
+                }
+
                 if (c == EOF) continue;
 
                 if (c != '\n') { col++; }
@@ -105,7 +120,7 @@ class Lex
 
                 /* handle backslash */
                 if (c == '\\') {
-                    if (status != LEX_STATUS_STRING) return std::make_pair(false, "ERROR: backslash");
+                    if (status != LEX_STATUS_STRING) return std::make_pair(false, getErrorMsg("backslash error", filename));
                     backslash = true;
                     continue;
                 }
@@ -121,18 +136,26 @@ class Lex
 handle_non_blank:
                 if (pCur->mEdges.find(c) == pCur->mEdges.end()) {
                     /* unknown error, return false */
-                    if (pCur == dfaInit && !isBlank(c)) return std::make_pair(false, "ERROR: unknown error, initial dfa node can not accept non-blank char");
+                    if (pCur == dfaInit && !isBlank(c)) return std::make_pair(false, getErrorMsg("unknown error, initial dfa node can not accept non-blank char.", filename));
 
                     /* match token, continue */
                     if (lastToken != UINT_MAX) {
-                        /* normal token */
-                        parseResult.push_back(std::make_pair(getStringByTokenId(lastToken), parseStr));
+                        /* normal token found */
+                        if (lastToken == static_cast<unsigned int>(COMMENT)) {
+                            /* handle COMMENT case
+                             * to the end of the line
+                             * */
+                            if (origin_c != '\n') commentFlag = true;
+                        } else {
+                            /* handle other cases */
+                            parseResult.push_back(std::make_pair(getStringByTokenId(lastToken), parseStr));
+                        }
                         pCur = dfaInit;
                         lastToken = UINT_MAX;
                         parseStr = "";
                     }
 
-                    if (pCur != dfaInit) return std::make_pair(false, "ERROR: pCur should be dfaInit when lastToken is UINT_MAX");
+                    if (pCur != dfaInit) return std::make_pair(false, getErrorMsg("pCur should be dfaInit when lastToken is UINT_MAX.", filename));
 
                     /* match blank, skip */
                     if (!isBlank(c)) {
@@ -144,15 +167,15 @@ handle_non_blank:
                     parseStr.push_back(origin_c);
                     lastToken = pCur->terminalId;
                     if (lastToken == UINT_MAX) {
-                        return std::make_pair(false, "ERROR: unknown error, char: " + std::to_string(origin_c) + ", row: " + std::to_string(row) + ", col: " + std::to_string(col) +  ".");
+                        return std::make_pair(false, getErrorMsg("unknown error, char: " + std::to_string(origin_c), filename));
                     } else if (lastToken == static_cast<unsigned int>(ERR_ERROR)) {
                         /* match error node, aka. not in charset, return false */
-                        return std::make_pair(false, "ERROR: not in charset error");
+                        return std::make_pair(false, getErrorMsg("not in charset error", filename));
                     } else if (lastToken >= static_cast<unsigned int>(CLASSIC_ASSIGN) && lastToken < static_cast<unsigned int>(FINAL_MARK)) {
                         /* there is no definition for unacceptable symbols, in this case, '=', in this language */
-                        return std::make_pair(false, "ERROR: pattern \"" + VKeyWords[lastToken - TERMINATOR - 1] + "\" is not defined in this language.");
+                        return std::make_pair(false, getErrorMsg("pattern \"" + VKeyWords[lastToken - TERMINATOR - 1] + "\" is not defined in this language.", filename));
                     }
-                    /* normal terminalId*/
+                    /* normal terminalId */
                 }
 
                 /* switch status */
@@ -162,7 +185,7 @@ handle_non_blank:
 
             /* end with backslash */
             if (backslash == true) {
-                return std::make_pair(false, "ERROR: file end with backslash; incomplete String");
+                return std::make_pair(false, getErrorMsg("file end with backslash; incomplete String", filename));
             }
 
             /* deal with last token */
@@ -196,6 +219,11 @@ handle_non_blank:
         {
             if (m_charSet.find(c) == m_charSet.end()) return false;
             return true;
+        }
+
+        std::string getErrorMsg(std::string msg, const std::string& filename)
+        {
+            return "ERROR in [" + std::to_string(row) + ", " + std::to_string(col) + "]: " + msg + " of " + filename;
         }
 
         std::unordered_set<char> initCharSet()
