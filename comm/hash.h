@@ -6,7 +6,7 @@
 
 namespace jhin
 {
-    namespace tools
+    namespace comm
     {
         unsigned int genHash(const std::set<jhin::lex::pNFANode>& vNodeData)
         {

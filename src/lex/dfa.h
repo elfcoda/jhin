@@ -5,7 +5,7 @@
 #include <map>
 #include <queue>
 #include "nfa.h"
-#include "../tools/hash.h"
+#include "../../comm/hash.h"
 
 namespace jhin
 {
@@ -99,7 +99,7 @@ bool DFAConflict(pDFANode p1, pDFANode p2)
 /* return nullptr if s is compatible with mHash, unless return pNFANode */
 std::pair<pDFANode, unsigned int> findSameNFASet(const std::set<pNFANode>& s)
 {
-    unsigned int hash = jhin::tools::genHash(s);
+    unsigned int hash = jhin::comm::genHash(s);
     if (DFANode::mHash.find(hash) == DFANode::mHash.end()) return std::make_pair(nullptr, hash);
     for (pDFANode p: DFANode::mHash[hash]) {
         if (isSetEqual(p->sNodeData, s)) {
