@@ -6,7 +6,7 @@ Float
 Double
 Long
 String
-Void
+Unit
 Type
 main
 lambda
@@ -25,6 +25,8 @@ return
 callcc
 break
 try | catch | except
+import
+for
 
 UNDERS  _
 COLON   :

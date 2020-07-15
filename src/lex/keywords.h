@@ -61,7 +61,7 @@ enum EKeyWords
     DOUBLE,
     LONG,
     STRING,
-    VOID,
+    UNIT,
     TYPE,
     MAIN,
     LAMBDA,
@@ -86,6 +86,8 @@ enum EKeyWords
     TRY,
     CATCH,
     EXCEPT,
+    IMPORT,
+    FOR,
 
     /* symbol */
     UNDERS,
@@ -176,9 +178,9 @@ using TOKEN = unsigned int;
 
 /* any change must synchronized to EKeyWords */
 const std::vector<std::string> VKeyWords = {
-    "class", "inherits", "this", "Object", "Bool", "Int", "Float", "Double", "Long", "String", "Void", "Type", "main",
+    "class", "inherits", "this", "Object", "Bool", "Int", "Float", "Double", "Long", "String", "Unit", "Type", "main",
     "lambda", "let", "in", "while", "do", "if", "elif", "else", "case", "of", "otherwise", "new",
-    "True", "False", "isvoid", "data", "return", "callcc", "break", "try", "catch", "except",
+    "True", "False", "isvoid", "data", "return", "callcc", "break", "try", "catch", "except", "import", "for",
     /* symbol */
     "_", ":", ";", ",", "<-", "==", ">", ">=", "<", "<=", "->", "=>",
     "+", "-", "*", "/", "\\", "(", ")", "{", "}", "[", "]", "|",
@@ -199,8 +201,8 @@ std::unordered_map<unsigned int, std::string> tokenId2String = {};
 /* start from TERMINATOR+1 */
 static const std::vector<std::string> v1 = {
     /* keywords */
-    "CLASS", "INHERITS", "THIS", "OBJECT", "BOOL", "INT", "FLOAT", "DOUBLE", "LONG", "STRING", "VOID", "TYPE", "MAIN", "LAMBDA", "LET", "IN", "WHILE", "DO", "IF", "ELIF", "ELSE",
-    "CASE", "OF", "OTHERWISE", "NEW", "TRUE", "FALSE", "ISVOID", "DATA", "RETURN", "CALLCC", "BREAK", "TRY", "CATCH", "EXCEPT",
+    "CLASS", "INHERITS", "THIS", "OBJECT", "BOOL", "INT", "FLOAT", "DOUBLE", "LONG", "STRING", "UNIT", "TYPE", "MAIN", "LAMBDA", "LET", "IN", "WHILE", "DO", "IF", "ELIF", "ELSE",
+    "CASE", "OF", "OTHERWISE", "NEW", "TRUE", "FALSE", "ISVOID", "DATA", "RETURN", "CALLCC", "BREAK", "TRY", "CATCH", "EXCEPT", "IMPORT", "FOR",
     /* symbol */
     "UNDERS", "COLON", "SEMICO", "COMMA", "ASSIGN", "EQ", "GT", "GE", "LT", "LE", "ARROW", "INFER", "PLUS", "MINUS", "STAR", "SLASH", "BACKSLA", "LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK",
     "RBRACK", "VBAR", "DOT", "PERCENT", "AT", "COMMENT", "DOUQUO", "NOT",

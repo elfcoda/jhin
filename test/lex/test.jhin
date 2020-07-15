@@ -1,2 +1,16 @@
 import pack;
 
+class Animal {
+    x1: Int;
+    x2: String;
+
+    fun1(m: Int, n: Float): Int {
+        a: Int <- 777;
+        return a;
+    };
+};
+
+main(): Unit {
+    v: Int <- 5;
+}
+
