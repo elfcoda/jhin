@@ -1,74 +1,74 @@
-class inherits this
-Object
-Bool
-Int
-Float
-Double
-Long
-String
-Unit
-Type
-main
-lambda
-let in
-while () { } do
-if elif else
-if () { }
-case of
-otherwise
-new
-True
-False
-isvoid
-data
-return
-callcc
-break
-try | catch | except
-import
-for
-
-UNDERS  _
-COLON   :
-SEMICO  ;
-COMMA   ,
-ASSIGN  <-
-EQ      ==
-GT      >
-GE      >=
-LT      <
-LE      <=
-ARROW   ->
-INFER   =>
-PLUS    +
-MINUS   -
-STAR    *
-SLASH   /
-BACKSLA \
-LPAREN  (
-RPAREN  )
-LCURLY  {
-RCURLY  }
-LBRACK  [
-RBRACK  ]
-VBAR    |
-DOT     .
-PERCENT %
-AT      @
-COMMENT --
-DOUQUO  "
-NOT     !
-
--- unacceptable, 词法的定义从短到长，有=才能有==，有==才能有===，可以保证每个非开始DFA节点都是终止节点，这样实现会优雅一些。
--- !!!
-CLASSICASSIGN  =
-
-ERROR
-
-
-INT     [0-9]+
-DECIMAL [0-9]+.[0-9]*(e(+|-)?[0-9]+)?   -- may be float or double
-ID      [a-z](a-zA-Z0-9|_)*
-VALUE   [A-Z](a-zA-Z|_)*  -- value constructor
-STRING  "$<ANY_BUT_DOUQUO>*"
-
+class inherits this  
+Object  
+Bool  
+Int  
+Float  
+Double  
+Long  
+String  
+Unit  
+Type  
+main  
+lambda  
+let in  
+while () { } do  
+if elif else  
+if () { }  
+case of  
+otherwise  
+new  
+True  
+False  
+isvoid  
+data  
+return  
+callcc  
+break  
+try | catch | except  
+import  
+for  
+  
+UNDERS  _  
+COLON   :  
+SEMICO  ;  
+COMMA   ,  
+ASSIGN  <-  
+EQ      ==  
+GT      >  
+GE      >=  
+LT      <  
+LE      <=  
+ARROW   ->  
+INFER   =>  
+PLUS    +  
+MINUS   -  
+STAR    *  
+SLASH   /  
+BACKSLA \  
+LPAREN  (  
+RPAREN  )  
+LCURLY  {  
+RCURLY  }  
+LBRACK  [  
+RBRACK  ]  
+VBAR    |  
+DOT     .  
+PERCENT %  
+AT      @  
+COMMENT --  
+DOUQUO  "  
+NOT     !  
+  
+-- unacceptable, 词法的定义从短到长，有=才能有==，有==才能有===，可以保证每个非开始DFA节点都是终止节点，这样实现会优雅一些。  
+-- !!!  
+CLASSICASSIGN  =  
+  
+ERROR  
+  
+  
+INT     [0-9]+  
+DECIMAL [0-9]+.[0-9]*(e(+|-)?[0-9]+)?   -- may be float or double  
+ID      [a-z](a-zA-Z0-9|_)*  
+VALUE   [A-Z](a-zA-Z|_)*  -- value constructor  
+STRING  "$<ANY_BUT_DOUQUO>*"  
+  
