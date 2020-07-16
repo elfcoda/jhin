@@ -1,17 +1,18 @@
 import pack;
 
--- Animal is RE_VALUE, aka. value constructor
-class Animal {
+-- This is a comment
+class Animal {  -- Animal must be Uppercase
     x1: Int;
     x2: String;
 
-    fun1(m: Int, n: Float): Int {
+    Fun1(m: Int, n: Float): Int {
         a: Int <- 777;
         return a;
     };
 };
 
-main(): Unit {
+Main(): Unit {
     v: Int <- 5;
+    return;
 }
 
