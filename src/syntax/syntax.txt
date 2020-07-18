@@ -1,10 +1,13 @@
-## LALR:  
+## LALR(DRAFT):  
+-- lexer need to implement '\n' first(or not)
 -- RE_VALUE: TypeName(Int String), ClassName(Animal)  
+DEFINE EPSILON
   
 ### -- program  
 Prog'   ::= Prog  
-Prog    ::= (Class | Proc)+  
-  
+Prog    ::= Class Prog
+        |   Proc Prog
+        |   EPSILON
   
 ### -- elif may account for the complexity of code logic, so I remove the syntax. elif can be replaced by "recursive if-else" or "case of" syntax, return NoType?
 Cmd     ::= CmdN  
@@ -25,22 +28,32 @@ CmdU    ::= while (Exp) FormalU
         |   if (Exp) FormalU  
   
 ### -- Formal  
-Formals ::= (Cmd|Exp|DeclN) *  
-Formal  ::= Cmd|Exp|DeclN  
-FormalU ::= CmdN|Exp|DeclN  
+Formals ::= Cmd Formals
+        |   Exp Formals
+        |   DeclN Formals
+        |   EPSILON
+Formal  ::= Cmd
+        |   Exp
+        |   DeclN  
+FormalU ::= CmdN
+        |   Exp
+        |   DeclN  
   
   
 ### -- Decl  
 Decl    ::= DeclN  
         |   Class  
   
+----------------------------------------------------------------------------------------------------------
 ### -- DeclN  
 DeclN   ::= RE_ID: Type  
         |   RE_ID: Type <- Exp  
         |   Proc  
 
 ### -- class  
-Class   ::= class RE_VALUE [inherits RE_VALUE]? { Decl * }  
+Class   ::= class RE_VALUE { Decl * }  
+        |   class RE_VALUE inherits RE_VALUE { Decl * }
+
 ### -- procedure  
 Proc    ::= RE_ID([RE_ID: Type [, RE_ID: Type] * ])[: Type] { '\n' * [(Exp|Cmd|DeclN) ('\n'+ (Exp|Cmd|DeclN)) * ] '\n' * }  
   
@@ -53,45 +66,74 @@ Exp     ::= ExpV
         |   ExpO  
         |   ExpB  
         |   ExpT  
-        |   RE_ID       -- id can be a type, eg. m: TYPE = Int, or a value  
         |   case Exp of {(RE_ID: Type => Exp '\n'|)* (otherwise => Exp)}  
         |   return Exp  
         |   let DeclN (, DeclN)* in Exp  
+        |   RE_ID.RE_ID()                       -- call
+        |   RE_ID@RE_VALUE.RE_ID()  
+        |   (Exp).RE_ID()
+        |   (Exp)@RE_VALUE.RE_ID()  -- for dispatching
         |   RE_ID()  
         |   RE_ID(Exp [, Exp] * )  
+        |   RE_ID.RE_ID(Exp [, Exp] * )  
+        |   RE_ID@RE_VALUE.RE_ID(Exp [, Exp] * )  
+        |   (Exp).RE_ID(Exp [, Exp] * )  
+        |   (Exp)@RE_VALUE.RE_ID(Exp [, Exp] * )  -- call
         |   lambda -> Exp  
         |   lambda DeclN [,DeclN] * -> Exp  
+----------------------------------------------------------------------------------------------------------
   
+### -- id can be a type, eg. m: TYPE = Int, or a value  
 ### -- Value exp  
-ExpV    ::= RE_INT  
+ExpV    ::= Expv == ExpV1
+        |   ExpV < ExpV1
+        |   ExpV <= ExpV1  
+        |   ExpV > ExpV1  
+        |   ExpV >= ExpV1  
+        |   Expv != ExpV1   -- Not Equal need implementing first  
+        |   ExpV1
+
+ExpV1   ::= ExpV1 + ExpV2  
+        |   ExpV1 - ExpV2
+        |   ExpV2
+
+ExpV2   ::= ExpV2 * ExpV3  
+        |   ExpV2 / ExpV3
+        |   ExpV3
+
+ExpV3   ::= ExpVN
+        |   !ExpVN
+        |   isVoid ExpVN
+        |   new RE_VALUE  
+
+ExpVN   ::= RE_INT  
         |   RE_DECIMAL  
         |   RE_STRING  
-        |   ExpV + ExpV  
-        |   ExpV - ExpV  
-        |   ExpV * ExpV  
-        |   ExpV / ExpV  
-        |   Expv == ExpV  
-        |   Expv != ExpV   -- Not Equal need implementing first  
+        |   RE_ID
         |   (ExpV)  
-        |   !ExpV  
-        |   ExpV < ExpV  
-        |   ExpV <= ExpV  
-        |   ExpV > ExpV  
-        |   ExpV >= ExpV  
-        |   isVoid ExpV  
-        |   new RE_VALUE  
+
   
              
 ### -- Object exp  
 ExpO    ::= THIS  
+        |   (ExpO)
+        |   RE_ID
   
 ### -- Bool exp  
 ExpB    ::= TRUE  
         |   FALSE  
         |   !ExpB  
+        |   (ExpB)
+        |   RE_ID
   
 ### -- Type exp  
-ExpT    ::= RE_VALUE    -- Type is a kind of value(ClassName)  
+ExpT    ::= ExpT + ExpT1
+        |   ExpT1
+
+ExpT1   ::= ExpT1 * ExpT2
+        |   ExpT2
+
+ExpT2   ::= RE_VALUE    -- Type is a kind of value(ClassName)  
         |   OBJECT      -- supertype of any type  
         |   BOOL  
         |   INT  
@@ -100,6 +142,6 @@ ExpT    ::= RE_VALUE    -- Type is a kind of value(ClassName)
         |   LONG  
         |   STRING  
         |   UNIT  
-        |   ExpT + ExpT  
-        |   ExpT * ExpT  
+        |   RE_ID
+        |   (ExpT)
 
