@@ -8,7 +8,7 @@ Prog    ::= (Class | Proc)+
   
 ### -- elif may account for the complexity of code logic, so I remove the syntax. elif can be replaced by "recursive if-else" or "case of" syntax, return NoType?
 Cmd     ::= CmdN  
-        |   CmdC
+&ensp;  |   CmdC
         |   CmdU
 
 ### -- normal
