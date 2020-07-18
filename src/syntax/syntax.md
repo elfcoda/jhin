@@ -1,26 +1,54 @@
-LALR:  
+## LALR:  
 -- RE_VALUE: TypeName(Int String), ClassName(Animal)  
   
+### -- program  
 Prog'   ::= Prog  
 Prog    ::= (Class | Proc)+  
-Class   ::= class RE_VALUE [inherits RE_VALUE]? { Declare }  
   
--- elif may account for the complexity of code logic, so I remove the syntax. elif can be replaced by "recursive if-else" or "case of" syntax  
-Command ::= RE_ID <- Exp  
-        |   while (Exp) { Formal }  
-        |   if (Exp) { Formal }  
-        |   if (Exp) { Formal } else { Formal }  -- if (Exp) { Formal } [elif (Exp) { Formal }]* [else { Formal }]  
-        |   RE_ID()  
   
-Formal  ::= (Command|Exp|Declare) *  
+### -- elif may account for the complexity of code logic, so I remove the syntax. elif can be replaced by "recursive if-else" or "case of" syntax, return NoType?
+Cmd     ::= CmdN  
+        |   CmdC
+        |   CmdU
+
+### -- normal
+CmdN    ::= RE_ID <- Exp
+       
+### -- curly if(while)-exp can recurse, by other if(while)-exp  
+CmdC    ::= while (Exp) { Formals }  
+        |   if (Exp) { Formals }  
+        |   if (Exp) { Formals } else { Formals }   -- if (Exp) { Formals } [elif (Exp) { Formals }]* [else { Formals }]  
+        
+### -- uncurly. donot followed by if-exp and while-exp. in this case, recursive if-exp may lead to ambigious semantics, cannot recurse with other if(while)-exp  
+CmdU    ::= while (Exp) FormalU  
+        |   if (Exp) FormalU else FormalU   
+        |   if (Exp) FormalU  
   
--- Declare  
-Declare ::= RE_ID: Type  
+### -- Formal  
+Formals ::= (Cmd|Exp|DeclN) *  
+Formal  ::= Cmd|Exp|DeclN  
+FormalU ::= CmdN|Exp|DeclN  
+  
+  
+### -- Decl  
+Decl    ::= DeclN  
+        |   Class  
+  
+### -- DeclN  
+DeclN   ::= RE_ID: Type  
         |   RE_ID: Type <- Exp  
-        |   RE_ID([RE_ID: Type [, RE_ID: Type]*])[: Type] { '\n'* [(Exp|Command|Declare) ('\n'+ (Exp|Command|Declare))*] '\n'* }  
+        |   Proc  
+
+### -- class  
+Class   ::= class RE_VALUE [inherits RE_VALUE]? { Decl * }  
+### -- procedure  
+Proc    ::= RE_ID([RE_ID: Type [, RE_ID: Type] * ])[: Type] { '\n' * [(Exp|Cmd|DeclN) ('\n'+ (Exp|Cmd|DeclN)) * ] '\n' * }  
   
--- Exp, separate Exp by several sub-Exps, can be joint by '|'  
--- return value of multi-exp is the return value of the last exp  
+### -- Types  
+Type    ::= ExpT|RE_ID|TYPE  
+  
+  
+### -- Exp, separate Exp by several sub-Exps, can be joint by '|', return value of multi-exp is the return value of the last exp  
 Exp     ::= ExpV  
         |   ExpO  
         |   ExpB  
@@ -28,13 +56,13 @@ Exp     ::= ExpV
         |   RE_ID       -- id can be a type, eg. m: TYPE = Int, or a value  
         |   case Exp of {(RE_ID: Type => Exp '\n'|)* (otherwise => Exp)}  
         |   return Exp  
-        |   let Declare  
-        |   lambda  ... -> =    // TODO  
+        |   let DeclN (, DeclN)* in Exp  
+        |   RE_ID()  
+        |   RE_ID(Exp [, Exp] * )  
+        |   lambda -> Exp  
+        |   lambda DeclN [,DeclN] * -> Exp  
   
--- Types  
-Type    ::= ExpT|RE_ID|TYPE  
-  
--- Value exp  
+### -- Value exp  
 ExpV    ::= RE_INT  
         |   RE_DECIMAL  
         |   RE_STRING  
@@ -54,15 +82,15 @@ ExpV    ::= RE_INT
         |   new RE_VALUE  
   
              
--- Object exp  
+### -- Object exp  
 ExpO    ::= THIS  
   
--- Bool exp  
+### -- Bool exp  
 ExpB    ::= TRUE  
         |   FALSE  
         |   !ExpB  
   
--- Type exp  
+### -- Type exp  
 ExpT    ::= RE_VALUE    -- Type is a kind of value(ClassName)  
         |   OBJECT      -- supertype of any type  
         |   BOOL  
@@ -72,7 +100,6 @@ ExpT    ::= RE_VALUE    -- Type is a kind of value(ClassName)
         |   LONG  
         |   STRING  
         |   UNIT  
-        |   NOTYPE      -- subtype of any type  
         |   ExpT + ExpT  
         |   ExpT * ExpT  
 
