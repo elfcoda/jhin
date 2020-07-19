@@ -1,14 +1,20 @@
 ## LALR(DRAFT):  
 -- lexer need to implement '\n' first(or not)
 -- RE_VALUE: TypeName(Int String), ClassName(Animal)  
+-- solution: union multi-newline
 DEFINE EPSILON
-  
+
+NewLineStar ::= '\n' NewLineStar
+            |   EPSILON
+NewLinePlus ::= '\n' NewLinePlus
+            |   '\n'
+
+----------------------------------------------------------------------------------------------------------
 ### -- program  
 Prog'   ::= Prog  
-Prog    ::= Class Prog
-        |   Proc Prog
-        |   EPSILON
+Prog    ::= (Class|Proc)*
   
+----------------------------------------------------------------------------------------------------------
 ### -- elif may account for the complexity of code logic, so I remove the syntax. elif can be replaced by "recursive if-else" or "case of" syntax, return NoType?
 Cmd     ::= CmdN  
         |   CmdC
@@ -20,7 +26,7 @@ CmdN    ::= RE_ID <- Exp
 ### -- curly if(while)-exp can recurse, by other if(while)-exp  
 CmdC    ::= while (Exp) { Formals }  
         |   if (Exp) { Formals }  
-        |   if (Exp) { Formals } else { Formals }   -- if (Exp) { Formals } [elif (Exp) { Formals }]* [else { Formals }]  
+        |   if (Exp) { Formals } else { Formals }
         
 ### -- uncurly. donot followed by if-exp and while-exp. in this case, recursive if-exp may lead to ambigious semantics, cannot recurse with other if(while)-exp  
 CmdU    ::= while (Exp) FormalU  
@@ -28,38 +34,35 @@ CmdU    ::= while (Exp) FormalU
         |   if (Exp) FormalU  
   
 ### -- Formal  
-Formals ::= Cmd Formals
-        |   Exp Formals
-        |   DeclN Formals
-        |   EPSILON
-Formal  ::= Cmd
-        |   Exp
-        |   DeclN  
-FormalU ::= CmdN
-        |   Exp
-        |   DeclN  
+Formals ::= (Cmd|Exp|DeclN) *
+FormalU ::= CmdN|Exp|DeclN  
   
   
+----------------------------------------------------------------------------------------------------------
 ### -- Decl  
 Decl    ::= DeclN  
         |   Class  
   
-----------------------------------------------------------------------------------------------------------
 ### -- DeclN  
-DeclN   ::= RE_ID: Type  
-        |   RE_ID: Type <- Exp  
+DeclN   ::= RE_ID: Type
+        |   RE_ID: Type <- Exp
         |   Proc  
+
 
 ### -- class  
 Class   ::= class RE_VALUE { Decl * }  
         |   class RE_VALUE inherits RE_VALUE { Decl * }
 
 ### -- procedure  
-Proc    ::= RE_ID([RE_ID: Type [, RE_ID: Type] * ])[: Type] { '\n' * [(Exp|Cmd|DeclN) ('\n'+ (Exp|Cmd|DeclN)) * ] '\n' * }  
-  
+-- multi-newline to one
+Proc    ::= RE_ID([RE_ID: Type [, RE_ID: Type] * ])[: Type] { '\n' * (Exp|Cmd|DeclN) ('\n'+ (Exp|Cmd|DeclN)) *  '\n' * }  
+        |   RE_ID([RE_ID: Type [, RE_ID: Type] * ])[: Type] { '\n' * }  
+
+
 ### -- Types  
 Type    ::= ExpT|RE_ID|TYPE  
   
+----------------------------------------------------------------------------------------------------------
   
 ### -- Exp, separate Exp by several sub-Exps, can be joint by '|', return value of multi-exp is the return value of the last exp  
 Exp     ::= ExpV  
@@ -81,6 +84,7 @@ Exp     ::= ExpV
         |   (Exp)@RE_VALUE.RE_ID(Exp [, Exp] * )  -- call
         |   lambda -> Exp  
         |   lambda DeclN [,DeclN] * -> Exp  
+
 ----------------------------------------------------------------------------------------------------------
   
 ### -- id can be a type, eg. m: TYPE = Int, or a value  
@@ -144,4 +148,6 @@ ExpT2   ::= RE_VALUE    -- Type is a kind of value(ClassName)
         |   UNIT  
         |   RE_ID
         |   (ExpT)
+
+----------------------------------------------------------------------------------------------------------
 
