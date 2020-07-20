@@ -23,16 +23,19 @@ def gen_note_str():
     return gen_note_pre + str(gen_note_count)
 
 def gen_star(str_production):
+    global gen_production
     new_symbol = gen_note_str()
     gen_production[new_symbol] = [str_production + " " + new_symbol, EPSILON]
     return new_symbol
 
 def gen_plus(str_production):
+    global gen_production
     new_symbol = gen_note_str()
     gen_production[new_symbol] = [str_production + " " + new_symbol, str_production]
     return new_symbol
 
 def gen_ques(str_production):
+    global gen_production
     new_symbol = gen_note_str()
     gen_production[new_symbol] = [str_production, EPSILON]
     return new_symbol
@@ -63,6 +66,15 @@ def expand_production(production):
     return production
 
 
+def show_production():
+    global origin_production
+    global gen_production
+    # format
+    print("=================")
+    print(origin_production)
+    print("=================")
+    print(gen_production)
+    print("=================")
 
 with open(fin) as file_in, open(fout) as file_out:
     pre_process = ""
@@ -72,26 +84,17 @@ with open(fin) as file_in, open(fout) as file_out:
     # print(pre_process)
     non_terminals = pre_process.split(split_str)
     non_terminals_len = len(non_terminals)
-    # test
-    non_terminals_len = 2
-    # test
     for i in range(1, non_terminals_len):  # idx of valid non_terminals
         non_terminal_v = non_terminals[i].strip().split(split_str1)
         non_terminal = non_terminal_v[0].strip()
         productions_v = non_terminal_v[1].strip().split("|")
         productions = []
         for p in productions_v:
-            productions += expand_production(p.strip())
+            productions.append(expand_production(p.strip()))
         origin_production[non_terminal] = productions
-        # now we have non_terminal and productions in origin_production
-        # and other productions in gen_production
-        print("=================")
-        print(origin_production)
-        print("=================")
-        print(gen_production)
-        print("=================")
-        print("=================")
-
+    # now we have non_terminal and productions in origin_production
+    # and other productions in gen_production
+    show_production()
 
 
 
