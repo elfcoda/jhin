@@ -194,9 +194,10 @@ const std::vector<std::string> VKeyWords = {
 };
 
 
-/* FOR DEBUGGING */
+/* FOR DEBUGGING AND SYNTAX PARSING TOOLS */
 /* get Token String By Id */
 std::unordered_map<unsigned int, std::string> tokenId2String = {};
+std::unordered_map<std::string, unsigned int> string2TokenId = {};
 
 /* start from TERMINATOR+1 */
 static const std::vector<std::string> v1 = {
@@ -223,11 +224,20 @@ static const std::vector<std::string> v3 = {
 void setTokenId2String()
 {
     unsigned idx = TERMINATOR + 1;
-    for (std::string s: v1) tokenId2String[idx++] = s;
+    for (std::string s: v1) {
+        string2TokenId[s] = idx;
+        tokenId2String[idx++] = s;
+    }
     idx = TERMINATOR_RE + 2;
-    for (std::string s: v2) tokenId2String[idx++] = s;
+    for (std::string s: v2) {
+        string2TokenId[s] = idx;
+        tokenId2String[idx++] = s;
+    }
     idx = TERMINATOR_RE + 128;
-    for (std::string s: v3) tokenId2String[idx++] = s;
+    for (std::string s: v3) {
+        string2TokenId[s] = idx;
+        tokenId2String[idx++] = s;
+    }
 }
 
 std::string getStringByTokenId(unsigned id)
