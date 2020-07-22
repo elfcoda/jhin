@@ -27,6 +27,7 @@ class Syntax
             return std::unordered_set<unsigned>{id};
         }
 
+        /* can include EPSILON */
         std::unordered_set genFirstSetNonTerminal(unsigned id)
         {
             /*
@@ -46,9 +47,24 @@ class Syntax
                 for (const auto& vec: productionIDs[i]) {
                     assert(!vec.empty());
                     if (vec[0] < SYNTAX_EPSILON_IDX) {
+                        /* new non-terminal symbol */
                         if (handledNonTer.find(vec[0]) == handledNonTer.end()) {
                             worklist.push(vec[0]);
                             handledNonTer.insert(vec[0]);
+                            /*
+                             * A -> B C D
+                             * if B may be EPSILON, then first-set of C should be included into first-set of A
+                             * the algorithm works for C as well.
+                             * */
+                            unsigned vSize = vec.size();
+                            for (unsigned idx = 0; idx < vSize - 1; idx++) {
+                                if (vec[idx] < SYNTAX_EPSILON_IDX && isNonTerminalEPSILON(vec[idx])) {
+                                    worklist.push(vec[idx+1]);
+                                    handledNonTer.insert(vec[idx+1]);
+                                } else {
+                                    break;
+                                }
+                            }
                         }
                     } else if (vec[0] == SYNTAX_EPSILON_IDX) {
                         /* s.insert(SYNTAX_EPSILON_IDX);
@@ -65,9 +81,19 @@ class Syntax
             return s;
         }
 
-        std::unordered_set<unsigned> genFollowSet(id)
+        std::unordered_set<unsigned> genFollowSet(unsigned id)
         {
-            for ()
+            /*
+             * A -> B C D C B, id is C
+             * */
+            for (const auto& item: productionIDs) {
+                for (const auto& pa: item.second) {
+                    int idx = 0;
+                    for (unsigned symbolId: pa.first) {
+                        DO IT
+                    }
+                }
+            }
         }
 
         auto genNFA()
@@ -117,6 +143,7 @@ class Syntax
              * is reasonable.
              * */
 
+            /* return false to skip */
             if (nonTerminalHandling.find(nonTerminal) != nonTerminalHandling.end()) return false;
             nonTerminalHandling.insert(nonTerminal);
 
