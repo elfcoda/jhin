@@ -12,17 +12,21 @@
 namespace jhin {
 namespace syntax {
 
-    std::unordered_map<std::string, unsigned int> non_terminal_to_id = {
-            {"Prog'", 1}, {"Prog", 2}, {"Prog_u", 3}, {"Cmd", 4}, {"CmdN", 5}, {"CmdC", 6}, {"CmdU", 7}, {"Formals", 8}, {"Formal", 9}, 
-            {"FormalU", 10}, {"Decl", 11}, {"DeclN", 12}, {"Class", 13}, {"Proc", 14}, {"Proc_ar", 15}, {"Proc_b0", 16}, {"Proc_b1", 17}, {"Type", 18}, {"Exp", 19}, 
-            {"Exp_ar", 20}, {"ExpV", 21}, {"ExpV1", 22}, {"ExpV2", 23}, {"ExpV3", 24}, {"ExpVN", 25}, {"ExpO", 26}, {"ExpB", 27}, {"ExpT", 28}, {"ExpT1", 29}, 
-            {"ExpT2", 30}, {"GEN_TERMINAL_1", 31}, {"GEN_TERMINAL_2", 32}, {"GEN_TERMINAL_3", 33}, {"GEN_TERMINAL_4", 34}, {"GEN_TERMINAL_5", 35}, {"GEN_TERMINAL_6", 36}, {"GEN_TERMINAL_7", 37}, {"GEN_TERMINAL_8", 38}, {"GEN_TERMINAL_9", 39}, 
-            {"GEN_TERMINAL_10", 40}, {"GEN_TERMINAL_11", 41}, {"GEN_TERMINAL_12", 42}, {"GEN_TERMINAL_13", 43}, {"GEN_TERMINAL_14", 44}, {"GEN_TERMINAL_15", 45}, {"GEN_TERMINAL_16", 46}, {"GEN_TERMINAL_17", 47}, {"GEN_TERMINAL_18", 48}, {"GEN_TERMINAL_19", 49}, 
-            {"GEN_TERMINAL_20", 50}, {"GEN_TERMINAL_21", 51}, {"GEN_TERMINAL_22", 52}
-    };
+	#define NON_TERMINAL_IDX_MAX    52
+	#define SYNTAX_EPSILON_STR      "EPSILON"
+	#define SYNTAX_EPSILON_IDX      53
+
+	std::unordered_map<std::string, unsigned int> non_terminal_to_id = {
+			{"Prog'", 1}, {"Prog", 2}, {"Prog_u", 3}, {"Cmd", 4}, {"CmdN", 5}, {"CmdC", 6}, {"CmdU", 7}, {"Formals", 8}, {"Formal", 9}, 
+			{"FormalU", 10}, {"Decl", 11}, {"DeclN", 12}, {"Class", 13}, {"Proc", 14}, {"Proc_ar", 15}, {"Proc_b0", 16}, {"Proc_b1", 17}, {"Type", 18}, {"Exp", 19}, 
+			{"Exp_ar", 20}, {"ExpV", 21}, {"ExpV1", 22}, {"ExpV2", 23}, {"ExpV3", 24}, {"ExpVN", 25}, {"ExpO", 26}, {"ExpB", 27}, {"ExpT", 28}, {"ExpT1", 29}, 
+			{"ExpT2", 30}, {"GEN_TERMINAL_1", 31}, {"GEN_TERMINAL_2", 32}, {"GEN_TERMINAL_3", 33}, {"GEN_TERMINAL_4", 34}, {"GEN_TERMINAL_5", 35}, {"GEN_TERMINAL_6", 36}, {"GEN_TERMINAL_7", 37}, {"GEN_TERMINAL_8", 38}, {"GEN_TERMINAL_9", 39}, 
+			{"GEN_TERMINAL_10", 40}, {"GEN_TERMINAL_11", 41}, {"GEN_TERMINAL_12", 42}, {"GEN_TERMINAL_13", 43}, {"GEN_TERMINAL_14", 44}, {"GEN_TERMINAL_15", 45}, {"GEN_TERMINAL_16", 46}, {"GEN_TERMINAL_17", 47}, {"GEN_TERMINAL_18", 48}, {"GEN_TERMINAL_19", 49}, 
+			{"GEN_TERMINAL_20", 50}, {"GEN_TERMINAL_21", 51}, {"GEN_TERMINAL_22", 52}
+	};
 
 
-    std::unordered_map<std::string, std::vector<std::vector<std::string>>> all_production = {
+	std::unordered_map<std::string, std::vector<std::vector<std::string>>> all_production = {
 			{"Prog'", {{"Prog"}}}, 
 			{"Prog", {{"GEN_TERMINAL_1"}}}, 
 			{"Prog_u", {{"Class"}, {"Proc"}}}, 
@@ -75,7 +79,7 @@ namespace syntax {
 			{"GEN_TERMINAL_20", {{"Exp_ar"}, {"EPSILON"}}}, 
 			{"GEN_TERMINAL_21", {{"COMMA", "DeclN", "GEN_TERMINAL_21"}, {"EPSILON"}}}, 
 			{"GEN_TERMINAL_22", {{"COMMA", "Exp", "GEN_TERMINAL_22"}, {"EPSILON"}}}
-    };
+	};
 
 };    /* namespace syntax */
 };    /* namespace jhin */
