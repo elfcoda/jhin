@@ -72,11 +72,11 @@ class Lex
         {
             std::queue<pNFANode> qu;
             qu.push(init);
-            std::set<pNFANode> sNFA = genEPClosure(qu);
+            std::set<pNFANode> sNFA = genEPClosure(qu, EPSILON);
             unsigned int startHash = jhin::comm::genHash(sNFA);
             /* create first DFA node */
-            pDFANode pStart = new DFANode(startHash, sNFA);
-            propagateDFA(pStart);
+            pDFANode pStart = new DFANode<pNFANode>(startHash, sNFA);
+            propagateDFA(pStart, EPSILON);
 
             return pStart;
         }

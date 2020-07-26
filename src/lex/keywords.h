@@ -196,9 +196,9 @@ const std::vector<std::string> VKeyWords = {
 
 /* FOR DEBUGGING AND SYNTAX PARSING TOOLS */
 /* get Token String By Id */
-std::unordered_map<unsigned int, std::string> tokenId2String = {};
-std::unordered_map<std::string, unsigned int> string2TokenId = {};
-std::unordered_set<std::unsigned> tokenSet = {};
+std::unordered_map<unsigned, std::string> tokenId2String = {};
+std::unordered_map<std::string, unsigned> string2TokenId = {};
+std::unordered_set<unsigned> tokenSet = {};
 
 /* start from TERMINATOR+1 */
 static const std::vector<std::string> v1 = {

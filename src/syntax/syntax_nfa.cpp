@@ -1,69 +1,14 @@
-#include <unordered_map>
 #include <unordered_set>
-#include <multimap>
 #include "non_terminal.h"
+#include "syntax_nfa.h"
 #include "../lex/nfa.h"
+#include "../lex/dfa.h"
 #include "../lex/keywords.h"
-#include "../../comm/hash.h"
 
 namespace jhin
 {
 namespace syntax
 {
-
-#define SYNTAX_TOKEN_END    1025
-
-/* new all possible nfa nodes when initing */
-struct SyntaxNFAData
-{
-    /* hash -> SyntaxNFAData Nodes */
-    static std::unordered_map<unsigned, std::vector<pSyntaxNFAData>> mHash;
-
-    /* node hash */
-    unsigned hash;
-
-    /* pointer */
-    std::multimap<unsigned, pSyntaxNFAData> edges;
-
-    /* node data */
-    unsigned nonTerminal;
-    std::vector<unsigned>> production;
-    unsigned position;
-
-    SyntaxNFAData(unsigned nonTerminal, const std::vector<unsigned>>& production, unsigned position)
-    {
-        this->nonTerminal = nonTerminal;
-        this->production = production;
-        this->position = position;
-        this->hash = comm::genHash(nonTerminal, production, position);
-    }
-
-    bool isDataSame(pSyntaxNFAData p)
-    {
-        if (this->hash != p->hash) return false;
-
-        if (this->nonTerminal != p->nonTerminal) return false;
-        if (this->position != p->position) return false;
-        unsigned n1 = this->production.size(), n2 = p->production.size();
-        if (n1 != n2) return false;
-        for (unsigned i = 0; i < n1; i++) {
-            if (this->production[i] != p->production[i]) return false;
-        }
-
-        return true;
-    }
-};
-using pSyntaxNFAData = SyntaxNFAData*;
-using pcSyntaxNFAData = const SyntaxNFAData*;
-std::unordered_map<unsigned, std::vector<pSyntaxNFAData>> SyntaxNFAData::mHash = {};
-
-enum SyntaxSymbolKind
-{
-    SYN_SYM_TOKEN = 1,
-    SYN_SYM_NON_TERMINAL,
-    SYN_SYM_EPSILON,
-    SYN_SYM_UNKNOWN,
-};
 
 class Syntax
 {
@@ -207,12 +152,11 @@ class Syntax
             while (!worklist.empty()) {
                 /* A -> EPSILON */
                 pSyntaxNFAData p = worklist.front(); worklist.pop();
-                p->nonTerminal;
                 unsigned size = p->production.size();
                 if (p->position < size) {
                     /* find node* */
                     pSyntaxNFAData pNFA = getSyntaxNFANode(p->nonTerminal, p->production, p->position + 1);
-                    p->edges[p->production[p->position]] = pNFA;
+                    p->edges[p->production[p->position]].push_back(pNFA);
                     if (handled.find(pNFA) == handled.end()) {
                         worklist.push(pNFA);
                         handled.insert(pNFA);
@@ -221,7 +165,7 @@ class Syntax
                         assert(productionIDs.find(p->production[p->position]) != productionIDs.end());
                         for (const std::vector<unsigned>& v: productionIDs[p->production[p->position]]) {
                             pSyntaxNFAData pNFA2 = getSyntaxNFANode(p->production[p->position], v, 0);
-                            p->edges[SYNTAX_EPSILON_IDX] = pNFA2;
+                            p->edges[SYNTAX_EPSILON_IDX].push_back(pNFA2);
                             if (handled.find(pNFA2) == handled.end()) {
                                 worklist.push(pNFA2);
                                 handled.insert(pNFA2);
@@ -232,6 +176,11 @@ class Syntax
             }
 
             return pStart;
+        }
+
+        auto genDFA(pSyntaxNFAData pStart)
+        {
+            // TODO
         }
 
         pSyntaxNFAData getSyntaxNFANode(unsigned nonTerminal, const std::vector<unsigned>& production, unsigned position)
