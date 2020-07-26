@@ -1,8 +1,10 @@
 #include <unordered_map>
 #include <unordered_set>
+#include <multimap>
 #include "non_terminal.h"
 #include "../lex/nfa.h"
 #include "../lex/keywords.h"
+#include "../../comm/hash.h"
 
 namespace jhin
 {
@@ -10,6 +12,50 @@ namespace syntax
 {
 
 #define SYNTAX_TOKEN_END    1025
+
+/* new all possible nfa nodes when initing */
+struct SyntaxNFAData
+{
+    /* hash -> SyntaxNFAData Nodes */
+    static std::unordered_map<unsigned, std::vector<pSyntaxNFAData>> mHash;
+
+    /* node hash */
+    unsigned hash;
+
+    /* pointer */
+    std::multimap<unsigned, pSyntaxNFAData> edges;
+
+    /* node data */
+    unsigned nonTerminal;
+    std::vector<unsigned>> production;
+    unsigned position;
+
+    SyntaxNFAData(unsigned nonTerminal, const std::vector<unsigned>>& production, unsigned position)
+    {
+        this->nonTerminal = nonTerminal;
+        this->production = production;
+        this->position = position;
+        this->hash = comm::genHash(nonTerminal, production, position);
+    }
+
+    bool isDataSame(pSyntaxNFAData p)
+    {
+        if (this->hash != p->hash) return false;
+
+        if (this->nonTerminal != p->nonTerminal) return false;
+        if (this->position != p->position) return false;
+        unsigned n1 = this->production.size(), n2 = p->production.size();
+        if (n1 != n2) return false;
+        for (unsigned i = 0; i < n1; i++) {
+            if (this->production[i] != p->production[i]) return false;
+        }
+
+        return true;
+    }
+};
+using pSyntaxNFAData = SyntaxNFAData*;
+using pcSyntaxNFAData = const SyntaxNFAData*;
+std::unordered_map<unsigned, std::vector<pSyntaxNFAData>> SyntaxNFAData::mHash = {};
 
 enum SyntaxSymbolKind
 {
@@ -22,13 +68,26 @@ enum SyntaxSymbolKind
 class Syntax
 {
     public:
+        std::unordered_set<unsigned> genFirstSet(unsigned id)
+        {
+            if (isNonTerminal(id)) {
+                return genFirstSetNonTerminal(id);
+            } else if (isToken(id)) {
+                return genFirstSetTerminal(id);
+            }
+
+            /* id can not be EPSILON and others */
+            assert(false);
+            return std::unordered_set<unsigned>{};
+        }
+
         std::unordered_set<unsigned> genFirstSetTerminal(unsigned id)
         {
             return std::unordered_set<unsigned>{id};
         }
 
         /* can include EPSILON */
-        std::unordered_set genFirstSetNonTerminal(unsigned id)
+        std::unordered_set<unsigned> genFirstSetNonTerminal(unsigned id)
         {
             /*
              * NOTATION:
@@ -44,9 +103,9 @@ class Syntax
             while (!worklist.empty()) {
                 unsigned i = worklist.top(); worklist.pop();
                 assert((productionIDs.find(i) != productionIDs.end()));
-                for (const auto& vec: productionIDs[i]) {
+                for (const std::vector<unsigned>& vec: productionIDs[i]) {
                     assert(!vec.empty());
-                    if (vec[0] < SYNTAX_EPSILON_IDX) {
+                    if (isNonTerminal(vec[0])) {
                         /* new non-terminal symbol */
                         if (handledNonTer.find(vec[0]) == handledNonTer.end()) {
                             worklist.push(vec[0]);
@@ -58,7 +117,7 @@ class Syntax
                              * */
                             unsigned vSize = vec.size();
                             for (unsigned idx = 0; idx < vSize - 1; idx++) {
-                                if (vec[idx] < SYNTAX_EPSILON_IDX && isNonTerminalEPSILON(vec[idx])) {
+                                if (isNonTerminal(vec[idx]) && isNonTerminalEPSILON(vec[idx])) {
                                     worklist.push(vec[idx+1]);
                                     handledNonTer.insert(vec[idx+1]);
                                 } else {
@@ -66,10 +125,10 @@ class Syntax
                                 }
                             }
                         }
-                    } else if (vec[0] == SYNTAX_EPSILON_IDX) {
-                        /* s.insert(SYNTAX_EPSILON_IDX);
+                    } else if (isEPSILON(vec[0])) {
+                        /* s.insert((vec[0]);
                          * handle out of this while statement. */
-                    } else if (vec[0] > SYNTAX_EPSILON_IDX){
+                    } else if (isToken(vec[0])) {
                         /* token */
                         s.insert(vec[0]);
                     }
@@ -85,22 +144,111 @@ class Syntax
         {
             /*
              * A -> B C D C B, id is C
+             * EPSILON is always excluded in follow-set
              * */
-            for (const auto& item: productionIDs) {
-                for (const auto& pa: item.second) {
-                    int idx = 0;
-                    for (unsigned symbolId: pa.first) {
-                        DO IT
+            std::unordered_set<unsigned> sFollow = {};
+            std::unordered_set<unsigned> sHandled = {};
+            std::queue<unsigned> worklist;
+            worklist.push(id);
+            sHandled.insert(id);
+
+            while (!worklist.empty()) {
+                unsigned workId = worklist.front(); worklist.pop();
+                for (const auto& item: productionIDs) {
+                    for (const std::vector<unsigned>& v: item.second) {
+                        for (int idx = 0; idx < v.size(); idx++) {
+                            unsigned symbolId = v[idx];
+                            if (symbolId == workId) {
+                                int idx2 = idx + 1;
+                                for (; idx2 < v.size(); idx2++) {
+                                    if (isEPSILON(v[idx2])) continue;
+                                    setUnion(sFollow, genFirstSet(v[idx2]));
+                                    if (isToken(v[idx2]) || !isNonTerminalEPSILON(v[idx2])) break;
+                                }
+                                if (idx2 == v.size() && sHandled.find(item.first) == sHandled.end()) {
+                                    worklist.push(item.first);
+                                    sHandled.insert(item.first);
+                                }
+                            }
+                        }
                     }
                 }
             }
+
+            return sFollow;
         }
 
-        auto genNFA()
+        pSyntaxNFAData genAllNFANodes()
+        {
+            pSyntaxNFAData pStart = nullptr;
+            for (const auto& item: productionIDs) {
+                for (const auto& v: item.second) {
+                    for (unsigned position = 0; i <= v.size(); i++) {
+                        pSyntaxNFAData p = new SyntaxNFAData(item.first, v, position);
+                        SyntaxNFAData::mHash[p->hash].push_back(p);
+                        /* start node must has only a production: Prog' -> Prog */
+                        if (item.first == 1 && position == 0) pStart = p;
+                    }
+                }
+            }
+
+            return pStart;
+        }
+
+        pSyntaxNFAData genNFA()
         {
             /* start from Prog' */
+            pSyntaxNFAData pStart = genAllNFANodes();
+            std::queue<pSyntaxNFAData> worklist;
+            std::unordered_set<pSyntaxNFAData> handled;
+            worklist.push(pStart);
+            handled.insert(pStart);
 
+            while (!worklist.empty()) {
+                /* A -> EPSILON */
+                pSyntaxNFAData p = worklist.front(); worklist.pop();
+                p->nonTerminal;
+                unsigned size = p->production.size();
+                if (p->position < size) {
+                    /* find node* */
+                    pSyntaxNFAData pNFA = getSyntaxNFANode(p->nonTerminal, p->production, p->position + 1);
+                    p->edges[p->production[p->position]] = pNFA;
+                    if (handled.find(pNFA) == handled.end()) {
+                        worklist.push(pNFA);
+                        handled.insert(pNFA);
+                    }
+                    if (isNonTerminal(p->production[p->position])) {
+                        assert(productionIDs.find(p->production[p->position]) != productionIDs.end());
+                        for (const std::vector<unsigned>& v: productionIDs[p->production[p->position]]) {
+                            pSyntaxNFAData pNFA2 = getSyntaxNFANode(p->production[p->position], v, 0);
+                            p->edges[SYNTAX_EPSILON_IDX] = pNFA2;
+                            if (handled.find(pNFA2) == handled.end()) {
+                                worklist.push(pNFA2);
+                                handled.insert(pNFA2);
+                            }
+                        }
+                    }
+                }
+            }
 
+            return pStart;
+        }
+
+        pSyntaxNFAData getSyntaxNFANode(unsigned nonTerminal, const std::vector<unsigned>& production, unsigned position)
+        {
+            pSyntaxNFAData p = new SyntaxNFAData(nonTerminal, production, position);
+            assert(SyntaxNFAData::mHash.find(p->hash) != SyntaxNFAData::mHash.end());
+            const std::vector<pSyntaxNFAData>& vec = SyntaxNFAData::mHash[p->hash];
+            for (pSyntaxNFAData pNFA: vec) {
+                if (pNFA->isDataSame(p)) {
+                    delete p;
+                    return pNFA;
+                }
+            }
+
+            assert(false);
+            delete p;
+            return nullptr;
         }
 
         auto parse()
@@ -111,6 +259,16 @@ class Syntax
         }
 
     private:
+        /* union second set to the first set */
+        void setUnion(std::unordered_set<unsigned>& fst, const std::unordered_set<unsigned>&& snd)
+        {
+            for (unsigned e: snd) { fst.insert(e); }
+        }
+
+        bool isNonTerminal(unsigned id) { return id < SYNTAX_EPSILON_IDX; }
+        bool isEPSILON(unsigned id) { return id == SYNTAX_EPSILON_IDX; }
+        bool isToken(unsigned id) { return tokenSet.find(id) != tokenSet.end(); }
+
         /* if nonTerminal can product EPSILON */
         bool isNonTerminalEPSILON(unsigned nonTerminal)
         {
@@ -148,8 +306,7 @@ class Syntax
             nonTerminalHandling.insert(nonTerminal);
 
             assert(productionIDs.find(nonTerminal) != productionIDs.end());
-            for (const auto& pa: productionIDs[nonTerminal]) {
-                const std::vector<unsigned>& v = pa.first;
+            for (const auto& v: productionIDs[nonTerminal]) {
                 if (isVectorEPSILON(v, nonTerminalHandling)) {
                     /* TODO: if nonTerminal would be rehandled later, we can optimize it by caching the handled nonTerminals */
                     nonTerminalHandling.remove(nonTerminal);
@@ -166,9 +323,9 @@ class Syntax
                              std::unordered_set<unsigned>& nonTerminalHandling)
         {
             for (auto id: v) {
-                if (id == SYNTAX_EPSILON_IDX) {
+                if (isEPSILON(id)) {
                     continue;
-                } else if (id > SYNTAX_EPSILON_IDX) {
+                } else if (isToken(id)) {
                     return false;
                 } else {
                     if (isNonTerminalEPSILON(id, nonTerminalHandling)) { continue; }
@@ -230,20 +387,20 @@ class Syntax
 
             for (const auto& item: all_production) {
                 unsigned keyID = getSymbolID(item.first);
-                std::vector<std::pair<std::vector<unsigned>, unsigned>> vv;
+                std::vector<std::vector<unsigned>> vv;
                 for (const auto& item2: item.second) {
                     std::vector<unsigned> v;
                     for (const auto& strElement: item2) {
                         v.push_back(getSymbolID(strElement));
                     }
-                    vv.emplace_back(std::make_pair(v, 0));
+                    vv.emplace_back(v);
                 }
                 productionIDs[keyID] = vv;
             }
         }
 
-        /* keyID -> production vectors, pair: production -> current LR(1) idx */
-        std::unordered_map<unsigned, std::vector<std::pair<std::vector<unsigned>, unsigned>>> productionIDs;
+        /* keyID -> production vectors, production */
+        std::unordered_map<unsigned, std::vector<std::vector<unsigned>>> productionIDs;
 };
 
 
