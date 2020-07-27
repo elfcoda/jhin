@@ -4,13 +4,13 @@
 #include <vector>
 #include <map>
 #include <queue>
-#include "nfa.h"
-#include "../syntax/syntax_nfa.h"
-#include "../../comm/hash.h"
+#include "../src/lex/nfa.h"
+#include "../src/syntax/syntax_nfa.h"
+#include "hash.h"
 
 namespace jhin
 {
-namespace lex
+namespace comm
 {
 
 
@@ -47,7 +47,7 @@ struct DFANode
      */
     std::map<unsigned, DFANode<PNFA>*> mEdges;
 
-    DFANode(unsigned int hash, std::set<pNFANode> sNFA)
+    DFANode(unsigned int hash, std::set<lex::pNFANode> sNFA)
     {
         /* id starts from 1 */
         maxId += 1;
@@ -75,7 +75,7 @@ struct DFANode
         terminalId = UINT_MAX;
         for (PNFA p: sNodeData) {
             /* ERROR first, not in charset error */
-            if (p->id == static_cast<unsigned int>(ERR_ERROR)) {
+            if (p->id == static_cast<unsigned int>(lex::ERR_ERROR)) {
                 terminalId = p->id;
                 return;
             }
@@ -90,9 +90,9 @@ template <class PNFA>
 using pDFANode = DFANode<PNFA>*;
 /* Lex */
 template <>
-unsigned int DFANode<pNFANode>::maxId = 0;
+unsigned int DFANode<lex::pNFANode>::maxId = 0;
 template <>
-std::map<unsigned int, std::set<pDFANode<pNFANode>>> DFANode<pNFANode>::mHash = {};
+std::map<unsigned int, std::set<pDFANode<lex::pNFANode>>> DFANode<lex::pNFANode>::mHash = {};
 /* Syntax */
 template <>
 unsigned int DFANode<syntax::pSyntaxNFAData>::maxId = 0;

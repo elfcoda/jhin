@@ -2,8 +2,8 @@
 #include "non_terminal.h"
 #include "syntax_nfa.h"
 #include "../lex/nfa.h"
-#include "../lex/dfa.h"
 #include "../lex/keywords.h"
+#include "../../comm/dfa.h"
 
 namespace jhin
 {
@@ -178,15 +178,15 @@ class Syntax
             return pStart;
         }
 
-        lex::pDFANode<pSyntaxNFAData> NFA2DFA(pSyntaxNFAData init)
+        comm::pDFANode<pSyntaxNFAData> NFA2DFA(pSyntaxNFAData init)
         {
             std::queue<pSyntaxNFAData> qu;
             qu.push(init);
-            std::set<pSyntaxNFAData> sNFA = lex::genEPClosure(qu, SYNTAX_EPSILON_IDX);
+            std::set<pSyntaxNFAData> sNFA = comm::genEPClosure(qu, SYNTAX_EPSILON_IDX);
             unsigned startHash = jhin::comm::genHash(sNFA);
             /* create first DFA node */
-            lex::pDFANode<pSyntaxNFAData> pStart = new lex::DFANode<pSyntaxNFAData>(startHash, sNFA);
-            lex::propagateDFA<pSyntaxNFAData>(pStart, SYNTAX_EPSILON_IDX);
+            comm::pDFANode<pSyntaxNFAData> pStart = new comm::DFANode<pSyntaxNFAData>(startHash, sNFA);
+            comm::propagateDFA<pSyntaxNFAData>(pStart, SYNTAX_EPSILON_IDX);
 
             return pStart;
         }

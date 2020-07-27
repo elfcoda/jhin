@@ -11,7 +11,7 @@
 #include <ctime>
 #include "keywords.h"
 #include "nfa.h"
-#include "dfa.h"
+#include "../../comm/dfa.h"
 
 
 namespace jhin
@@ -68,15 +68,15 @@ class Lex
             return init;
         }
 
-        pDFANode<pNFANode> NFA2DFA(pNFANode init)
+        comm::pDFANode<pNFANode> NFA2DFA(pNFANode init)
         {
             std::queue<pNFANode> qu;
             qu.push(init);
-            std::set<pNFANode> sNFA = genEPClosure(qu, EPSILON);
+            std::set<pNFANode> sNFA = comm::genEPClosure(qu, EPSILON);
             unsigned int startHash = jhin::comm::genHash(sNFA);
             /* create first DFA node */
-            pDFANode<pNFANode> pStart = new DFANode<pNFANode>(startHash, sNFA);
-            propagateDFA<pNFANode>(pStart, EPSILON);
+            comm::pDFANode<pNFANode> pStart = new comm::DFANode<pNFANode>(startHash, sNFA);
+            comm::propagateDFA<pNFANode>(pStart, EPSILON);
 
             return pStart;
         }
@@ -92,8 +92,8 @@ class Lex
             if (LexInit() == false) return std::make_pair(false, getErrorMsg("Lex init error", filename));
 
             /* about 2 seconds to generate NFA and DFA nodes */
-            pDFANode<pNFANode> dfaInit = NFA2DFA(genNFA());
-            pDFANode<pNFANode> pCur = dfaInit;
+            comm::pDFANode<pNFANode> dfaInit = NFA2DFA(genNFA());
+            comm::pDFANode<pNFANode> pCur = dfaInit;
             status = LEX_STATUS_NORMAL;
             bool backslash = false;
             bool commentFlag = false;
@@ -200,7 +200,7 @@ handle_non_blank:
             return std::make_pair(true, "");
         }
 
-        void drivenByDFATable(pDFANode<pNFANode> init)
+        void drivenByDFATable(comm::pDFANode<pNFANode> init)
         {
             /*
              * TODO
