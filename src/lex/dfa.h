@@ -16,11 +16,11 @@ namespace lex
 
 /* DFA definition */
 /* a DFANode can be generated only if the sNodeData is compatible with that in 'static mHash' */
-template <class NFA>
+template <class PNFA>
 struct DFANode
 {
     /* hash map, (hash value of sNodeData) -> (DFA set) */
-    static std::map<unsigned int, std::set<DFANode<NFA>*>> mHash;
+    static std::map<unsigned int, std::set<DFANode<PNFA>*>> mHash;
 
     /* record max node id to increase id */
     static unsigned int maxId;
@@ -28,11 +28,11 @@ struct DFANode
     /* dfa node id */
     unsigned int id;
 
-    /* node in NFA(normal and terminal) */
+    /* node in PNFA(normal and terminal) */
     /* std::set<unsigned int> sNodeData; */
     /* {1, 3, 23, 57}  should be same with {1, 23, 57, 3}, so sNodeData should be ordered for equality comparation */
     /* if pNFANode is ordered, pNFANode->id is in particular order as well */
-    std::set<NFA> sNodeData;
+    std::set<PNFA> sNodeData;
 
     /* nfa terminal node id  */
     /* non-terminal node if terminalId == UINT_MAX */
@@ -45,7 +45,7 @@ struct DFANode
     /* std::map<char, DFANode*> mEdges;
      * to get compatible with SyntaxNFAData
      */
-    std::map<unsigned, DFANode<NFA>*> mEdges;
+    std::map<unsigned, DFANode<PNFA>*> mEdges;
 
     DFANode(unsigned int hash, std::set<pNFANode> sNFA)
     {
@@ -73,7 +73,7 @@ struct DFANode
     void setTerminalId()
     {
         terminalId = UINT_MAX;
-        for (NFA p: sNodeData) {
+        for (PNFA p: sNodeData) {
             /* ERROR first, not in charset error */
             if (p->id == static_cast<unsigned int>(ERR_ERROR)) {
                 terminalId = p->id;
@@ -85,22 +85,23 @@ struct DFANode
         }
     }
 };
+/* PNFA: pNFA para */
+template <class PNFA>
+using pDFANode = DFANode<PNFA>*;
 /* Lex */
-template<>
+template <>
 unsigned int DFANode<pNFANode>::maxId = 0;
-using pDFANode = DFANode<pNFANode>*;
-template<>
-std::map<unsigned int, std::set<pDFANode>> DFANode<pNFANode>::mHash = {};
+template <>
+std::map<unsigned int, std::set<pDFANode<pNFANode>>> DFANode<pNFANode>::mHash = {};
 /* Syntax */
-template<>
+template <>
 unsigned int DFANode<syntax::pSyntaxNFAData>::maxId = 0;
-using pSyntaxDFANode = DFANode<syntax::pSyntaxNFAData>*;
-template<>
-std::map<unsigned int, std::set<pSyntaxDFANode>> DFANode<syntax::pSyntaxNFAData>::mHash = {};
+template <>
+std::map<unsigned int, std::set<pDFANode<syntax::pSyntaxNFAData>>> DFANode<syntax::pSyntaxNFAData>::mHash = {};
 
 
-template <class T>
-bool isSetEqual(const std::set<T>& s1, const std::set<T>& s2)
+template <class PNFA>
+bool isSetEqual(const std::set<PNFA>& s1, const std::set<PNFA>& s2)
 {
     auto it1 = s1.begin();
     auto it2 = s2.begin();
@@ -113,7 +114,8 @@ bool isSetEqual(const std::set<T>& s1, const std::set<T>& s2)
     return true;
 }
 
-bool DFAConflict(pDFANode p1, pDFANode p2)
+template <class PNFA>
+bool DFAConflict(pDFANode<PNFA> p1, pDFANode<PNFA> p2)
 {
     if (p1->hash != p2->hash) return false;
     if (isSetEqual(p1->sNodeData, p2->sNodeData))
@@ -122,11 +124,12 @@ bool DFAConflict(pDFANode p1, pDFANode p2)
 }
 
 /* return nullptr if s is compatible with mHash, unless return pNFANode */
-std::pair<pDFANode, unsigned int> findSameNFASet(const std::set<pNFANode>& s)
+template <class PNFA>
+std::pair<pDFANode<PNFA>, unsigned int> findSameNFASet(const std::set<PNFA>& s)
 {
-    unsigned int hash = jhin::comm::genHash<pNFANode>(s);
-    if (DFANode<pNFANode>::mHash.find(hash) == DFANode<pNFANode>::mHash.end()) return std::make_pair(nullptr, hash);
-    for (pDFANode p: DFANode<pNFANode>::mHash[hash]) {
+    unsigned int hash = jhin::comm::genHash<PNFA>(s);
+    if (DFANode<PNFA>::mHash.find(hash) == DFANode<PNFA>::mHash.end()) return std::make_pair(nullptr, hash);
+    for (pDFANode<PNFA> p: DFANode<PNFA>::mHash[hash]) {
         if (isSetEqual(p->sNodeData, s)) {
             return std::make_pair(p, hash);
         }
@@ -135,14 +138,15 @@ std::pair<pDFANode, unsigned int> findSameNFASet(const std::set<pNFANode>& s)
     return std::make_pair(nullptr, hash);
 }
 
-std::set<pNFANode> genEPClosure(std::queue<pNFANode>& qu, unsigned EP)
+template <class PNFA>
+std::set<PNFA> genEPClosure(std::queue<PNFA>& qu, unsigned EP)
 {
-    std::set<pNFANode> se;
+    std::set<PNFA> se;
     while (!qu.empty()) {
-        pNFANode n = qu.front();
+        PNFA n = qu.front();
         qu.pop();
-        const std::vector<pNFANode>& v = n->mNodes[EP];
-        for (pNFANode p: v) {
+        const std::vector<PNFA>& v = n->mNodes[EP];
+        for (PNFA p: v) {
             if (se.find(p) == se.end()) {
                 qu.push(p);
             }
@@ -155,30 +159,31 @@ std::set<pNFANode> genEPClosure(std::queue<pNFANode>& qu, unsigned EP)
 
 
 /* handle DFA nodes, input a init node */
-void propagateDFA(pDFANode init, unsigned EP)
+template <class PNFA>
+void propagateDFA(pDFANode<PNFA> init, unsigned EP)
 {
-    std::queue<pDFANode> quDFAs;
+    std::queue<pDFANode<PNFA>> quDFAs;
     quDFAs.push(init);
 
     while (!quDFAs.empty()) {
-        pDFANode pDFA = quDFAs.front();
+        pDFANode<PNFA> pDFA = quDFAs.front();
         quDFAs.pop();
 
-        const std::set<pNFANode>& s = pDFA->sNodeData;
-        std::map<char, std::set<pNFANode>> m;
-        for (pNFANode p: s) {
+        const std::set<PNFA>& s = pDFA->sNodeData;
+        std::map<char, std::set<PNFA>> m;
+        for (PNFA p: s) {
             for (const auto& it: p->mNodes) {
                 if (it.first != EP) {
-                    for (pNFANode pNode: it.second) {
+                    for (PNFA pNode: it.second) {
                         m[it.first].insert(pNode);
                     }
                 }
             }
         }
 
-        std::map<char, std::queue<pNFANode>> mqu;
+        std::map<char, std::queue<PNFA>> mqu;
         for (const auto& it: m) {
-            for (pNFANode pNode: it.second) {
+            for (PNFA pNode: it.second) {
                 mqu[it.first].push(pNode);
             }
         }
@@ -186,11 +191,11 @@ void propagateDFA(pDFANode init, unsigned EP)
 
         /* check compatibility everytime gen a new DFA node */
         for (auto& it: mqu) {
-            std::set<pNFANode> sNFA = genEPClosure(it.second, EP);
-            std::pair<pDFANode, unsigned int> pa = findSameNFASet(sNFA);
+            std::set<PNFA> sNFA = genEPClosure<PNFA>(it.second, EP);
+            std::pair<pDFANode<PNFA>, unsigned int> pa = findSameNFASet<PNFA>(sNFA);
             if (pa.first == nullptr) {
                 /* gen new DFA node, connect and add to worklist */
-                pDFANode pNew = new DFANode<pNFANode>(pa.second, sNFA);
+                pDFANode<PNFA> pNew = new DFANode<PNFA>(pa.second, sNFA);
                 pDFA->mEdges[it.first] = pNew;
                 /* add new node to the worklist */
                 quDFAs.push(pNew);
@@ -207,7 +212,8 @@ void propagateDFA(pDFANode init, unsigned EP)
  * recursive reference
  * OR IT WILL TAKE TOO MUCH MEMORY
  * */
-bool releaseDFANodes(pDFANode init)
+template <class PNFA>
+bool releaseDFANodes(pDFANode<PNFA> init)
 {
     // TODO
     // 后面再慢慢优化吧，代码要写不完惹QAQ

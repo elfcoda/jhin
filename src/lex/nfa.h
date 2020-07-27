@@ -27,7 +27,9 @@ struct NFANode
      * but '#' is not a chacracter of this language
      * for the reason, this lex analyser will complain when feeded with '#'
      * */
+    // to get compatible with syntax nfa epsilon when dealing with DFA parameter
     std::map<char, std::vector<NFANode*>> mNodes;
+    // std::map<unsigned, std::vector<NFANode*>> mNodes;
 
     /* normal node */
     NFANode()

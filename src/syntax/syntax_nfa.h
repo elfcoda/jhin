@@ -33,7 +33,7 @@ struct SyntaxNFAData
     unsigned hash;
 
     /* pointer */
-    std::map<unsigned, std::vector<pSyntaxNFAData>> edges;
+    std::map<unsigned, std::vector<pSyntaxNFAData>> mNodes;
 
     /* node data */
     unsigned nonTerminal;

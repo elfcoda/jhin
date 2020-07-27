@@ -43,10 +43,10 @@ class Syntax
             std::unordered_set<unsigned> s;
             std::queue<unsigned> worklist;
             worklist.push(id);
-            unordered_set<unsigned> handledNonTer{id};
+            std::unordered_set<unsigned> handledNonTer{id};
 
             while (!worklist.empty()) {
-                unsigned i = worklist.top(); worklist.pop();
+                unsigned i = worklist.front(); worklist.pop();
                 assert((productionIDs.find(i) != productionIDs.end()));
                 for (const std::vector<unsigned>& vec: productionIDs[i]) {
                     assert(!vec.empty());
@@ -128,7 +128,7 @@ class Syntax
             pSyntaxNFAData pStart = nullptr;
             for (const auto& item: productionIDs) {
                 for (const auto& v: item.second) {
-                    for (unsigned position = 0; i <= v.size(); i++) {
+                    for (unsigned position = 0; position <= v.size(); position++) {
                         pSyntaxNFAData p = new SyntaxNFAData(item.first, v, position);
                         SyntaxNFAData::mHash[p->hash].push_back(p);
                         /* start node must has only a production: Prog' -> Prog */
@@ -156,7 +156,7 @@ class Syntax
                 if (p->position < size) {
                     /* find node* */
                     pSyntaxNFAData pNFA = getSyntaxNFANode(p->nonTerminal, p->production, p->position + 1);
-                    p->edges[p->production[p->position]].push_back(pNFA);
+                    p->mNodes[p->production[p->position]].push_back(pNFA);
                     if (handled.find(pNFA) == handled.end()) {
                         worklist.push(pNFA);
                         handled.insert(pNFA);
@@ -165,7 +165,7 @@ class Syntax
                         assert(productionIDs.find(p->production[p->position]) != productionIDs.end());
                         for (const std::vector<unsigned>& v: productionIDs[p->production[p->position]]) {
                             pSyntaxNFAData pNFA2 = getSyntaxNFANode(p->production[p->position], v, 0);
-                            p->edges[SYNTAX_EPSILON_IDX].push_back(pNFA2);
+                            p->mNodes[SYNTAX_EPSILON_IDX].push_back(pNFA2);
                             if (handled.find(pNFA2) == handled.end()) {
                                 worklist.push(pNFA2);
                                 handled.insert(pNFA2);
@@ -178,9 +178,17 @@ class Syntax
             return pStart;
         }
 
-        auto genDFA(pSyntaxNFAData pStart)
+        lex::pDFANode<pSyntaxNFAData> NFA2DFA(pSyntaxNFAData init)
         {
-            // TODO
+            std::queue<pSyntaxNFAData> qu;
+            qu.push(init);
+            std::set<pSyntaxNFAData> sNFA = lex::genEPClosure(qu, SYNTAX_EPSILON_IDX);
+            unsigned startHash = jhin::comm::genHash(sNFA);
+            /* create first DFA node */
+            lex::pDFANode<pSyntaxNFAData> pStart = new lex::DFANode<pSyntaxNFAData>(startHash, sNFA);
+            lex::propagateDFA<pSyntaxNFAData>(pStart, SYNTAX_EPSILON_IDX);
+
+            return pStart;
         }
 
         pSyntaxNFAData getSyntaxNFANode(unsigned nonTerminal, const std::vector<unsigned>& production, unsigned position)
@@ -200,11 +208,11 @@ class Syntax
             return nullptr;
         }
 
-        auto parse()
+        bool parse()
         {
             if (init() != true) return false;
 
-
+            return true;
         }
 
     private:
@@ -216,13 +224,13 @@ class Syntax
 
         bool isNonTerminal(unsigned id) { return id < SYNTAX_EPSILON_IDX; }
         bool isEPSILON(unsigned id) { return id == SYNTAX_EPSILON_IDX; }
-        bool isToken(unsigned id) { return tokenSet.find(id) != tokenSet.end(); }
+        bool isToken(unsigned id) { return lex::tokenSet.find(id) != lex::tokenSet.end(); }
 
         /* if nonTerminal can product EPSILON */
         bool isNonTerminalEPSILON(unsigned nonTerminal)
         {
             std::unordered_set<unsigned> nonTerminalHandling;
-            return isNonTerminalEPSILON(nonTerminal, nonTerminalHandling)
+            return isNonTerminalEPSILON(nonTerminal, nonTerminalHandling);
         }
 
         bool isNonTerminalEPSILON(unsigned nonTerminal,
@@ -258,12 +266,12 @@ class Syntax
             for (const auto& v: productionIDs[nonTerminal]) {
                 if (isVectorEPSILON(v, nonTerminalHandling)) {
                     /* TODO: if nonTerminal would be rehandled later, we can optimize it by caching the handled nonTerminals */
-                    nonTerminalHandling.remove(nonTerminal);
+                    nonTerminalHandling.erase(nonTerminal);
                     return true;
                 }
             }
 
-            nonTerminalHandling.remove(nonTerminal);
+            nonTerminalHandling.erase(nonTerminal);
             return false;
         }
 
@@ -287,7 +295,6 @@ class Syntax
 
         bool init()
         {
-            NFANode::maxId = 0;
             switchString2ID();
 
             return true;
@@ -316,7 +323,7 @@ class Syntax
             } else if (lex::string2TokenId.find(s) != lex::string2TokenId.end()) {
                 return std::make_pair(lex::string2TokenId[s], SYN_SYM_TOKEN);
             } else if (s == SYNTAX_EPSILON_STR) {
-                return std::make_pair(SYNTAX_EPSILON_IDX, SYN_SYM_EPSILON)
+                return std::make_pair(SYNTAX_EPSILON_IDX, SYN_SYM_EPSILON);
             }
 
             /* ERROR: s not found, please check your syntax file */
