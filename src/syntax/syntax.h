@@ -125,29 +125,29 @@ class Syntax
 
         pSyntaxNFAData genAllNFANodes()
         {
-            pSyntaxNFAData pStart = nullptr;
+            pSyntaxNFAData pNFAStart = nullptr;
             for (const auto& item: productionIDs) {
                 for (const auto& v: item.second) {
                     for (unsigned position = 0; position <= v.size(); position++) {
                         pSyntaxNFAData p = new SyntaxNFAData(item.first, v, position);
                         SyntaxNFAData::mHash[p->hash].push_back(p);
                         /* start node must has only a production: Prog' -> Prog */
-                        if (item.first == 1 && position == 0) pStart = p;
+                        if (item.first == 1 && position == 0) pNFAStart = p;
                     }
                 }
             }
 
-            return pStart;
+            return pNFAStart;
         }
 
         pSyntaxNFAData genNFA()
         {
             /* start from Prog' */
-            pSyntaxNFAData pStart = genAllNFANodes();
+            pSyntaxNFAData pNFAStart = genAllNFANodes();
             std::queue<pSyntaxNFAData> worklist;
             std::unordered_set<pSyntaxNFAData> handled;
-            worklist.push(pStart);
-            handled.insert(pStart);
+            worklist.push(pNFAStart);
+            handled.insert(pNFAStart);
 
             while (!worklist.empty()) {
                 /* A -> EPSILON */
@@ -175,42 +175,28 @@ class Syntax
                 }
             }
 
-            return pStart;
+            return pNFAStart;
         }
 
-        comm::pDFANode<pSyntaxNFAData> NFA2DFA(pSyntaxNFAData init)
+        comm::pDFANode<pSyntaxNFAData> NFA2DFA(pSyntaxNFAData pNFAStart)
         {
             std::queue<pSyntaxNFAData> qu;
-            qu.push(init);
+            qu.push(pNFAStart);
             std::set<pSyntaxNFAData> sNFA = comm::genEPClosure(qu, SYNTAX_EPSILON_IDX);
             unsigned startHash = jhin::comm::genHash(sNFA);
             /* create first DFA node */
-            comm::pDFANode<pSyntaxNFAData> pStart = new comm::DFANode<pSyntaxNFAData>(startHash, sNFA);
-            comm::propagateDFA<pSyntaxNFAData>(pStart, SYNTAX_EPSILON_IDX);
+            comm::pDFANode<pSyntaxNFAData> pDFAStart = new comm::DFANode<pSyntaxNFAData>(startHash, sNFA);
+            comm::propagateDFA<pSyntaxNFAData>(pDFAStart, SYNTAX_EPSILON_IDX);
 
-            return pStart;
-        }
-
-        pSyntaxNFAData getSyntaxNFANode(unsigned nonTerminal, const std::vector<unsigned>& production, unsigned position)
-        {
-            pSyntaxNFAData p = new SyntaxNFAData(nonTerminal, production, position);
-            assert(SyntaxNFAData::mHash.find(p->hash) != SyntaxNFAData::mHash.end());
-            const std::vector<pSyntaxNFAData>& vec = SyntaxNFAData::mHash[p->hash];
-            for (pSyntaxNFAData pNFA: vec) {
-                if (pNFA->isDataSame(p)) {
-                    delete p;
-                    return pNFA;
-                }
-            }
-
-            assert(false);
-            delete p;
-            return nullptr;
+            return pDFAStart;
         }
 
         bool parse()
         {
             if (init() != true) return false;
+
+            pSyntaxNFAData pNFAStart = genNFA();
+            comm::pDFANode<pSyntaxNFAData> pDFAStart = NFA2DFA(pNFAStart);
 
             return true;
         }
@@ -275,6 +261,22 @@ class Syntax
             return false;
         }
 
+        pSyntaxNFAData getSyntaxNFANode(unsigned nonTerminal, const std::vector<unsigned>& production, unsigned position)
+        {
+            pSyntaxNFAData p = new SyntaxNFAData(nonTerminal, production, position);
+            assert(SyntaxNFAData::mHash.find(p->hash) != SyntaxNFAData::mHash.end());
+            const std::vector<pSyntaxNFAData>& vec = SyntaxNFAData::mHash[p->hash];
+            for (pSyntaxNFAData pNFA: vec) {
+                if (pNFA->isDataSame(p)) {
+                    delete p;
+                    return pNFA;
+                }
+            }
+
+            assert(false);
+            delete p;
+            return nullptr;
+        }
 
         bool isVectorEPSILON(const std::vector<unsigned>& v,
                              std::unordered_set<unsigned>& nonTerminalHandling)
@@ -310,6 +312,8 @@ class Syntax
                 return SYNTAX_EPSILON_IDX;
             }
 
+            #include <iostream>
+            std::cout << "TEST: " << s << std::endl;
             /* ERROR: s not found, please check your syntax file */
             assert(false);
             return 0;
@@ -363,10 +367,5 @@ class Syntax
 
 };  /* namespace syntax*/
 };  /* namespace jhin */
-
-int main(){
-
-    return 0;
-}
 
 

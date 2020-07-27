@@ -68,18 +68,18 @@ def expand_production(production):
 
 # replace "*" by STAR, and so on
 def replace_production(production):
-    list1 = ["!=", "<-", ">=", "=>", "<=", "==",
+    list1 = ["!=", "<-", ">=", "=>", "<=", "==", "->",
             "(", ")", "{", "}", "[", "]", "*", "@", ":", ",", \
             "if", "while", ".", "+", "-", "/", "!", \
             "<", ">", "for", "return", "case", "of", "else", \
-            "otherwise", "lambda", "isVoid", "'\\n'", "inherits", "class"
+            "otherwise", "lambda", "isVoid", "'\\n'", "inherits", "class", "new", "let", "in"
             ]
 
-    list2 = ["NEQ", "ASSIGN", "GE", "INFER", "LE", "EQ",
+    list2 = ["NEQ", "ASSIGN", "GE", "INFER", "LE", "EQ", "ARROW",
             "LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK", "RBRACK", "STAR", "AT", "COLON", "COMMA", \
             "IF", "WHILE", "DOT", "PLUS", "MINUS", "SLASH", "NOT", \
             "LT", "GT", "FOR", "RETURN", "CASE", "OF", "ELSE", \
-            "OTHERWISE", "LAMBDA", "ISVOID", "NEWLINE", "INHERITS", "CLASS"
+            "OTHERWISE", "LAMBDA", "ISVOID", "NEWLINE", "INHERITS", "CLASS", "NEW", "LET", "IN"
             ]
 
     for (l1, l2) in zip(list1, list2):

@@ -72,16 +72,21 @@ Class   ::= class RE_VALUE { NOTE_STAR(Decl) }
 ----------
 # procedure  
 # multi-newline to one
-Proc    ::= RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { NOTE_QUES('\n') Proc_b0 NOTE_STAR(Proc_b1)  NOTE_QUES('\n') }
-        |   RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { NOTE_QUES('\n') }  
+# Proc    ::= RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { NOTE_QUES('\n') Proc_b0 NOTE_STAR(Proc_b1)  NOTE_QUES('\n') }
+#         |   RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { NOTE_QUES('\n') }  
+Proc    ::= RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { Proc_b0 NOTE_STAR(Proc_b1) }
+        |   RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { }  
 ----------
 Proc_ar ::= RE_ID : Type NOTE_STAR(, RE_ID : Type)
 ----------
 Proc_b0 ::= Exp | Cmd | DeclN
 ----------
-Proc_b1 ::= '\n' Exp
-        |   '\n' Cmd
-        |   '\n' DeclN
+# Proc_b1 ::= '\n' Exp
+#         |   '\n' Cmd
+#         |   '\n' DeclN
+Proc_b1 ::= Exp
+        |   Cmd
+        |   DeclN
 
 
 ----------
@@ -115,12 +120,12 @@ Exp_ar  ::= Exp NOTE_STAR(, Exp)
 # id can be a type, eg. m: TYPE = Int, or a value  
 # Value exp  
 # Not Equal need implementing first  !!!
-ExpV    ::= Expv == ExpV1
+ExpV    ::= ExpV == ExpV1
         |   ExpV < ExpV1
         |   ExpV <= ExpV1  
         |   ExpV > ExpV1  
         |   ExpV >= ExpV1  
-        |   Expv != ExpV1
+#        |   ExpV != ExpV1  # "!=" should define in lex phase firstly!!!
         |   ExpV1
 
 ----------
