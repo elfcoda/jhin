@@ -4,6 +4,8 @@
 #include <vector>
 #include <map>
 #include <queue>
+#include <cassert>
+#include <type_traits>
 #include "../src/lex/nfa.h"
 #include "../src/syntax/syntax_nfa.h"
 #include "hash.h"
@@ -288,6 +290,50 @@ void propagateDFA(pDFANode<PNFA> init, unsigned EP)
             }
         }
     }
+}
+
+template <class RET, class PNFA, class... Ts>
+using DFAFunc = RET(pDFANode<PNFA>, Ts...);
+
+/* REPEAT: whether an old DFA node can be rehandled */
+template <class RET = void, class PNFA = syntax::pSyntaxNFAData, bool REPEAT = false, class... Ts>
+pDFANode<PNFA> travelDFA(pDFANode<PNFA> pStart,
+                         DFAFunc<RET, PNFA, Ts...> f,
+                         Ts... ts)
+{
+    std::queue<pDFANode<PNFA>> worklist;
+    worklist.push(pStart);
+    std::unordered_set<pDFANode<PNFA>> se = {pStart};
+
+    if constexpr (REPEAT) {
+        /* this branch should be processed in compile-time to make type-checker happy. */
+        static_assert(std::is_same<RET, bool>::value, "RET should be type 'bool' when 'REPEAT' is true");
+
+        while (!worklist.empty()) {
+            pDFANode<PNFA> p = worklist.front(); worklist.pop();
+            /* f 必须是一个单调递增有上界函数，或单调递减有下界函数，由调用方来保证 */
+            bool bIsChanged = f(p, ts...);
+            if (bIsChanged) {
+                for (const auto& item: p->mEdges) {
+                    worklist.push(item.second);
+                }
+            }
+        }
+    } else {
+        while (!worklist.empty()) {
+            pDFANode<PNFA> p = worklist.front(); worklist.pop();
+            f(p, ts...);
+            for (const auto& item: p->mEdges) {
+                pDFANode<PNFA> pDFA = item.second;
+                if (se.find(pDFA) == se.end()) {
+                    worklist.push(pDFA);
+                    se.insert(pDFA);
+                }
+            }
+        }
+    }
+
+    return pStart;
 }
 
 /*

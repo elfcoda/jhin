@@ -226,20 +226,24 @@ class Syntax
             pSyntaxNFAData pNFAStart = genNFA();
             comm::pDFANode<pSyntaxNFAData> pDFAStart = NFA2DFA(pNFAStart);
             bool b = updateDFAFollowSetForNFA(pDFAStart);
+            pDFAStart = comm::travelDFA(pDFAStart, removeEPSILON);
 
+            // DEBUG
             std::cout << (pDFAStart->toString()) << std::endl;
 
-            return b;
+            return true;
         }
 
         bool isConflict(comm::pDFANode<pSyntaxNFAData> pDFAStart)
         {
+            /* if conflict, maybe we should switch to LR(1) algorithm */
             return false;
         }
 
         bool updateDFAFollowSetForNFA(comm::pDFANode<pSyntaxNFAData> pStart)
         {
             /* LALR core */
+
             /* eg:
              * DFA(a) -> DFA(b)
              * DFA(b) -> DFA(c) DFA(e)
@@ -364,6 +368,15 @@ class Syntax
         {
             std::unordered_set<unsigned> nonTerminalHandling;
             return isNonTerminalEPSILON(nonTerminal, nonTerminalHandling);
+        }
+
+        static void removeEPSILON(comm::pDFANode<pSyntaxNFAData> p)
+        {
+            for (auto& item: p->followSet) {
+                if (item.second.find(SYNTAX_EPSILON_IDX) != item.second.end()) {
+                    item.second.erase(SYNTAX_EPSILON_IDX);
+                }
+            }
         }
 
         bool isNonTerminalEPSILON(unsigned nonTerminal,

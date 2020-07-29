@@ -51,11 +51,6 @@ struct SyntaxNFAData
         id = maxId;
     }
 
-    bool canReduce()
-    {
-        return position == production.size();
-    }
-
     std::string toString()
     {
         std::string s = "";
