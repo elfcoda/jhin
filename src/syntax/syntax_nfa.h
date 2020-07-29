@@ -51,6 +51,30 @@ struct SyntaxNFAData
         id = maxId;
     }
 
+    bool canReduce()
+    {
+        return position == production.size();
+    }
+
+    std::string toString()
+    {
+        std::string s = "";
+        s += id_to_non_terminal[nonTerminal];
+        s += "\t-> ";
+        std::string dot = ".";
+        for (unsigned idx = 0; idx < production.size(); idx++) {
+            if (idx == position) s += dot;
+            id = production[idx];
+            if (id == SYNTAX_EPSILON_IDX) s += "EPSILON ";
+            else if (id < SYNTAX_EPSILON_IDX) s += id_to_non_terminal[id] + " ";
+            else s += lex::tokenId2String[id] + " ";
+        }
+
+        if (position == production.size()) s += dot;
+
+        return s;
+    }
+
     bool isDataSame(pSyntaxNFAData p)
     {
         if (this->hash != p->hash) return false;
@@ -78,6 +102,12 @@ enum SyntaxSymbolKind
     SYN_SYM_UNKNOWN,
 };
 
+enum SyntaxConflictType
+{
+    SYNTAX_CONFLICT_SHIFT_REDUCE = 1,
+    SYNTAX_CONFLICT_REDUCE_REDUCE,
+    SYNTAX_CONFLICT_NORMAL,
+};
 
 
 

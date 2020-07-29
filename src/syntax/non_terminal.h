@@ -12,6 +12,7 @@
 namespace jhin {
 namespace syntax {
 
+	#define NON_TERMINAL_IDX_MIN    1
 	#define NON_TERMINAL_IDX_MAX    49
 	#define SYNTAX_EPSILON_STR      "EPSILON"
 	#define SYNTAX_EPSILON_IDX      50
@@ -22,6 +23,14 @@ namespace syntax {
 			{"Exp_ar", 20}, {"ExpV", 21}, {"ExpV1", 22}, {"ExpV2", 23}, {"ExpV3", 24}, {"ExpVN", 25}, {"ExpO", 26}, {"ExpB", 27}, {"ExpT", 28}, {"ExpT1", 29}, 
 			{"ExpT2", 30}, {"GEN_TERMINAL_1", 31}, {"GEN_TERMINAL_2", 32}, {"GEN_TERMINAL_3", 33}, {"GEN_TERMINAL_4", 34}, {"GEN_TERMINAL_5", 35}, {"GEN_TERMINAL_6", 36}, {"GEN_TERMINAL_7", 37}, {"GEN_TERMINAL_8", 38}, {"GEN_TERMINAL_9", 39}, 
 			{"GEN_TERMINAL_10", 40}, {"GEN_TERMINAL_11", 41}, {"GEN_TERMINAL_12", 42}, {"GEN_TERMINAL_13", 43}, {"GEN_TERMINAL_14", 44}, {"GEN_TERMINAL_15", 45}, {"GEN_TERMINAL_16", 46}, {"GEN_TERMINAL_17", 47}, {"GEN_TERMINAL_18", 48}, {"GEN_TERMINAL_19", 49}
+	};
+
+	std::unordered_map<unsigned int, std::string> id_to_non_terminal = {
+			{1, "Prog'"}, {2, "Prog"}, {3, "Prog_u"}, {4, "Cmd"}, {5, "CmdN"}, {6, "CmdC"}, {7, "CmdU"}, {8, "Formals"}, {9, "Formal"}, 
+			{10, "FormalU"}, {11, "Decl"}, {12, "DeclN"}, {13, "Class"}, {14, "Proc"}, {15, "Proc_ar"}, {16, "Proc_b0"}, {17, "Proc_b1"}, {18, "Type"}, {19, "Exp"}, 
+			{20, "Exp_ar"}, {21, "ExpV"}, {22, "ExpV1"}, {23, "ExpV2"}, {24, "ExpV3"}, {25, "ExpVN"}, {26, "ExpO"}, {27, "ExpB"}, {28, "ExpT"}, {29, "ExpT1"}, 
+			{30, "ExpT2"}, {31, "GEN_TERMINAL_1"}, {32, "GEN_TERMINAL_2"}, {33, "GEN_TERMINAL_3"}, {34, "GEN_TERMINAL_4"}, {35, "GEN_TERMINAL_5"}, {36, "GEN_TERMINAL_6"}, {37, "GEN_TERMINAL_7"}, {38, "GEN_TERMINAL_8"}, {39, "GEN_TERMINAL_9"}, 
+			{40, "GEN_TERMINAL_10"}, {41, "GEN_TERMINAL_11"}, {42, "GEN_TERMINAL_12"}, {43, "GEN_TERMINAL_13"}, {44, "GEN_TERMINAL_14"}, {45, "GEN_TERMINAL_15"}, {46, "GEN_TERMINAL_16"}, {47, "GEN_TERMINAL_17"}, {48, "GEN_TERMINAL_18"}, {49, "GEN_TERMINAL_19"}
 	};
 
 
@@ -75,6 +84,14 @@ namespace syntax {
 			{"GEN_TERMINAL_17", {{"Exp_ar"}, {"EPSILON"}}}, 
 			{"GEN_TERMINAL_18", {{"COMMA", "DeclN", "GEN_TERMINAL_18"}, {"EPSILON"}}}, 
 			{"GEN_TERMINAL_19", {{"COMMA", "Exp", "GEN_TERMINAL_19"}, {"EPSILON"}}}
+	};
+
+	std::unordered_map<std::string, std::string> token_string_to_symbol = {
+			{"NEQ", "!="}, {"ASSIGN", "<-"}, {"GE", ">="}, {"INFER", "=>"}, {"LE", "<="}, {"EQ", "=="}, {"ARROW", "->"}, {"LPAREN", "("}, {"RPAREN", ")"}, {"LCURLY", "{"}, 
+			{"RCURLY", "}"}, {"LBRACK", "["}, {"RBRACK", "]"}, {"STAR", "*"}, {"AT", "@"}, {"COLON", ":"}, {"COMMA", ","}, {"IF", "if"}, {"WHILE", "while"}, {"DOT", "."}, 
+			{"PLUS", "+"}, {"MINUS", "-"}, {"SLASH", "/"}, {"NOT", "!"}, {"LT", "<"}, {"GT", ">"}, {"FOR", "for"}, {"RETURN", "return"}, {"CASE", "case"}, {"OF", "of"}, 
+			{"ELSE", "else"}, {"OTHERWISE", "otherwise"}, {"LAMBDA", "lambda"}, {"ISVOID", "isVoid"}, {"NEWLINE", "'\n'"}, {"INHERITS", "inherits"}, {"CLASS", "class"}, {"NEW", "new"}, {"LET", "let"}, {"IN", "in"}, 
+	
 	};
 
 };    /* namespace syntax */

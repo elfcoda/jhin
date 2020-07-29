@@ -4,6 +4,7 @@
 #include "../lex/nfa.h"
 #include "../lex/keywords.h"
 #include "../../comm/dfa.h"
+#include "../../comm/comm_head.h"
 
 namespace jhin
 {
@@ -123,6 +124,30 @@ class Syntax
             return sFollow;
         }
 
+        /* gen LR(1) follow-set for every NFANode */
+        std::unordered_set<unsigned> genFollowSetLR1(const std::vector<unsigned>& production, unsigned position, const std::unordered_set<unsigned>& fo)
+        {
+            /*
+             * A -> B .C D C B, <$>
+             * C -> .M N, <first(D C B $)>
+             * */
+            std::unordered_set<unsigned> sFollow = {};
+
+            int idx = position + 1;
+            for (; idx < production.size(); idx++) {
+                if (isEPSILON(production[idx])) continue;
+                setUnion(sFollow, genFirstSet(production[idx]));
+                if (isToken(production[idx]) || !isNonTerminalEPSILON(production[idx])) break;
+            }
+
+            if (idx == production.size()) {
+                setUnion(sFollow, fo);
+            }
+
+            return sFollow;
+        }
+
+
         pSyntaxNFAData genAllNFANodes()
         {
             pSyntaxNFAData pNFAStart = nullptr;
@@ -144,6 +169,7 @@ class Syntax
         {
             /* start from Prog' */
             pSyntaxNFAData pNFAStart = genAllNFANodes();
+            /* start NFA node's fo-set is $  */
             std::queue<pSyntaxNFAData> worklist;
             std::unordered_set<pSyntaxNFAData> handled;
             worklist.push(pNFAStart);
@@ -157,10 +183,12 @@ class Syntax
                     /* find node* */
                     pSyntaxNFAData pNFA = getSyntaxNFANode(p->nonTerminal, p->production, p->position + 1);
                     p->mNodes[p->production[p->position]].push_back(pNFA);
+                    /* feed a token or non-terminal */
                     if (handled.find(pNFA) == handled.end()) {
                         worklist.push(pNFA);
                         handled.insert(pNFA);
                     }
+                    /* expand non-terminal */
                     if (isNonTerminal(p->production[p->position])) {
                         assert(productionIDs.find(p->production[p->position]) != productionIDs.end());
                         for (const std::vector<unsigned>& v: productionIDs[p->production[p->position]]) {
@@ -197,13 +225,132 @@ class Syntax
 
             pSyntaxNFAData pNFAStart = genNFA();
             comm::pDFANode<pSyntaxNFAData> pDFAStart = NFA2DFA(pNFAStart);
+            bool b = updateDFAFollowSetForNFA(pDFAStart);
+
+            std::cout << (pDFAStart->toString()) << std::endl;
+
+            return b;
+        }
+
+        bool isConflict(comm::pDFANode<pSyntaxNFAData> pDFAStart)
+        {
+            return false;
+        }
+
+        bool updateDFAFollowSetForNFA(comm::pDFANode<pSyntaxNFAData> pStart)
+        {
+            /* LALR core */
+            /* eg:
+             * DFA(a) -> DFA(b)
+             * DFA(b) -> DFA(c) DFA(e)
+             * DFA(c) -> DFA(d)
+             * DFA(d) -> DFA(b)
+             * every follow-est of NFA in DFA node only increase monotonously
+             * so add the DFA node to worklist until it stop increasing
+             * */
+
+            bool isLALR = true;
+
+            /* first update strat DFA */
+            for (pSyntaxNFAData p: pStart->sNodeData) {
+                if (p->nonTerminal == NON_TERMINAL_IDX_MIN) {
+                    /* Prog' -> Prog */
+                    pStart->followSet[p] = std::unordered_set<unsigned>{SYNTAX_TOKEN_END};
+                    std::set<pSyntaxNFAData> worklist;
+                    worklist.insert(p);
+                    propagateWithinDFA(worklist, pStart);
+                }
+
+            }
+
+            std::queue<comm::pDFANode<pSyntaxNFAData>> worklist;
+            worklist.push(pStart);
+            if (isLALR) {
+                /* LALR: if two DFA nodes have exactly same productions but follow-set, combine the nodes by different follow-sets
+                 * we directly implement LALR without LR(1)
+                 * */
+                while (!worklist.empty()) {
+                    comm::pDFANode<pSyntaxNFAData> pDFA = worklist.front(); worklist.pop();
+                    for (const auto& item: pDFA->mEdges) {
+                        /* for every DFA */
+                        std::set<pSyntaxNFAData> se;
+                        bool elementsChanged = false;
+                        for (pSyntaxNFAData p: pDFA->sNodeData) {
+                            if (p->position < p->production.size() && p->production[p->position] == item.first) {
+                                /* p is the NFA we need */
+                                auto followP = pDFA->followSet[p];
+                                /* find the pNFA we have created */
+                                pSyntaxNFAData NFANode = getSyntaxNFANode(p->nonTerminal, p->production, p->position + 1);
+                                unsigned oldSize = item.second->followSet[NFANode].size();
+                                setUnion(item.second->followSet[NFANode], followP);
+                                unsigned newSize = item.second->followSet[NFANode].size();
+                                if (oldSize != newSize) elementsChanged = true;
+                                se.insert(NFANode);
+                            }
+                        }
+                        propagateWithinDFA(se, item.second);
+                        if (elementsChanged) worklist.push(item.second);
+                    }
+                }
+            } else {
+                /* LR(1) algorithm, separate one DFA node by two */
+                // TODO
+                // IF LALR CONFLICT
+                assert(false);
+            }
 
             return true;
+        }
+
+        void propagateWithinDFA(const std::set<pSyntaxNFAData>& worklist, comm::pDFANode<pSyntaxNFAData> pDFA)
+        {
+            /* update follow-set in every nfa node, until the element number in follow-set is unchanged
+             *----------
+             * A -> B .C fst part
+             * ---------
+             * C -> .m N snd part
+             * C -> .L J
+             * L -> .C n
+             * ---------
+             * */
+            /* pre-process
+             * add all snd part nodes to NFAs to propagate
+             * */
+            std::map<unsigned, std::vector<pSyntaxNFAData>> NFAs;
+            for (pSyntaxNFAData p: pDFA->sNodeData) {
+                if (worklist.find(p) == worklist.end()) {
+                    NFAs[p->nonTerminal].push_back(p);
+                }
+            }
+
+            /* add all fst part nodes to worklist2 to handle */
+            std::queue<pSyntaxNFAData> worklist2;
+            for (pSyntaxNFAData p: worklist) worklist2.push(p);
+
+            /* fill followSet in DFA */
+            while (!worklist2.empty()) {
+                pSyntaxNFAData p = worklist2.front(); worklist2.pop();
+                if (p->position == p->production.size()) continue;
+                if (isToken(p->production[p->position])) continue;
+                if (isEPSILON(p->production[p->position])) continue;
+                std::unordered_set<unsigned> newSet = genFollowSetLR1(p->production, p->position, pDFA->followSet[p]);
+                for (pSyntaxNFAData p2: NFAs[p->production[p->position]]) {
+                    unsigned oldSize = pDFA->followSet[p2].size();
+                    setUnion(pDFA->followSet[p2], newSet);
+                    unsigned newSize = pDFA->followSet[p2].size();
+                    /* fst pass or other pass whose element number is different, need propagating */
+                    if (oldSize != newSize) worklist2.push(p2);
+                }
+            }
         }
 
     private:
         /* union second set to the first set */
         void setUnion(std::unordered_set<unsigned>& fst, const std::unordered_set<unsigned>&& snd)
+        {
+            for (unsigned e: snd) { fst.insert(e); }
+        }
+        void setUnion(std::unordered_set<unsigned>& fst, const std::unordered_set<unsigned>& snd)
         {
             for (unsigned e: snd) { fst.insert(e); }
         }

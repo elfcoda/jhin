@@ -34,11 +34,60 @@ struct DFANode
     /* if pNFANode is ordered, pNFANode->id is in particular order as well */
     std::set<PNFA> sNodeData;
 
+    /* the follow-set of every NFA in a DFA node
+     * used only in LALR algorithm */
+    std::map<syntax::pSyntaxNFAData, std::unordered_set<unsigned>> followSet;
+
+    /* switch followSet to string */
+    std::string toString()
+    {
+        std::string s = "";
+        std::string prefix = "";
+        // for (syntax::pSyntaxNFAData p: sNodeData) { s += p->toString(); }
+        for (const auto& item: followSet) {
+            s += item.first->toString();
+
+            /* format start */
+            unsigned sSize = item.first->toString().length();
+            unsigned sMaxSize = 128;
+            if (sSize < sMaxSize) {
+                for (int i = 0; i < sMaxSize - sSize; i++) s += "-";
+            }
+            /* format end */
+
+            s += "\t<";
+            for (auto it = item.second.begin(); it != item.second.end(); it++) {
+                if (it == item.second.begin()) prefix = "";
+                else prefix = ", ";
+
+                unsigned id = *it;
+                if (id == SYNTAX_EPSILON_IDX) {
+                    s += prefix + "EPSILON";
+                } else if (id < SYNTAX_EPSILON_IDX) {
+                    s += prefix + syntax::id_to_non_terminal[id];
+                } else if (id == SYNTAX_TOKEN_END) {
+                    s += prefix + "$";
+                } else {
+                    /* turn "PLUS" to "+" */
+                    if (syntax::token_string_to_symbol.find(lex::tokenId2String[id]) == syntax::token_string_to_symbol.end()) {
+                        s += prefix + lex::tokenId2String[id];
+                    } else {
+                        s += prefix + syntax::token_string_to_symbol[lex::tokenId2String[id]];
+                    }
+                }
+            }
+            s += ">\n";
+        }
+        s += "\n\n";
+
+        return s;
+    }
+
     /* nfa terminal node id  */
     /* non-terminal node if terminalId == UINT_MAX */
     unsigned int terminalId;
 
-    /* md5sum, used to compare sNodeData */
+    /* hash value of node data, used to compare sNodeData */
     unsigned int hash;
 
     /* edges */
@@ -68,6 +117,40 @@ struct DFANode
         sNodeData = sNFA;
         mHash[hash].insert(this);
         assert(id < UINT_MAX);
+    }
+
+    bool canShift()
+    {
+        for (const auto& item: mEdges) {
+            if (lex::tokenSet.find(item.first) != lex::tokenSet.end()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    unsigned reduceCnt()
+    {
+        unsigned cnt = 0;
+        for (PNFA p: sNodeData) {
+            if (p->canReduce()) {
+                cnt++;
+            }
+        }
+
+        return cnt;
+    }
+
+    bool hasShiftReduceConflict()
+    {
+        if (canShift() && reduceCnt() > 0) return true;
+        return false;
+    }
+
+    bool hasReduceReduceConflict()
+    {
+        return reduceCnt() > 1;
     }
 
     void setTerminalId()
