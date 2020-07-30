@@ -9,6 +9,7 @@
 #include "../src/lex/nfa.h"
 #include "../src/syntax/syntax_nfa.h"
 #include "hash.h"
+#include "container_op.h"
 
 namespace jhin
 {
@@ -121,38 +122,35 @@ struct DFANode
         assert(id < UINT_MAX);
     }
 
-    bool canShift()
+    std::unordered_set<unsigned>  genShift()
     {
+        std::unordered_set<unsigned> shiftSet;
         for (const auto& item: mEdges) {
             if (lex::tokenSet.find(item.first) != lex::tokenSet.end()) {
-                return true;
+                shiftSet.insert(item.first);
             }
         }
 
-        return false;
+        return shiftSet;
     }
 
-    unsigned reduceCnt()
+    void isConflict()
     {
-        unsigned cnt = 0;
-        for (PNFA p: sNodeData) {
-            if (p->canReduce()) {
-                cnt++;
+        std::unordered_map<unsigned, syntax::pSyntaxNFAData> mToken2NFA;
+
+        /* shift token may correspond more than one NFA, we just set it to nullptr */
+        comm::unionSet2Map<std::unordered_map, unsigned, syntax::pSyntaxNFAData, std::unordered_set>(mToken2NFA, genShift(), nullptr);
+
+        for (const auto& item: followSet) {
+            for (unsigned id: item.second) {
+                if (mToken2NFA.find(id) != mToken2NFA.end()) {
+                    /* conflict */
+                    assert(false);
+                } else {
+                    mToken2NFA[id] = item.first;
+                }
             }
         }
-
-        return cnt;
-    }
-
-    bool hasShiftReduceConflict()
-    {
-        if (canShift() && reduceCnt() > 0) return true;
-        return false;
-    }
-
-    bool hasReduceReduceConflict()
-    {
-        return reduceCnt() > 1;
     }
 
     void setTerminalId()

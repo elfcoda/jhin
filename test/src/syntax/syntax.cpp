@@ -1,6 +1,7 @@
 #include <iostream>
 #include "../../../src/syntax/syntax.h"
 #include "../../../src/lex/keywords.h"
+#include "../../../comm/log.h"
 
 int main()
 {

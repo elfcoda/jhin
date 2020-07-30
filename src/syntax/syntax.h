@@ -5,6 +5,7 @@
 #include "../lex/keywords.h"
 #include "../../comm/dfa.h"
 #include "../../comm/comm_head.h"
+#include "../../comm/container_op.h"
 
 namespace jhin
 {
@@ -108,7 +109,7 @@ class Syntax
                                 int idx2 = idx + 1;
                                 for (; idx2 < v.size(); idx2++) {
                                     if (isEPSILON(v[idx2])) continue;
-                                    setUnion(sFollow, genFirstSet(v[idx2]));
+                                    comm::unionSet2Set<std::unordered_set>(sFollow, genFirstSet(v[idx2]));
                                     if (isToken(v[idx2]) || !isNonTerminalEPSILON(v[idx2])) break;
                                 }
                                 if (idx2 == v.size() && sHandled.find(item.first) == sHandled.end()) {
@@ -136,12 +137,12 @@ class Syntax
             int idx = position + 1;
             for (; idx < production.size(); idx++) {
                 if (isEPSILON(production[idx])) continue;
-                setUnion(sFollow, genFirstSet(production[idx]));
+                comm::unionSet2Set<std::unordered_set>(sFollow, genFirstSet(production[idx]));
                 if (isToken(production[idx]) || !isNonTerminalEPSILON(production[idx])) break;
             }
 
             if (idx == production.size()) {
-                setUnion(sFollow, fo);
+                comm::unionSet2Set<std::unordered_set>(sFollow, fo);
             }
 
             return sFollow;
@@ -286,7 +287,7 @@ class Syntax
                                 /* find the pNFA we have created */
                                 pSyntaxNFAData NFANode = getSyntaxNFANode(p->nonTerminal, p->production, p->position + 1);
                                 unsigned oldSize = item.second->followSet[NFANode].size();
-                                setUnion(item.second->followSet[NFANode], followP);
+                                comm::unionSet2Set<std::unordered_set>(item.second->followSet[NFANode], followP);
                                 unsigned newSize = item.second->followSet[NFANode].size();
                                 if (oldSize != newSize) elementsChanged = true;
                                 se.insert(NFANode);
@@ -340,7 +341,7 @@ class Syntax
                 std::unordered_set<unsigned> newSet = genFollowSetLR1(p->production, p->position, pDFA->followSet[p]);
                 for (pSyntaxNFAData p2: NFAs[p->production[p->position]]) {
                     unsigned oldSize = pDFA->followSet[p2].size();
-                    setUnion(pDFA->followSet[p2], newSet);
+                    comm::unionSet2Set<std::unordered_set>(pDFA->followSet[p2], newSet);
                     unsigned newSize = pDFA->followSet[p2].size();
                     /* fst pass or other pass whose element number is different, need propagating */
                     if (oldSize != newSize) worklist2.push(p2);
@@ -349,16 +350,6 @@ class Syntax
         }
 
     private:
-        /* union second set to the first set */
-        void setUnion(std::unordered_set<unsigned>& fst, const std::unordered_set<unsigned>&& snd)
-        {
-            for (unsigned e: snd) { fst.insert(e); }
-        }
-        void setUnion(std::unordered_set<unsigned>& fst, const std::unordered_set<unsigned>& snd)
-        {
-            for (unsigned e: snd) { fst.insert(e); }
-        }
-
         bool isNonTerminal(unsigned id) { return id < SYNTAX_EPSILON_IDX; }
         bool isEPSILON(unsigned id) { return id == SYNTAX_EPSILON_IDX; }
         bool isToken(unsigned id) { return lex::tokenSet.find(id) != lex::tokenSet.end(); }
