@@ -15,7 +15,13 @@ struct KKK
 
 int main()
 {
-    std::vector<int> ve = {1, 2, 3};
+    KKK k1, k2;
+    std::map<int, std::vector<KKK>> ve;
+    ve[1] = {k1};
+    ve[2] = {k2};
+    std::map<int, std::vector<std::vector<int>>> mvv;
+    mvv[5] = {{12, 123}, {45, 567, 76}};
+    mvv[1] = {{12, 3}, {45, 76}};
     std::set<int> se = {1, 2};
     std::string s = "das";
     std::unordered_map<std::string, int> ma;
@@ -27,7 +33,9 @@ int main()
 
     Log log("test.log");
     log.init();
-    log >> ve >> newline >> se >> newline >> s >> newline >> i >> newline >> "hello" >> newline >> std::string("HelloWorld") >> newline >> ma >> newline >> 777;
+    log >> se >> newline >> s >> newline >> i >> newline >> "hello" >> newline >> std::string("HelloWorld") >> newline >> ma >> newline >> 777 >> newline;
+    /**/
+    log >> ve;
 
     return 0;
 }

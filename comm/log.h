@@ -70,7 +70,16 @@ namespace comm
                       class... As>
             std::ostream& write(const C<As...>& container)
             {
-                std::string s = sErr + "container can not display!";
+                std::string s = genContainerString(container);
+                return file.write(s.c_str(), s.length());
+            }
+
+            /* generate container string */
+            template <template<class...> class C,
+                      class... As>
+            std::string genContainerString(const C<As...>& container)
+            {
+                std::string s = "{" + sErr + "container can not display!}";
 
                 /* test */
                 // static_assert(sizeof...(As) == 3, "err");
@@ -97,7 +106,14 @@ namespace comm
                     }
                 }
 
-                return file.write(s.c_str(), s.length());
+                return s;
+            }
+
+            template <class T>
+            std::string genContainerString(const T& data)
+            {
+                std::string s = "{" + sErr + "data can not display!}";
+                return s;
             }
 
             /* single parameter
@@ -128,7 +144,11 @@ namespace comm
 
                     s += "}\n";
                 } else {
-                    s = sErr + "element is not arithmetic type!";
+                    s = "{\n";
+                    for (const A& subContainer: se) {
+                        s += genContainerString(subContainer);
+                    }
+                    s += "}\n";
                 }
 
                 return s;
@@ -141,36 +161,37 @@ namespace comm
             {
                 std::string s = "";
 
-                if constexpr (isShowType<K> && isShowType<V>) {
-                    /* K and V are arithmetic types */
-                    s += "{";
-                    for (const auto& item: ma) {
-                        /* Key */
-                        if constexpr (isString<K>) {
-                            s += item.first + ": ";
-                        } else {
-                            s += std::to_string(item.first) + ": ";
-                        }
-                        /* Value */
-                        if constexpr (isString<V>) {
-                            s += item.second + ", ";
-                        } else {
-                            s += std::to_string(item.second) + ", ";
-                        }
+                /* K and V are arithmetic types */
+                s += "{";
+                for (const auto& item: ma) {
+                    /* Key */
+                    if constexpr (isString<K>) {
+                        s += item.first + " => ";
+                    } else if constexpr (std::is_arithmetic_v<K>) {
+                        s += std::to_string(item.first) + " => ";
+                    } else {
+                        s += genContainerString(item.first) + " => ";
                     }
 
-                    /* pop back redundant chars */
+                    /* Value */
+                    if constexpr (isString<V>) {
+                        s += item.second + ", ";
+                    } else if constexpr (std::is_arithmetic_v<V>) {
+                        s += std::to_string(item.second) + ", ";
+                    } else {
+                        s += genContainerString(item.second);
+                    }
+                }
+
+                /* pop back redundant chars */
+                if constexpr (isShowType<V>) {
                     if (!ma.empty()) {
                         s.pop_back();
                         s.pop_back();
                     }
-
-                    s += "}\n";
-                } else if constexpr (!isShowType<K>) {
-                    s = "Key is not arithmetic type!";
-                } else {
-                    s = "Value is not arithmetic type!";
                 }
+
+                s += "}\n";
 
                 return s;
             }
