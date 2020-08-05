@@ -31,11 +31,8 @@ int main()
 
     KKK k;
 
-    Log log("test.log");
-    log.init();
-    log >> se >> newline >> s >> newline >> i >> newline >> "hello" >> newline >> std::string("HelloWorld") >> newline >> ma >> newline >> 777 >> newline;
-    /**/
-    log >> ve;
+    Log::singleton() >> se >> newline >> s >> newline >> i >> newline >> "hello" >> newline >> std::string("HelloWorld") >> newline >> ma >> newline >> 777 >> newline;
+    Log::singleton() >> 1234567 >> newline;
 
     return 0;
 }

@@ -8,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 namespace jhin
 {
@@ -25,8 +26,14 @@ namespace comm
 
     class Log
     {
-        public:
+        private:
             Log(const std::string& filename): filename(filename) {}
+
+        public:
+            static std::mutex mtx;
+            static Log log;
+            static Log& singleton();
+            static bool isInited;
 
             bool init()
             {
@@ -34,6 +41,7 @@ namespace comm
                 return true;
             }
 
+        public:
             /* write */
             /* trivial case */
             template <class T>
@@ -214,6 +222,21 @@ namespace comm
             std::ofstream file;
 
     };
+    std::mutex Log::mtx;
+    Log Log::log("test.log");
+    bool Log::isInited = false;
+    Log& Log::singleton()
+    {
+        if (!isInited) {
+            const std::lock_guard<std::mutex> lock(mtx);
+            if (!isInited) {
+                log.init();
+                isInited = true;
+            }
+        }
+
+        return log;
+    }
 
 };  /* namespace comm */
 };  /* namespace jhin */
