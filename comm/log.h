@@ -21,6 +21,7 @@ namespace comm
     constexpr bool isShowType = std::is_arithmetic_v<T> || isString<T>;
 
     const std::string sErr = "ERROR: ";
+    const std::string sLogFilename = "log.log";
 
     struct LogNewLine {} newline;
 
@@ -223,7 +224,7 @@ namespace comm
 
     };
     std::mutex Log::mtx;
-    Log Log::log("test.log");
+    Log Log::log(sLogFilename);
     bool Log::isInited = false;
     Log& Log::singleton()
     {

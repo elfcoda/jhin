@@ -4,6 +4,7 @@
 #include "../lex/nfa.h"
 #include "../lex/keywords.h"
 #include "../../comm/dfa.h"
+#include "../../comm/log.h"
 #include "../../comm/comm_head.h"
 #include "../../comm/container_op.h"
 
@@ -228,17 +229,12 @@ class Syntax
             comm::pDFANode<pSyntaxNFAData> pDFAStart = NFA2DFA(pNFAStart);
             bool b = updateDFAFollowSetForNFA(pDFAStart);
             pDFAStart = comm::travelDFA(pDFAStart, removeEPSILON);
+            /* conflict detect */
+            pDFAStart = comm::travelDFA(pDFAStart, +[](comm::pDFANode<pSyntaxNFAData> p){ p->isConflict(); });
 
-            // DEBUG
-            std::cout << (pDFAStart->toString()) << std::endl;
+            // comm::Log::singleton() >> (pDFAStart->toString()) >> comm::newline;
 
             return true;
-        }
-
-        bool isConflict(comm::pDFANode<pSyntaxNFAData> pDFAStart)
-        {
-            /* if conflict, maybe we should switch to LR(1) algorithm */
-            return false;
         }
 
         bool updateDFAFollowSetForNFA(comm::pDFANode<pSyntaxNFAData> pStart)

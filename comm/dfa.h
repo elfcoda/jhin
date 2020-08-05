@@ -9,6 +9,7 @@
 #include "../src/lex/nfa.h"
 #include "../src/syntax/syntax_nfa.h"
 #include "hash.h"
+#include "log.h"
 #include "container_op.h"
 
 namespace jhin
@@ -41,10 +42,21 @@ struct DFANode
      * used only in LALR algorithm */
     std::map<syntax::pSyntaxNFAData, std::unordered_set<unsigned>> followSet;
 
+    /* production only */
+    std::string toStringRaw()
+    {
+        std::string s = "";
+        for (PNFA p: sNodeData) {
+            s += p->toString();
+            s += "\n";
+        }
+        return s;
+    }
+
     /* switch followSet to string */
     std::string toString()
     {
-        std::string s = "";
+        std::string s = "DFA_" + std::to_string(this->id) + ":\n";
         std::string prefix = "";
         // for (syntax::pSyntaxNFAData p: sNodeData) { s += p->toString(); }
         for (const auto& item: followSet) {
@@ -136,16 +148,26 @@ struct DFANode
 
     void isConflict()
     {
+        Log::singleton() >> toString() >> newline >> "$$$$$$$$$$$$$$$$$$$$$" >> newline;
         std::unordered_map<unsigned, syntax::pSyntaxNFAData> mToken2NFA;
 
         /* shift token may correspond more than one NFA, we just set it to nullptr */
         comm::unionSet2Map<std::unordered_map, unsigned, syntax::pSyntaxNFAData, std::unordered_set>(mToken2NFA, genShift(), nullptr);
 
         for (const auto& item: followSet) {
+            /* find unreducable NFA productions */
+            if (item.first->production.size() != item.first->position) continue;
+
             for (unsigned id: item.second) {
                 if (mToken2NFA.find(id) != mToken2NFA.end()) {
                     /* conflict */
-                    assert(false);
+                    if (mToken2NFA[id] == nullptr) {
+                        Log::singleton() >> "in DFA_" >> this->id >> ": Shift-Reduce conflict, Reduce production is: " >> syntax::id_to_non_terminal[item.first->nonTerminal] >> " => " >> item.first->production >> newline;
+                    } else {
+                        Log::singleton() >> "in DFA_" >> this->id >> ": Reduce-Reduce conflict, Reduce production1 is: " >> syntax::id_to_non_terminal[mToken2NFA[id]->nonTerminal] >> " => " >> mToken2NFA[id]->production >> newline \
+                                         >> "Reduce production2 is: " >> syntax::id_to_non_terminal[item.first->nonTerminal] >> " => " >> item.first->production >> newline;
+                    }
+                    // assert(false);
                 } else {
                     mToken2NFA[id] = item.first;
                 }
@@ -253,7 +275,8 @@ void propagateDFA(pDFANode<PNFA> init, unsigned EP)
         quDFAs.pop();
 
         const std::set<PNFA>& s = pDFA->sNodeData;
-        std::map<char, std::set<PNFA>> m;
+        /* m.first should be compatible with SyntaxNFAData */
+        std::map<unsigned, std::set<PNFA>> m;
         for (PNFA p: s) {
             for (const auto& it: p->mNodes) {
                 if (it.first != EP) {
@@ -264,7 +287,8 @@ void propagateDFA(pDFANode<PNFA> init, unsigned EP)
             }
         }
 
-        std::map<char, std::queue<PNFA>> mqu;
+        /* mqu.first should be compatible with SyntaxNFAData */
+        std::map<unsigned, std::queue<PNFA>> mqu;
         for (const auto& it: m) {
             for (PNFA pNode: it.second) {
                 mqu[it.first].push(pNode);
@@ -280,6 +304,7 @@ void propagateDFA(pDFANode<PNFA> init, unsigned EP)
                 /* gen new DFA node, connect and add to worklist */
                 pDFANode<PNFA> pNew = new DFANode<PNFA>(pa.second, sNFA);
                 pDFA->mEdges[it.first] = pNew;
+                Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pNew->id >> ": \n" >> pNew->toStringRaw() >> newline >> newline >> newline;
                 /* add new node to the worklist */
                 quDFAs.push(pNew);
             } else {

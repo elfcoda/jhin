@@ -60,9 +60,15 @@ struct SyntaxNFAData
         for (unsigned idx = 0; idx < production.size(); idx++) {
             if (idx == position) s += dot;
             id = production[idx];
-            if (id == SYNTAX_EPSILON_IDX) s += "EPSILON ";
-            else if (id < SYNTAX_EPSILON_IDX) s += id_to_non_terminal[id] + " ";
-            else s += lex::tokenId2String[id] + " ";
+            if (id == SYNTAX_EPSILON_IDX) { s += "EPSILON "; }
+            else if (id < SYNTAX_EPSILON_IDX) { s += id_to_non_terminal[id] + " "; }
+            else {
+                std::string sSymbol = lex::tokenId2String[id];
+                if (token_string_to_symbol.find(sSymbol) != token_string_to_symbol.end()) {
+                    sSymbol = token_string_to_symbol[sSymbol];
+                }
+                s += sSymbol + " ";
+            }
         }
 
         if (position == production.size()) s += dot;
