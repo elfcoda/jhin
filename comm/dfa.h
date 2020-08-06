@@ -173,7 +173,7 @@ struct DFANode
                         Log::singleton() >> "in DFA_" >> this->id >> ": Reduce-Reduce conflict, Reduce production1 is: " >> syntax::id_to_non_terminal[mToken2NFA[id]->nonTerminal] >> " => " >> mToken2NFA[id]->production >> newline \
                                          >> "Reduce production2 is: " >> syntax::id_to_non_terminal[item.first->nonTerminal] >> " => " >> item.first->production >> newline;
                     }
-                    // assert(false);
+                    assert(false);
                 } else {
                     mToken2NFA[id] = item.first;
                 }
