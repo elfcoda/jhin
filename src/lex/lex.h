@@ -114,8 +114,9 @@ class Lex
                 if (commentFlag == true) {
                     if (origin_c == '\n') {
                         commentFlag = false;
+                    } else {
+                        continue;
                     }
-                    continue;
                 }
 
                 /* handle backslash */
@@ -158,7 +159,7 @@ handle_non_blank:
                     if (pCur != dfaInit) return std::make_pair(false, getErrorMsg("pCur should be dfaInit when lastToken is UINT_MAX.", filename));
 
                     /* match blank, skip */
-                    if (!isBlank(c)) {
+                    if (!isBlank(c) && !commentFlag) {
                         /* and now pCur is definitely dfaInit, we goto handle_non_blank to redo non-blank char c again. pCur should accept it, or compiler will raise an error. */
                         goto handle_non_blank;
                     }
@@ -248,7 +249,7 @@ handle_non_blank:
 
         bool isBlank(char c)
         {
-            if (c == ' ' || c == '\t' || c == '\n') return true;
+            if (c == ' ' || c == '\t') return true;
             return false;
         }
 

@@ -88,6 +88,7 @@ enum EKeyWords
     EXCEPT,
     IMPORT,
     FOR,
+    DEF,
 
     /* symbol */
     UNDERS,
@@ -120,6 +121,7 @@ enum EKeyWords
     COMMENT,
     DOUQUO,
     NOT,
+    NEWLINE,
 
     /* unacceptable symbol */
     CLASSIC_ASSIGN,
@@ -180,11 +182,11 @@ using TOKEN = unsigned int;
 const std::vector<std::string> VKeyWords = {
     "class", "inherits", "this", "Object", "Bool", "Int", "Float", "Double", "Long", "String", "Unit", "Type", "main",
     "lambda", "let", "in", "while", "do", "if", "elif", "else", "case", "of", "otherwise", "new",
-    "True", "False", "isvoid", "data", "return", "callcc", "break", "try", "catch", "except", "import", "for",
+    "True", "False", "isvoid", "data", "return", "callcc", "break", "try", "catch", "except", "import", "for", "def",
     /* symbol */
     "_", ":", ";", ",", "<-", "==", ">", ">=", "<", "<=", "->", "=>",
     "+", "-", "*", "/", "\\", "(", ")", "{", "}", "[", "]", "|",
-    ".", "%", "@", "--", "\"", "!",
+    ".", "%", "@", "--", "\"", "!", "\n",
     /* unacceptable symbol.
      * when dealing with "==", first '=' would go to non-terminal node
      * for the purpose that dfaInit should accept any non-blank char to terminal status
@@ -204,10 +206,10 @@ std::unordered_set<unsigned> tokenSet = {};
 static const std::vector<std::string> v1 = {
     /* keywords */
     "CLASS", "INHERITS", "THIS", "OBJECT", "BOOL", "INT", "FLOAT", "DOUBLE", "LONG", "STRING", "UNIT", "TYPE", "MAIN", "LAMBDA", "LET", "IN", "WHILE", "DO", "IF", "ELIF", "ELSE",
-    "CASE", "OF", "OTHERWISE", "NEW", "TRUE", "FALSE", "ISVOID", "DATA", "RETURN", "CALLCC", "BREAK", "TRY", "CATCH", "EXCEPT", "IMPORT", "FOR",
+    "CASE", "OF", "OTHERWISE", "NEW", "TRUE", "FALSE", "ISVOID", "DATA", "RETURN", "CALLCC", "BREAK", "TRY", "CATCH", "EXCEPT", "IMPORT", "FOR", "DEF",
     /* symbol */
     "UNDERS", "COLON", "SEMICO", "COMMA", "ASSIGN", "EQ", "GT", "GE", "LT", "LE", "ARROW", "INFER", "PLUS", "MINUS", "STAR", "SLASH", "BACKSLA", "LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK",
-    "RBRACK", "VBAR", "DOT", "PERCENT", "AT", "COMMENT", "DOUQUO", "NOT",
+    "RBRACK", "VBAR", "DOT", "PERCENT", "AT", "COMMENT", "DOUQUO", "NOT", "NEWLINE",
     /* unacceptable symbol */
     "CLASSIC_ASSIGN"
 };

@@ -54,6 +54,28 @@ namespace comm
         for (const M1 e: snd) fst[e] = m2;
     }
 
+    /* map to map */
+    template <template<typename...> typename M,
+              typename M1,
+              typename M2>
+    void unionMap2Map(M<M1, M2>& fst, const M<M1, M2>&& snd)
+    {
+        static_assert((std::is_same_v<M<M1, M2>, std::unordered_map<M1, M2>> || std::is_same_v<M<M1, M2>, std::map<M1, M2>>),
+                      "M should be [unordered_]map type");
+        for (const auto& e: snd) fst[e.first] = e.second;
+    }
+
+    template <template<typename...> typename M,
+              typename M1,
+              typename M2>
+    void unionMap2Map(M<M1, M2>& fst, const M<M1, M2>& snd)
+    {
+        static_assert((std::is_same_v<M<M1, M2>, std::unordered_map<M1, M2>> || std::is_same_v<M<M1, M2>, std::map<M1, M2>>),
+                      "M should be [unordered_]map type");
+        for (const auto& e: snd) fst[e.first] = e.second;
+    }
+
+
 };  /* namespace comm */
 };  /* namespace jhin */
 

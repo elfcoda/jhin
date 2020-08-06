@@ -1,18 +1,17 @@
-import pack;
 
 -- This is a comment
-class Animal {  -- Animal must be Uppercase
-    x1: Int;
-    x2: String;
+class Animal {  -- Animal must be Uppercase, and digits are excluded in RE_VALUE
+    x1: Int
+    x2: String
 
-    Fun1(m: Int, n: Float): Int {
-        a: Int <- 777;
-        return a;
-    };
-};
+    def fun1(m: Int, n: Float): Int {
+        a: Int <- 7
+        return a
+    }
+}
 
-Main(): Unit {
-    v: Int <- 5;
-    return;
+def main(): Unit {
+    v: Int <- 5
+    return 777
 }
 

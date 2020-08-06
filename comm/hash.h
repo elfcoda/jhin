@@ -2,6 +2,7 @@
 #define __HASH_H__
 
 #include <set>
+#include "log.h"
 #include "../src/lex/nfa.h"
 
 namespace jhin
@@ -9,16 +10,16 @@ namespace jhin
     namespace comm
     {
         /* for DFA */
-        template <class NFA>
-        unsigned genHash(const std::set<NFA>& vNodeData)
+        template <class PNFA>
+        unsigned genHash(const std::set<PNFA>& vNodeData)
         {
             unsigned ans = 1;
-            for (NFA p: vNodeData) ans *= p->id;
+            for (PNFA p: vNodeData) ans *= p->id;
 
             return ans;
         }
 
-        /* for NFA */
+        /* for PNFA */
         unsigned genHash(unsigned nonTerminal, const std::vector<unsigned>& production, unsigned position)
         {
             unsigned ans = 1;

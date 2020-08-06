@@ -63,6 +63,12 @@ struct NFANode
     {
         id = terminalId;
     }
+
+    /* implement toString() */
+    std::string toString()
+    {
+        return std::to_string(id);
+    }
 };
 unsigned int NFANode::maxId = 0;
 using pNFANode = NFANode*;

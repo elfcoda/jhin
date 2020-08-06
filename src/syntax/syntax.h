@@ -19,7 +19,8 @@ class Syntax
         std::unordered_set<unsigned> genFirstSet(unsigned id)
         {
             if (isNonTerminal(id)) {
-                return genFirstSetNonTerminal(id);
+                std::unordered_map<unsigned, pSyntaxNFAData> m;
+                return genFirstSetNonTerminal(id, m);
             } else if (isToken(id)) {
                 return genFirstSetTerminal(id);
             }
@@ -29,13 +30,28 @@ class Syntax
             return std::unordered_set<unsigned>{};
         }
 
+        std::unordered_map<unsigned, pSyntaxNFAData> genFirstSetMap(unsigned id)
+        {
+            if (isNonTerminal(id)) {
+                std::unordered_map<unsigned, pSyntaxNFAData> m;
+                genFirstSetNonTerminal(id, m);
+                return m;
+            } else if (isToken(id)) {
+                return std::unordered_map<unsigned, pSyntaxNFAData>{{id, nullptr}};
+            }
+
+            /* id can not be EPSILON and others */
+            assert(false);
+            return std::unordered_map<unsigned, pSyntaxNFAData>{};
+        }
+
         std::unordered_set<unsigned> genFirstSetTerminal(unsigned id)
         {
             return std::unordered_set<unsigned>{id};
         }
 
         /* can include EPSILON */
-        std::unordered_set<unsigned> genFirstSetNonTerminal(unsigned id)
+        std::unordered_set<unsigned> genFirstSetNonTerminal(unsigned id, std::unordered_map<unsigned, pSyntaxNFAData>& m)
         {
             /*
              * NOTATION:
@@ -78,12 +94,18 @@ class Syntax
                          * handle out of this while statement. */
                     } else if (isToken(vec[0])) {
                         /* token */
+                        /* vec[0] is from pNFA */
+                        pSyntaxNFAData pNFA = getSyntaxNFANode(i, vec, 0);
                         s.insert(vec[0]);
+                        m[vec[0]] = pNFA;
                     }
                 }
             }
 
-            if (isNonTerminalEPSILON(id)) s.insert(SYNTAX_EPSILON_IDX);
+            if (isNonTerminalEPSILON(id)) {
+                s.insert(SYNTAX_EPSILON_IDX);
+                m[SYNTAX_EPSILON_IDX] = nullptr;
+            }
 
             return s;
         }
@@ -110,7 +132,7 @@ class Syntax
                                 int idx2 = idx + 1;
                                 for (; idx2 < v.size(); idx2++) {
                                     if (isEPSILON(v[idx2])) continue;
-                                    comm::unionSet2Set<std::unordered_set>(sFollow, genFirstSet(v[idx2]));
+                                    comm::unionSet2Set(sFollow, genFirstSet(v[idx2]));
                                     if (isToken(v[idx2]) || !isNonTerminalEPSILON(v[idx2])) break;
                                 }
                                 if (idx2 == v.size() && sHandled.find(item.first) == sHandled.end()) {
@@ -138,12 +160,34 @@ class Syntax
             int idx = position + 1;
             for (; idx < production.size(); idx++) {
                 if (isEPSILON(production[idx])) continue;
-                comm::unionSet2Set<std::unordered_set>(sFollow, genFirstSet(production[idx]));
+                comm::unionSet2Set(sFollow, genFirstSet(production[idx]));
                 if (isToken(production[idx]) || !isNonTerminalEPSILON(production[idx])) break;
             }
 
             if (idx == production.size()) {
-                comm::unionSet2Set<std::unordered_set>(sFollow, fo);
+                comm::unionSet2Set(sFollow, fo);
+            }
+
+            return sFollow;
+        }
+
+        std::unordered_map<unsigned, pSyntaxNFAData> genFollowMapLR1(const std::vector<unsigned>& production, unsigned position, const std::unordered_map<unsigned, pSyntaxNFAData>& fo)
+        {
+            /*
+             * A -> B .C D C B, <$>
+             * C -> .M N, <first(D C B $)>
+             * */
+            std::unordered_map<unsigned, pSyntaxNFAData> sFollow = {};
+
+            int idx = position + 1;
+            for (; idx < production.size(); idx++) {
+                if (isEPSILON(production[idx])) continue;
+                comm::unionMap2Map(sFollow, genFirstSetMap(production[idx]));
+                if (isToken(production[idx]) || !isNonTerminalEPSILON(production[idx])) break;
+            }
+
+            if (idx == production.size()) {
+                comm::unionMap2Map(sFollow, fo);
             }
 
             return sFollow;
@@ -157,6 +201,7 @@ class Syntax
                 for (const auto& v: item.second) {
                     for (unsigned position = 0; position <= v.size(); position++) {
                         pSyntaxNFAData p = new SyntaxNFAData(item.first, v, position);
+                        comm::Log::singleton() >> "NFAID_" >> p->id >> ": " >> p->toString() >> comm::newline;
                         SyntaxNFAData::mHash[p->hash].push_back(p);
                         /* start node must has only a production: Prog' -> Prog */
                         if (item.first == 1 && position == 0) pNFAStart = p;
@@ -227,7 +272,7 @@ class Syntax
 
             pSyntaxNFAData pNFAStart = genNFA();
             comm::pDFANode<pSyntaxNFAData> pDFAStart = NFA2DFA(pNFAStart);
-            bool b = updateDFAFollowSetForNFA(pDFAStart);
+            bool b = updateDFAFollowSetForNFA(pDFAStart, pNFAStart);
             pDFAStart = comm::travelDFA(pDFAStart, removeEPSILON);
             /* conflict detect */
             pDFAStart = comm::travelDFA(pDFAStart, +[](comm::pDFANode<pSyntaxNFAData> p){ p->isConflict(); });
@@ -237,7 +282,7 @@ class Syntax
             return true;
         }
 
-        bool updateDFAFollowSetForNFA(comm::pDFANode<pSyntaxNFAData> pStart)
+        bool updateDFAFollowSetForNFA(comm::pDFANode<pSyntaxNFAData> pStart, pSyntaxNFAData pNFAStart)
         {
             /* LALR core */
 
@@ -257,6 +302,7 @@ class Syntax
                 if (p->nonTerminal == NON_TERMINAL_IDX_MIN) {
                     /* Prog' -> Prog */
                     pStart->followSet[p] = std::unordered_set<unsigned>{SYNTAX_TOKEN_END};
+                    pStart->followMap[p] = std::unordered_map<unsigned, pSyntaxNFAData>{{SYNTAX_TOKEN_END, pNFAStart}};
                     std::set<pSyntaxNFAData> worklist;
                     worklist.insert(p);
                     propagateWithinDFA(worklist, pStart);
@@ -280,10 +326,12 @@ class Syntax
                             if (p->position < p->production.size() && p->production[p->position] == item.first) {
                                 /* p is the NFA we need */
                                 auto followP = pDFA->followSet[p];
+                                auto followPMap = pDFA->followMap[p];
                                 /* find the pNFA we have created */
                                 pSyntaxNFAData NFANode = getSyntaxNFANode(p->nonTerminal, p->production, p->position + 1);
                                 unsigned oldSize = item.second->followSet[NFANode].size();
-                                comm::unionSet2Set<std::unordered_set>(item.second->followSet[NFANode], followP);
+                                comm::unionSet2Set(item.second->followSet[NFANode], followP);
+                                comm::unionMap2Map(item.second->followMap[NFANode], followPMap);
                                 unsigned newSize = item.second->followSet[NFANode].size();
                                 if (oldSize != newSize) elementsChanged = true;
                                 se.insert(NFANode);
@@ -335,9 +383,11 @@ class Syntax
                 if (isToken(p->production[p->position])) continue;
                 if (isEPSILON(p->production[p->position])) continue;
                 std::unordered_set<unsigned> newSet = genFollowSetLR1(p->production, p->position, pDFA->followSet[p]);
+                std::unordered_map<unsigned, pSyntaxNFAData> newMap = genFollowMapLR1(p->production, p->position, pDFA->followMap[p]);
                 for (pSyntaxNFAData p2: NFAs[p->production[p->position]]) {
                     unsigned oldSize = pDFA->followSet[p2].size();
-                    comm::unionSet2Set<std::unordered_set>(pDFA->followSet[p2], newSet);
+                    comm::unionSet2Set(pDFA->followSet[p2], newSet);
+                    comm::unionMap2Map(pDFA->followMap[p2], newMap);
                     unsigned newSize = pDFA->followSet[p2].size();
                     /* fst pass or other pass whose element number is different, need propagating */
                     if (oldSize != newSize) worklist2.push(p2);

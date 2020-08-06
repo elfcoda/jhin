@@ -18,6 +18,9 @@ EPSILON = "EPSILON"
 NOTE_QUES = "NOTE_QUES"
 NOTE_STAR = "NOTE_STAR"
 NOTE_PLUS = "NOTE_PLUS"
+gened_star = {}
+gened_ques = {}
+gened_plus = {}
 def gen_note_str():
     global gen_note_count
     gen_note_count += 1
@@ -25,21 +28,36 @@ def gen_note_str():
 
 def gen_star(str_production):
     global gen_production
-    new_symbol = gen_note_str()
-    gen_production[new_symbol] = [str_production + " " + new_symbol, EPSILON]
-    return new_symbol
+    global gened_star
+    if str_production in gened_star:
+        return gened_star[str_production]
+    else:
+        new_symbol = gen_note_str()
+        gen_production[new_symbol] = [str_production + " " + new_symbol, EPSILON]
+        gened_star[str_production] = new_symbol
+        return new_symbol
 
 def gen_plus(str_production):
     global gen_production
-    new_symbol = gen_note_str()
-    gen_production[new_symbol] = [str_production + " " + new_symbol, str_production]
-    return new_symbol
+    global gened_plus
+    if str_production in gened_plus:
+        return gened_plus[str_production]
+    else:
+        new_symbol = gen_note_str()
+        gen_production[new_symbol] = [str_production + " " + new_symbol, str_production]
+        gened_plus[str_production] = new_symbol
+        return new_symbol
 
 def gen_ques(str_production):
     global gen_production
-    new_symbol = gen_note_str()
-    gen_production[new_symbol] = [str_production, EPSILON]
-    return new_symbol
+    global gened_ques
+    if str_production in gened_ques:
+        return gened_ques[str_production]
+    else:
+        new_symbol = gen_note_str()
+        gen_production[new_symbol] = [str_production, EPSILON]
+        gened_ques[str_production] = new_symbol
+        return new_symbol
 
 def substitute_production(production, NOTE_KIND):
     while production.find(NOTE_KIND) != -1:
@@ -70,14 +88,14 @@ list1 = ["!=", "<-", ">=", "=>", "<=", "==", "->",
         "(", ")", "{", "}", "[", "]", "*", "@", ":", ",", \
         "if", "while", ".", "+", "-", "/", "!", \
         "<", ">", "for", "return", "case", "of", "else", \
-        "otherwise", "lambda", "isVoid", "'\\n'", "inherits", "class", "new", "let", "in"
+        "otherwise", "lambda", "isVoid", "'back_n'", "inherits", "class", "new", "let", "in", "def"
         ]
 
 list2 = ["NEQ", "ASSIGN", "GE", "INFER", "LE", "EQ", "ARROW",
         "LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK", "RBRACK", "STAR", "AT", "COLON", "COMMA", \
         "IF", "WHILE", "DOT", "PLUS", "MINUS", "SLASH", "NOT", \
         "LT", "GT", "FOR", "RETURN", "CASE", "OF", "ELSE", \
-        "OTHERWISE", "LAMBDA", "ISVOID", "NEWLINE", "INHERITS", "CLASS", "NEW", "LET", "IN"
+        "OTHERWISE", "LAMBDA", "ISVOID", "NEWLINE", "INHERITS", "CLASS", "NEW", "LET", "IN", "DEF"
         ]
 
 # replace "*" by STAR, and so on

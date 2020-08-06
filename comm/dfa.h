@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <cassert>
 #include <type_traits>
@@ -42,6 +43,11 @@ struct DFANode
      * used only in LALR algorithm */
     std::map<syntax::pSyntaxNFAData, std::unordered_set<unsigned>> followSet;
 
+    /* enabled only for DEBUG!!! to display where the unsigned id(aka. token etc) from
+     * pNFA -> map<terminal, pNFA>
+     * */
+    std::map<syntax::pSyntaxNFAData, std::unordered_map<unsigned, syntax::pSyntaxNFAData>> followMap;
+
     /* production only */
     std::string toStringRaw()
     {
@@ -59,7 +65,7 @@ struct DFANode
         std::string s = "DFA_" + std::to_string(this->id) + ":\n";
         std::string prefix = "";
         // for (syntax::pSyntaxNFAData p: sNodeData) { s += p->toString(); }
-        for (const auto& item: followSet) {
+        for (const auto& item: followMap) {
             s += item.first->toString();
 
             /* format start */
@@ -73,21 +79,21 @@ struct DFANode
             s += "\t<";
             for (auto it = item.second.begin(); it != item.second.end(); it++) {
                 if (it == item.second.begin()) prefix = "";
-                else prefix = ", ";
+                else prefix = " ";
 
-                unsigned id = *it;
+                unsigned id = it->first;
                 if (id == SYNTAX_EPSILON_IDX) {
-                    s += prefix + "EPSILON";
+                    // s += prefix + "{" + SYNTAX_EPSILON_STR + " -> nullptr}";
                 } else if (id < SYNTAX_EPSILON_IDX) {
-                    s += prefix + syntax::id_to_non_terminal[id];
+                    s += prefix + "{" + syntax::id_to_non_terminal[id] + " -> NFAID_" + std::to_string(it->second->id) + "}";
                 } else if (id == SYNTAX_TOKEN_END) {
-                    s += prefix + "$";
+                    s += prefix + "{$ -> nullptr}";
                 } else {
                     /* turn "PLUS" to "+" */
                     if (syntax::token_string_to_symbol.find(lex::tokenId2String[id]) == syntax::token_string_to_symbol.end()) {
-                        s += prefix + lex::tokenId2String[id];
+                        s += prefix + "{" + lex::tokenId2String[id] + " -> NFAID_" + std::to_string(it->second->id) + "}";
                     } else {
-                        s += prefix + syntax::token_string_to_symbol[lex::tokenId2String[id]];
+                        s += prefix + "{" + syntax::token_string_to_symbol[lex::tokenId2String[id]] + " -> NFAID_" + ((it->second == nullptr) ? "nullptr" : std::to_string(it->second->id)) + "}";
                     }
                 }
             }
@@ -304,10 +310,11 @@ void propagateDFA(pDFANode<PNFA> init, unsigned EP)
                 /* gen new DFA node, connect and add to worklist */
                 pDFANode<PNFA> pNew = new DFANode<PNFA>(pa.second, sNFA);
                 pDFA->mEdges[it.first] = pNew;
-                Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pNew->id >> ": \n" >> pNew->toStringRaw() >> newline >> newline >> newline;
+                Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pNew->id >> ": \n" >> pNew->toStringRaw() >> newline >> newline;
                 /* add new node to the worklist */
                 quDFAs.push(pNew);
             } else {
+                Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pa.first->id >> newline >> newline >> newline;
                 /* if the node is already exist, do not add to the worklist */
                 pDFA->mEdges[it.first] = pa.first;
             }

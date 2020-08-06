@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include <map>
+#include "non_terminal.h"
 #include "../../comm/hash.h"
 
 
@@ -59,11 +60,11 @@ struct SyntaxNFAData
         std::string dot = ".";
         for (unsigned idx = 0; idx < production.size(); idx++) {
             if (idx == position) s += dot;
-            id = production[idx];
-            if (id == SYNTAX_EPSILON_IDX) { s += "EPSILON "; }
-            else if (id < SYNTAX_EPSILON_IDX) { s += id_to_non_terminal[id] + " "; }
+            unsigned syntaxId = production[idx];
+            if (syntaxId == SYNTAX_EPSILON_IDX) { s += "EPSILON "; }
+            else if (syntaxId < SYNTAX_EPSILON_IDX) { s += id_to_non_terminal[syntaxId] + " "; }
             else {
-                std::string sSymbol = lex::tokenId2String[id];
+                std::string sSymbol = lex::tokenId2String[syntaxId];
                 if (token_string_to_symbol.find(sSymbol) != token_string_to_symbol.end()) {
                     sSymbol = token_string_to_symbol[sSymbol];
                 }

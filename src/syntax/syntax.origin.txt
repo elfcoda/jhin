@@ -45,8 +45,7 @@ CmdU    ::= while ( Exp ) FormalU
   
 ----------
 # Formal  
-Formals ::= Formal NOTE_STAR('back_n' Formal)
-        |   EPSILON
+Formals ::= NOTE_STAR(Formal)
 ----------
 Formal  ::= Cmd|Exp|DeclN
 ----------
@@ -73,21 +72,37 @@ Class   ::= class RE_VALUE { NOTE_STAR(Decl) }
 ----------
 # procedure  
 # multi-newline to one
-Proc    ::= def RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { Formals }
+# Proc    ::= RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { NOTE_QUES('\n') Proc_b0 NOTE_STAR(Proc_b1)  NOTE_QUES('\n') }
+#         |   RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { NOTE_QUES('\n') }  
+Proc    ::= RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { Proc_b0 NOTE_STAR(Proc_b1) }
+        |   RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { }  
 ----------
 Proc_ar ::= RE_ID : Type NOTE_STAR(, RE_ID : Type)
 ----------
+Proc_b0 ::= Exp | Cmd | DeclN
+----------
+# Proc_b1 ::= '\n' Exp
+#         |   '\n' Cmd
+#         |   '\n' DeclN
+Proc_b1 ::= Exp
+        |   Cmd
+        |   DeclN
+
+
+----------
 # Types  
-Type    ::= Exp | TYPE  
+Type    ::= ExpT | RE_ID | TYPE  
   
 ----------
   
 # Exp, separate Exp by several sub-Exps, can be joint by '|', return value of multi-exp is the return value of the last exp  
-# add { } to fix conflict, add Exp0 to fix return and == conflict
-Exp     ::= return Exp
-        |   case Exp of { NOTE_STAR(RE_ID : Type => Exp) otherwise => Exp }
-        |   THIS
-        |   let DeclN NOTE_STAR(, DeclN) in { Exp }
+Exp     ::= ExpV  
+        |   ExpO  
+        |   ExpB  
+        |   ExpT  
+        |   case Exp of { NOTE_STAR(RE_ID : Type => Exp) otherwise => Exp }  
+        |   return Exp  
+        |   let DeclN NOTE_STAR(, DeclN) in Exp  
         |   RE_ID ( NOTE_QUES(Exp_ar) )
 
         |   RE_ID . RE_ID ( NOTE_QUES(Exp_ar) )
@@ -95,42 +110,74 @@ Exp     ::= return Exp
         |   ( Exp ) . RE_ID ( NOTE_QUES(Exp_ar) )
         |   ( Exp ) @ RE_VALUE . RE_ID ( NOTE_QUES(Exp_ar) )
 
-        |   lambda -> { Exp }
-        |   lambda DeclN NOTE_STAR(, DeclN) -> { Exp }
-        
-        |   Exp0
-----------
-Exp0    ::= Exp0 == Exp1
-        |   Exp0 < Exp1
-        |   Exp0 <= Exp1  
-        |   Exp0 > Exp1  
-        |   Exp0 >= Exp1  
-        |   Exp1
-----------
-Exp1    ::= Exp1 + Exp2  
-        |   Exp1 - Exp2
-        |   Exp2
-----------
-Exp2    ::= Exp2 * Exp3
-        |   Exp2 / Exp3
-        |   Exp3
+        |   lambda -> Exp
+        |   lambda DeclN NOTE_STAR(, DeclN) -> Exp  
 
 ----------
-Exp3    ::= ! ExpN
-        |   isVoid ExpN
-        |   ExpN
+Exp_ar  ::= Exp NOTE_STAR(, Exp)
+----------
+  
+# id can be a type, eg. m: TYPE = Int, or a value  
+# Value exp  
+# Not Equal need implementing first  !!!
+ExpV    ::= ExpV == ExpV1
+        |   ExpV < ExpV1
+        |   ExpV <= ExpV1  
+        |   ExpV > ExpV1  
+        |   ExpV >= ExpV1  
+#        |   ExpV != ExpV1  # "!=" should define in lex phase firstly!!!
+        |   ExpV1
+
+----------
+ExpV1   ::= ExpV1 + ExpV2  
+        |   ExpV1 - ExpV2
+        |   ExpV2
+
+----------
+ExpV2   ::= ExpV2 * ExpV3  
+        |   ExpV2 / ExpV3
+        |   ExpV3
+
+----------
+ExpV3   ::= ExpVN
+        |   ! ExpVN
+        |   isVoid ExpVN
         |   new RE_VALUE  
 
 ----------
-ExpN    ::= RE_INT  
+ExpVN   ::= RE_INT  
         |   RE_DECIMAL  
         |   RE_STRING  
         |   RE_ID
-        |   TRUE
-        |   FALSE
-        |   ( Exp )
+        |   ( ExpV )  
 
-        |   RE_VALUE    # Type is a kind of value(ClassName)  
+  
+             
+----------
+# Object exp  
+ExpO    ::= THIS  
+        |   ( ExpO )
+        |   RE_ID
+  
+----------
+# Bool exp  
+ExpB    ::= TRUE  
+        |   FALSE  
+        |   ! ExpB  
+        |   ( ExpB )
+        |   RE_ID
+  
+----------
+# Type exp  
+ExpT    ::= ExpT + ExpT1
+        |   ExpT1
+
+----------
+ExpT1   ::= ExpT1 * ExpT2
+        |   ExpT2
+----------
+
+ExpT2   ::= RE_VALUE    # Type is a kind of value(ClassName)  
         |   OBJECT      # supertype of any type  
         |   BOOL  
         |   INT  
@@ -139,8 +186,7 @@ ExpN    ::= RE_INT
         |   LONG  
         |   STRING  
         |   UNIT  
-----------
-Exp_ar  ::= Exp NOTE_STAR(, Exp)
-  
+        |   RE_ID
+        |   ( ExpT )
 
 
