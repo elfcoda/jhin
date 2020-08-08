@@ -39,9 +39,9 @@ CmdC    ::= while ( Exp ) Newls { Formals }
         
 ----------
 # uncurly. donot followed by if-exp and while-exp. in this case, recursive if-exp may lead to ambigious semantics, cannot recurse with other if(while)-exp  
-CmdU    ::= while ( Exp ) Newls FormalU  
-        |   if ( Exp ) Newls FormalU else FormalU   
-        |   if ( Exp ) Newls FormalU
+CmdU    ::= while ( Exp ) Newls FormalU 'back_n'
+        |   if ( Exp ) Newls FormalU Newlq else Newls FormalU 'back_n'
+        |   if ( Exp ) Newls FormalU 'back_n'
   
 ----------
 # Formal  
@@ -61,6 +61,8 @@ FormalU ::= CmdN
         |   Exp
         |   DeclN
   
+----------
+Newlq   ::= NOTE_QUES('back_n')
 ----------
 Newls   ::= NOTE_STAR('back_n')
 ----------
