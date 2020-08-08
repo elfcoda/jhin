@@ -15,11 +15,11 @@
 
 ----------
 # program  
-Prog'   ::= Newls Prog  
+Prog'   ::= Prog  
 ----------
 Prog    ::= NOTE_STAR(Prog_u)
 ----------
-Prog_u  ::= Class Newlp | Proc Newlp
+Prog_u  ::= Class | Proc
  
 ----------
 # elif may account for the complexity of code logic, so I remove the syntax. elif can be replaced by "recursive if-else" or "case of" syntax, return NoType?
@@ -33,43 +33,28 @@ CmdN    ::= RE_ID <- Exp
        
 ----------
 # curly if(while)-exp can recurse, by other if(while)-exp  
-CmdC    ::= while ( Exp ) Newls { Formals }
-        |   if ( Exp ) Newls { Formals }  
-        |   if ( Exp ) Newls { Formals } else { Formals }
+CmdC    ::= while ( Exp ) { Formals }
+        |   if ( Exp ) { Formals }  
+        |   if ( Exp ) { Formals } else { Formals }
         
 ----------
 # uncurly. donot followed by if-exp and while-exp. in this case, recursive if-exp may lead to ambigious semantics, cannot recurse with other if(while)-exp  
-CmdU    ::= while ( Exp ) Newls FormalU  
-        |   if ( Exp ) Newls FormalU else FormalU   
-        |   if ( Exp ) Newls FormalU
+CmdU    ::= while ( Exp ) FormalU  
+        |   if ( Exp ) FormalU else FormalU   
+        |   if ( Exp ) FormalU
   
 ----------
 # Formal  
-# Formals ::= Newls Formal NOTE_STAR(Newlp Formal) 
-#       |   Newls
-
-Formals ::= Newls Formalt
+Formals ::= NOTE_STAR(Formal)
 ----------
-Formalt ::= Formal NOTE_QUES(Newlp Formalt)
-        |   EPSILON
+Formal  ::= Cmd|Exp|DeclN
 ----------
-Formal  ::= Cmd
-        |   Exp
-        |   DeclN
-----------
-FormalU ::= CmdN
-        |   Exp
-        |   DeclN
+FormalU ::= CmdN|Exp|DeclN  
   
-----------
-Newls   ::= NOTE_STAR('back_n')
-----------
-Newlp   ::= NOTE_PLUS('back_n')
-----------
-Decls   ::= Newls Declt
-----------
-Declt   ::= Decl NOTE_QUES(Newlp Declt)
-        |   EPSILON
+# ----------
+# Newls   ::= NOTE_STAR('back_n')
+# ----------
+# Newlp   ::= NOTE_PLUS('back_n')
 ----------
 # Decl  
 Decl    ::= DeclN
@@ -84,13 +69,13 @@ DeclN   ::= RE_ID : Type
 
 ----------
 # class  
-Class   ::= class RE_VALUE Newls { Decls }
-        |   class RE_VALUE inherits RE_VALUE Newls { Decls }
+Class   ::= class RE_VALUE { NOTE_STAR(Decl) }
+        |   class RE_VALUE inherits RE_VALUE { NOTE_STAR(Decl) }
 
 ----------
 # procedure  
 # multi-newline to one
-Proc    ::= def RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) Newls { Formals }
+Proc    ::= def RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) { Formals }
 ----------
 Proc_ar ::= RE_ID : Type NOTE_STAR(, RE_ID : Type)
 ----------
@@ -105,7 +90,7 @@ Exp     ::= return Exp
         |   case Exp of { NOTE_STAR(RE_ID : Type => Exp) otherwise => Exp }
         |   THIS
         |   let DeclN NOTE_STAR(, DeclN) in { Exp }
-        |   RE_ID ( NOTE_QUES(Exp_ar) )
+        |   callcc RE_ID ( NOTE_QUES(Exp_ar) )
 
         |   RE_ID . RE_ID ( NOTE_QUES(Exp_ar) )
         |   RE_ID @ RE_VALUE . RE_ID ( NOTE_QUES(Exp_ar) )

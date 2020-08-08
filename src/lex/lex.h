@@ -81,12 +81,12 @@ class Lex
             return pStart;
         }
 
-        std::pair<bool, std::string> parse(const std::string& source, const std::string& filename, std::vector<std::pair<std::string, std::string>>& parseResult)
+        std::pair<bool, std::string> parse(const std::string& source, const std::string& filename, std::vector<std::pair<unsigned, std::string>>& parseResult)
         {
             return parseSrc(source, filename, parseResult);
         }
 
-        std::pair<bool, std::string> parseSrc(const std::string& source, const std::string& filename, std::vector<std::pair<std::string, std::string>>& parseResult)
+        std::pair<bool, std::string> parseSrc(const std::string& source, const std::string& filename, std::vector<std::pair<unsigned, std::string>>& parseResult)
         {
             /* init first */
             if (LexInit() == false) return std::make_pair(false, getErrorMsg("Lex init error", filename));
@@ -149,7 +149,12 @@ handle_non_blank:
                             if (origin_c != '\n') commentFlag = true;
                         } else {
                             /* handle other cases */
-                            parseResult.push_back(std::make_pair(getStringByTokenId(lastToken), parseStr));
+                            if (lastToken >= static_cast<unsigned int>(CLASSIC_ASSIGN) && lastToken < static_cast<unsigned int>(FINAL_MARK)) {
+                                /* there is no definition for unacceptable symbols, in this case, '=', in this language */
+                                return std::make_pair(false, getErrorMsg("pattern \"" + VKeyWords[lastToken - TERMINATOR - 1] + "\" is not defined in this language.", filename));
+                            }
+
+                            parseResult.push_back(std::make_pair(lastToken, parseStr));
                         }
                         pCur = dfaInit;
                         lastToken = UINT_MAX;
@@ -172,9 +177,6 @@ handle_non_blank:
                     } else if (lastToken == static_cast<unsigned int>(ERR_ERROR)) {
                         /* match error node, aka. not in charset, return false */
                         return std::make_pair(false, getErrorMsg("not in charset error", filename));
-                    } else if (lastToken >= static_cast<unsigned int>(CLASSIC_ASSIGN) && lastToken < static_cast<unsigned int>(FINAL_MARK)) {
-                        /* there is no definition for unacceptable symbols, in this case, '=', in this language */
-                        return std::make_pair(false, getErrorMsg("pattern \"" + VKeyWords[lastToken - TERMINATOR - 1] + "\" is not defined in this language.", filename));
                     }
                     /* normal terminalId */
                 }
@@ -192,7 +194,7 @@ handle_non_blank:
             /* deal with last token */
             if (lastToken != UINT_MAX) {
                 /* normal token */
-                parseResult.push_back(std::make_pair(getStringByTokenId(lastToken), parseStr));
+                parseResult.push_back(std::make_pair(lastToken, parseStr));
                 pCur = dfaInit;
                 lastToken = UINT_MAX;
                 parseStr = "";
@@ -224,7 +226,7 @@ handle_non_blank:
 
         std::string getErrorMsg(std::string msg, const std::string& filename)
         {
-            return "ERROR in [" + std::to_string(row) + ", " + std::to_string(col) + "] of " + filename + ": " + msg;
+            return "ERROR near [" + std::to_string(row) + ", " + std::to_string(col) + "] in " + filename + ": " + msg;
         }
 
         std::unordered_set<char> initCharSet()

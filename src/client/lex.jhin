@@ -1,0 +1,15 @@
+
+
+class Animal {
+    x1: Int
+    x2: String
+
+    def fun1() {
+        xm: Int <- 6
+        if (x1 == 7) {
+            xo <- 0
+        } else {
+            return xx
+        }
+    }
+}

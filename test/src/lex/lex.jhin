@@ -12,6 +12,7 @@ class Animal {  -- Animal must be Uppercase, and digits are excluded in RE_VALUE
 
 def main(): Unit {
     v: Int <- 5
+    if (v = 0) {}
     return 777
 }
 

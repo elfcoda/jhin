@@ -266,9 +266,9 @@ class Syntax
             return pDFAStart;
         }
 
-        bool parse()
+        comm::pDFANode<pSyntaxNFAData> parse()
         {
-            if (init() != true) return false;
+            if (init() != true) return nullptr;
 
             pSyntaxNFAData pNFAStart = genNFA();
             comm::pDFANode<pSyntaxNFAData> pDFAStart = NFA2DFA(pNFAStart);
@@ -279,7 +279,14 @@ class Syntax
 
             // comm::Log::singleton() >> (pDFAStart->toString()) >> comm::newline;
 
-            return true;
+            /* construct initial <Prog' $> production */
+            comm::pDFANode<pSyntaxNFAData> specialNode = new comm::DFANode<pSyntaxNFAData>();
+            /* shift $ to nullptr */
+            specialNode->mEdges[SYNTAX_TOKEN_END] = nullptr;
+            pDFAStart->mEdges[NON_TERMINAL_IDX_MIN] = specialNode;
+
+
+            return pDFAStart;
         }
 
         bool updateDFAFollowSetForNFA(comm::pDFANode<pSyntaxNFAData> pStart, pSyntaxNFAData pNFAStart)

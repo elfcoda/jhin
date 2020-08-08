@@ -87,7 +87,7 @@ struct DFANode
                 } else if (id < SYNTAX_EPSILON_IDX) {
                     s += prefix + "{" + syntax::id_to_non_terminal[id] + " -> NFAID_" + std::to_string(it->second->id) + "}";
                 } else if (id == SYNTAX_TOKEN_END) {
-                    s += prefix + "{$ -> nullptr}";
+                    s += prefix + "{" + SYNTAX_TOKEN_END_MARK + " -> nullptr}";
                 } else {
                     /* turn "PLUS" to "+" */
                     if (syntax::token_string_to_symbol.find(lex::tokenId2String[id]) == syntax::token_string_to_symbol.end()) {
@@ -116,6 +116,9 @@ struct DFANode
      * to get compatible with SyntaxNFAData
      */
     std::map<unsigned, DFANode<PNFA>*> mEdges;
+
+    /* empty node */
+    DFANode() {}
 
     DFANode(unsigned int hash, std::set<lex::pNFANode> sNFA)
     {
@@ -150,6 +153,26 @@ struct DFANode
         }
 
         return shiftSet;
+    }
+
+    /* get syntax::pSyntaxNFAData */
+    PNFA canReduce(unsigned token)
+    {
+        /* lookup reduce-set */
+        for (const auto& item: followSet) {
+            PNFA p = item.first;
+            /* reducable position */
+            if (p->production.size() != p->position) continue;
+
+            if (item.second.find(token) != item.second.end()) {
+                return item.first;
+            }
+        }
+
+        /* lookup shift-set */
+        assert(mEdges.find(token) != mEdges.end());
+
+        return nullptr;
     }
 
     void isConflict()
@@ -209,6 +232,8 @@ template <>
 unsigned int DFANode<syntax::pSyntaxNFAData>::maxId = 0;
 template <>
 std::map<unsigned int, std::set<pDFANode<syntax::pSyntaxNFAData>>> DFANode<syntax::pSyntaxNFAData>::mHash = {};
+
+using pSyntaxDFA = jhin::comm::pDFANode<jhin::syntax::pSyntaxNFAData>;
 
 
 template <class PNFA>

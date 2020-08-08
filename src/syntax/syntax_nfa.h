@@ -8,12 +8,15 @@
 #include "../../comm/hash.h"
 
 
+#define SYNTAX_TOKEN_END        1025
+#define SYNTAX_TOKEN_END_MARK   "$"
+#define SYNTAX_TOKEN_BEGIN      1026
+#define SYNTAX_TOKEN_BEGIN_MARK "#"
+
 namespace jhin
 {
 namespace syntax
 {
-
-#define SYNTAX_TOKEN_END    1025
 
 struct SyntaxNFAData;
 using pSyntaxNFAData = SyntaxNFAData*;
@@ -50,6 +53,11 @@ struct SyntaxNFAData
 
         maxId += 1;
         id = maxId;
+    }
+
+    bool isEPSILON()
+    {
+        return (production.size() == 1 && production[0] == SYNTAX_EPSILON_IDX);
     }
 
     std::string toString()

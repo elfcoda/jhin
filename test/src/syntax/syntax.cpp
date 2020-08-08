@@ -7,8 +7,7 @@ int main()
 {
     jhin::lex::setTokenId2String();
     jhin::syntax::Syntax* syn = new jhin::syntax::Syntax();
-    bool b = syn->parse();
-    std::cout << b << std::endl;
+    jhin::comm::pDFANode<jhin::syntax::pSyntaxNFAData> pDFAStart = syn->parse();
 
     return 0;
 }

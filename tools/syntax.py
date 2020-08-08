@@ -88,14 +88,14 @@ list1 = ["!=", "<-", ">=", "=>", "<=", "==", "->",
         "(", ")", "{", "}", "[", "]", "*", "@", ":", ",", \
         "if", "while", ".", "+", "-", "/", "!", \
         "<", ">", "for", "return", "case", "of", "else", \
-        "otherwise", "lambda", "isVoid", "'back_n'", "inherits", "class", "new", "let", "in", "def"
+        "otherwise", "lambda", "isVoid", "'back_n'", "inherits", "class", "new", "let", "in", "def", "callcc"
         ]
 
 list2 = ["NEQ", "ASSIGN", "GE", "INFER", "LE", "EQ", "ARROW",
         "LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK", "RBRACK", "STAR", "AT", "COLON", "COMMA", \
         "IF", "WHILE", "DOT", "PLUS", "MINUS", "SLASH", "NOT", \
         "LT", "GT", "FOR", "RETURN", "CASE", "OF", "ELSE", \
-        "OTHERWISE", "LAMBDA", "ISVOID", "NEWLINE", "INHERITS", "CLASS", "NEW", "LET", "IN", "DEF"
+        "OTHERWISE", "LAMBDA", "ISVOID", "NEWLINE", "INHERITS", "CLASS", "NEW", "LET", "IN", "DEF", "CALLCC"
         ]
 
 # replace "*" by STAR, and so on
