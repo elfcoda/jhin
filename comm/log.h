@@ -265,8 +265,7 @@ namespace comm
                 using DT = typename std::decay<T>::type;
                 std::string s = getWriteString(static_cast<const DT&>(t));
 
-                std::string ws = mLevel.at(Log::logLevel) + s;
-                write(ws);
+                write(s);
 
                 return *this;
             }
@@ -296,6 +295,11 @@ namespace comm
                 /* write infomation */
                 file.write(WRITE_FILE_INFOMATION.c_str(), WRITE_FILE_INFOMATION.length());
             }
+        }
+
+        if (Log::logLevel >= WRITE_LEVEL) {
+            std::string s = mLevel.at(Log::logLevel);
+            file.write(s.c_str(), s.length());
         }
 
         return log;
