@@ -36,6 +36,7 @@ namespace jhin
 
     /* current log level settings */
     const ELogLevel WRITE_LEVEL = INFO;
+    const std::string WRITE_FILE_INFOMATION = "WRITE_LEVEL is: " + std::to_string(static_cast<unsigned>(WRITE_LEVEL)) + "\n";
 
 };  /* namespace jhin */
 
@@ -68,14 +69,6 @@ namespace comm
 
             bool init()
             {
-                file.open(filename);
-                return true;
-            }
-
-            bool switchFile(const std::string& filename)
-            {
-                file.close();
-                this->filename = filename;
                 file.open(filename);
                 return true;
             }
@@ -249,6 +242,19 @@ namespace comm
                 return file.write(s.c_str(), s.length());
             }
 
+            /* switch to another file */
+            bool switchFile(const std::string& filename)
+            {
+                file.close();
+                this->filename = filename;
+                file.open(filename);
+
+                /* write infomation */
+                write(WRITE_FILE_INFOMATION);
+
+                return true;
+            }
+
             /* op >> */
             template <class T>
             Log& operator >>(T&& t)
@@ -269,13 +275,14 @@ namespace comm
 
         private:
             std::string filename;
-            std::ofstream file;
+            static std::ofstream file;
 
     };
     std::mutex Log::mtx;
     Log Log::log(sLogFilename);
     bool Log::isInited = false;
     ELogLevel Log::logLevel = DEBUG;
+    std::ofstream Log::file;
 
     Log& Log::singleton(ELogLevel level = DEBUG)
     {
@@ -286,6 +293,8 @@ namespace comm
             if (!isInited) {
                 log.init();
                 isInited = true;
+                /* write infomation */
+                file.write(WRITE_FILE_INFOMATION.c_str(), WRITE_FILE_INFOMATION.length());
             }
         }
 
