@@ -10,6 +10,35 @@
 #include <vector>
 #include <mutex>
 
+
+
+namespace jhin
+{
+    enum ELogLevel
+    {
+        DEBUG = 1,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL,
+    };
+
+    const std::string sDEBUG    = "DEBUG: ";
+    const std::string sINFO     = "INFO: ";
+    const std::string sWARN     = "WARN: ";
+    const std::string sERROR    = "ERROR: ";
+    const std::string sFATAL    = "FATAL: ";
+    const std::unordered_map<ELogLevel, std::string> mLevel = {{ELogLevel::DEBUG, sDEBUG},
+                                                               {ELogLevel::INFO, sINFO},
+                                                               {ELogLevel::WARN, sWARN},
+                                                               {ELogLevel::ERROR, sERROR},
+                                                               {ELogLevel::FATAL, sFATAL}};
+
+    /* current log level settings */
+    const ELogLevel WRITE_LEVEL = INFO;
+
+};  /* namespace jhin */
+
 namespace jhin
 {
 namespace comm
@@ -20,7 +49,6 @@ namespace comm
     template <class T>
     constexpr bool isShowType = std::is_arithmetic_v<T> || isString<T>;
 
-    const std::string sErr = "ERROR: ";
     const std::string sLogFilename = "log.log";
 
     struct LogNewLine {} newline;
@@ -33,8 +61,10 @@ namespace comm
         public:
             static std::mutex mtx;
             static Log log;
-            static Log& singleton();
             static bool isInited;
+            static ELogLevel logLevel;
+            static Log& singleton(ELogLevel level);
+
 
             bool init()
             {
@@ -42,45 +72,53 @@ namespace comm
                 return true;
             }
 
+            bool switchFile(const std::string& filename)
+            {
+                file.close();
+                this->filename = filename;
+                file.open(filename);
+                return true;
+            }
+
         public:
-            /* write */
+            /* get write string */
             /* trivial case */
             template <class T>
-            std::ostream& write(T&& t)
+            std::string getWriteString(T&& t)
             {
                 std::string s = std::to_string(t);
-                return file.write(s.c_str(), s.length());
+                return s;
             }
 
             /* string case */
             // template <>
-            // std::ostream& write<const std::string&>(const std::string& s)
+            // std::string getWriteString<const std::string&>(const std::string& s)
             // {
-            //     return file.write(s.c_str(), s.length());
+            //     return s;
             // }
 
             /* new line case */
             template <>
-            std::ostream& write<const LogNewLine&>(const LogNewLine& n)
+            std::string getWriteString<const LogNewLine&>(const LogNewLine& n)
             {
                 std::string s = "\n";
-                return file.write(s.c_str(), s.length());
+                return s;
             }
 
             /* const char* case */
-            std::ostream& write(const char* c)
+            std::string getWriteString(const char* c)
             {
                 std::string s(c);
-                return file.write(s.c_str(), s.length());
+                return s;
             }
 
             /* container case */
             template <template<class...> class C,
                       class... As>
-            std::ostream& write(const C<As...>& container)
+            std::string getWriteString(const C<As...>& container)
             {
                 std::string s = genContainerString(container);
-                return file.write(s.c_str(), s.length());
+                return s;
             }
 
             /* generate container string */
@@ -88,7 +126,7 @@ namespace comm
                       class... As>
             std::string genContainerString(const C<As...>& container)
             {
-                std::string s = "{" + sErr + "container can not display!}";
+                std::string s = "{" + sERROR + "container can not display!}";
 
                 /* test */
                 // static_assert(sizeof...(As) == 3, "err");
@@ -121,7 +159,7 @@ namespace comm
             template <class T>
             std::string genContainerString(const T& data)
             {
-                std::string s = "{" + sErr + "data can not display!}";
+                std::string s = "{" + sERROR + "data can not display!}";
                 return s;
             }
 
@@ -205,13 +243,24 @@ namespace comm
                 return s;
             }
 
+            /* write to file */
+            std::ostream& write(const std::string& s)
+            {
+                return file.write(s.c_str(), s.length());
+            }
+
             /* op >> */
             template <class T>
             Log& operator >>(T&& t)
             {
+                if (Log::logLevel < WRITE_LEVEL) return *this;
+
                 /* decay type */
                 using DT = typename std::decay<T>::type;
-                write(static_cast<const DT&>(t));
+                std::string s = getWriteString(static_cast<const DT&>(t));
+
+                std::string ws = mLevel.at(Log::logLevel) + s;
+                write(ws);
 
                 return *this;
             }
@@ -226,8 +275,12 @@ namespace comm
     std::mutex Log::mtx;
     Log Log::log(sLogFilename);
     bool Log::isInited = false;
-    Log& Log::singleton()
+    ELogLevel Log::logLevel = DEBUG;
+
+    Log& Log::singleton(ELogLevel level = DEBUG)
     {
+        Log::logLevel = level;
+
         if (!isInited) {
             const std::lock_guard<std::mutex> lock(mtx);
             if (!isInited) {
@@ -243,4 +296,5 @@ namespace comm
 };  /* namespace jhin */
 
 #endif
+
 
