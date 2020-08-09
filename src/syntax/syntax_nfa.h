@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <memory>
 #include <map>
 #include "non_terminal.h"
 #include "../../comm/hash.h"
@@ -85,7 +86,7 @@ struct SyntaxNFAData
         return s;
     }
 
-    bool isDataSame(pSyntaxNFAData p)
+    bool isDataSame(std::shared_ptr<SyntaxNFAData> p)
     {
         if (this->hash != p->hash) return false;
 

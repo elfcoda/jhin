@@ -335,11 +335,11 @@ void propagateDFA(pDFANode<PNFA> init, unsigned EP)
                 /* gen new DFA node, connect and add to worklist */
                 pDFANode<PNFA> pNew = new DFANode<PNFA>(pa.second, sNFA);
                 pDFA->mEdges[it.first] = pNew;
-                Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pNew->id >> ": \n" >> pNew->toStringRaw() >> newline >> newline;
+                // Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pNew->id >> ": \n" >> pNew->toStringRaw() >> newline >> newline;
                 /* add new node to the worklist */
                 quDFAs.push(pNew);
             } else {
-                Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pa.first->id >> newline >> newline >> newline;
+                // Log::singleton() >> "DFA_" >> pDFA->id >> ": \n" >> pDFA->toStringRaw() >> "\nconnect " >> it.first >> " to DFA_" >> pa.first->id >> newline >> newline >> newline;
                 /* if the node is already exist, do not add to the worklist */
                 pDFA->mEdges[it.first] = pa.first;
             }

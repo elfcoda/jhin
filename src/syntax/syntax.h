@@ -1,4 +1,5 @@
 #include <unordered_set>
+#include <memory>
 #include "non_terminal.h"
 #include "syntax_nfa.h"
 #include "../lex/nfa.h"
@@ -467,18 +468,16 @@ class Syntax
 
         pSyntaxNFAData getSyntaxNFANode(unsigned nonTerminal, const std::vector<unsigned>& production, unsigned position)
         {
-            pSyntaxNFAData p = new SyntaxNFAData(nonTerminal, production, position);
+            std::shared_ptr<SyntaxNFAData> p = std::make_shared<SyntaxNFAData>(nonTerminal, production, position);
             assert(SyntaxNFAData::mHash.find(p->hash) != SyntaxNFAData::mHash.end());
             const std::vector<pSyntaxNFAData>& vec = SyntaxNFAData::mHash[p->hash];
             for (pSyntaxNFAData pNFA: vec) {
                 if (pNFA->isDataSame(p)) {
-                    delete p;
                     return pNFA;
                 }
             }
 
             assert(false);
-            delete p;
             return nullptr;
         }
 

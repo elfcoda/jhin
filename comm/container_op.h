@@ -3,7 +3,11 @@
 
 #include <set>
 #include <unordered_set>
+#include <tuple>
+#include <stack>
+#include <vector>
 #include <map>
+#include <string>
 #include <unordered_map>
 #include <cassert>
 #include <type_traits>
@@ -75,7 +79,45 @@ namespace comm
         for (const auto& e: snd) fst[e.first] = e.second;
     }
 
+    template <typename T>
+    void stackPopN(std::stack<T>& st, unsigned n)
+    {
+        while (n--) {
+            assert(!st.empty());
+            st.pop();
+        }
+    }
 
+    template <typename T>
+    std::vector<T> stackPopGetN(std::stack<T>& st, unsigned n)
+    {
+        std::vector<T> vs;
+
+        while (n--) {
+            assert(!st.empty());
+            vs.push_back(st.top());
+            st.pop();
+        }
+
+        std::reverse(vs.begin(), vs.end());
+
+        return vs;
+    }
+
+    template <typename T, typename... Ts>
+    std::vector<T> stackPopNGetTupleFst(std::stack<std::tuple<T, Ts...>>& st, unsigned n)
+    {
+        std::vector<T> vIds;
+        while (n--) {
+            assert(!st.empty());
+            vIds.push_back(std::get<0>(st.top()));
+            st.pop();
+        }
+
+        std::reverse(vIds.begin(), vIds.end());
+
+        return vIds;
+    }
 };  /* namespace comm */
 };  /* namespace jhin */
 

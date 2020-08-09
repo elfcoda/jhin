@@ -13,3 +13,5 @@ class Animal {
         }
     }
 }
+
+def ju1(xi:Int, yi:Int){}

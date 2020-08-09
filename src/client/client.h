@@ -12,15 +12,6 @@ namespace jhin
 namespace client
 {
 
-template <typename T>
-void stackPopN(std::stack<T>& st, unsigned n)
-{
-    while (n--) {
-        assert(!st.empty());
-        st.pop();
-    }
-}
-
 template <class T>
 std::string stack2String(std::stack<T> st)
 {
