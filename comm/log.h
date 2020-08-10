@@ -57,14 +57,14 @@ namespace comm
     class Log
     {
         private:
-            Log(const std::string& filename): filename(filename) {}
+            Log(const std::string& writefilename) {}
 
         public:
             static std::mutex mtx;
             static Log log;
             static bool isInited;
             static ELogLevel logLevel;
-            static Log& singleton(ELogLevel level);
+            static Log& singleton(ELogLevel level, bool showLevel, std::string writefilename);
 
 
             bool init()
@@ -237,23 +237,10 @@ namespace comm
             }
 
             /* write to file */
-            std::ostream& write(const std::string& s)
-            {
-                return file.write(s.c_str(), s.length());
-            }
+            static std::ostream& write(const std::string& s);
 
             /* switch to another file */
-            bool switchFile(const std::string& filename)
-            {
-                file.close();
-                this->filename = filename;
-                file.open(filename);
-
-                /* write infomation */
-                write(WRITE_FILE_INFOMATION);
-
-                return true;
-            }
+            static bool switchFile(const std::string& writefilename);
 
             /* op >> */
             template <class T>
@@ -273,7 +260,7 @@ namespace comm
             ~Log() { file.close(); }
 
         private:
-            std::string filename;
+            static std::string filename;
             static std::ofstream file;
 
     };
@@ -282,8 +269,30 @@ namespace comm
     bool Log::isInited = false;
     ELogLevel Log::logLevel = DEBUG;
     std::ofstream Log::file;
+    std::string Log::filename = sLogFilename;
 
-    Log& Log::singleton(ELogLevel level = DEBUG)
+    /* write to file */
+    std::ostream& Log::write(const std::string& s)
+    {
+        return file.write(s.c_str(), s.length());
+    }
+
+    /* switch to another file */
+    bool Log::switchFile(const std::string& writefilename)
+    {
+        if (writefilename == filename) return true;
+
+        file.close();
+        filename = writefilename;
+        file.open(filename);
+
+        /* write infomation */
+        write(WRITE_FILE_INFOMATION);
+
+        return true;
+    }
+
+    Log& Log::singleton(ELogLevel level = DEBUG, bool showLevel = true, std::string writefilename = sLogFilename)
     {
         Log::logLevel = level;
 
@@ -293,13 +302,17 @@ namespace comm
                 log.init();
                 isInited = true;
                 /* write infomation */
-                file.write(WRITE_FILE_INFOMATION.c_str(), WRITE_FILE_INFOMATION.length());
+                write(WRITE_FILE_INFOMATION);
             }
         }
 
-        if (Log::logLevel >= WRITE_LEVEL) {
+        if (writefilename != filename) {
+            switchFile(writefilename);
+        }
+
+        if (Log::logLevel >= WRITE_LEVEL && showLevel) {
             std::string s = mLevel.at(Log::logLevel);
-            file.write(s.c_str(), s.length());
+            write(s);
         }
 
         return log;
