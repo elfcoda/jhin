@@ -5,7 +5,10 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <queue>
+#include "../../comm/log.h"
 #include "../../comm/dfa.h"
+#include "../../comm/comm.h"
 #include "../../comm/container_op.h"
 
 namespace jhin
@@ -25,6 +28,12 @@ struct PTNodeData
 {
     /* non-terminal id or token id */
     unsigned symbolId;
+
+    std::string toString()
+    {
+        std::string s = comm::symbolId2String(symbolId);
+        return s;
+    }
 
     PTNodeData(unsigned symbolId)
     {
@@ -66,7 +75,9 @@ class ParseTree
             bool b = init();
             assert(b == true);
 
-            genParseTree(lexResult, pDFAStart);
+            pPTNode pRoot = genParseTree(lexResult, pDFAStart);
+            showTree(pRoot);
+
             return true;
         }
 
@@ -127,9 +138,37 @@ class ParseTree
             return pRoot;
         }
 
-        void travelParseTree(pPTNode pRoot)
+        void showTree(pPTNode pRoot)
         {
+            std::string graphFile = "/Users/luwenjie/git/jhin/jhin/src/ast/graph.py";
+            std::tuple<std::string, unsigned> tree = parseTree2String(pRoot, 0);
+            std::string sPy = "tree = \n";
+            comm::Log::singleton(INFO, false, graphFile) >> sPy >> std::get<0>(tree) >> comm::newline;
+        }
 
+        std::tuple<std::string, unsigned> parseTree2String(pPTNode pRoot, int indent)
+        {
+            if (pRoot == nullptr) return std::make_tuple("[]", 0);
+
+            std::string sBlank(indent * 4, ' ');
+            /* (symbolString, wide, symboltype) */
+            SymbolType stype = comm::symbolId2Type(pRoot->data->symbolId);
+            std::string s1 = "[(\"" + pRoot->data->toString() + "\", ";
+            std::string s2 = ", " + std::to_string(stype) + ")";
+            unsigned curWide = 1;
+            if (pRoot->children != nullptr) {
+                for (pPTNode p: *(pRoot->children)) {
+                    /* pPTNodes we push_back before can not be nullptr */
+                    assert(p != nullptr);
+                    auto tu = parseTree2String(p, indent + 1);
+                    curWide += std::get<1>(tu);
+                    s2 += ", \n" + sBlank + std::get<0>(tu);
+                }
+            }
+            curWide = (curWide == 1 ? 1 : curWide - 1);
+            s2 += "]";
+
+            return std::make_tuple(s1 + std::to_string(curWide) + s2, curWide);
         }
 
     private:

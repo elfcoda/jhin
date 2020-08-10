@@ -43,7 +43,7 @@ struct DFANode
      * used only in LALR algorithm */
     std::map<syntax::pSyntaxNFAData, std::unordered_set<unsigned>> followSet;
 
-    /* enabled only for DEBUG!!! to display where the unsigned id(aka. token etc) from
+    /* enabled for log debugging. to display where the unsigned id(aka. token etc) from
      * pNFA -> map<terminal, pNFA>
      * */
     std::map<syntax::pSyntaxNFAData, std::unordered_map<unsigned, syntax::pSyntaxNFAData>> followMap;
