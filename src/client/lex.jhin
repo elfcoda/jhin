@@ -14,4 +14,8 @@ class Animal {
     }
 }
 
+class Cat {
+    ym: Int
+}
+
 def ju1(xi:Int, yi:Int){}

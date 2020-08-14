@@ -1,11 +1,11 @@
-#ifndef __PT_H__
-#define __PT_H__
+#pragma once
 
 #include <vector>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 #include <queue>
+#include "ast_node.h"
 #include "../../comm/log.h"
 #include "../../comm/dfa.h"
 #include "../../comm/comm.h"
@@ -16,75 +16,27 @@ namespace jhin
 namespace ast
 {
 
-struct PTNodeData;
-using pPTNodeData = PTNodeData*;
-
-struct PTNode;
-using pPTNode = PTNode*;
-
-using pChildrenList = std::vector<pPTNode>*;
-
-struct PTNodeData
-{
-    /* non-terminal id or token id */
-    unsigned symbolId;
-
-    std::string toString()
-    {
-        std::string s = comm::symbolId2String(symbolId);
-        return s;
-    }
-
-    PTNodeData(unsigned symbolId)
-    {
-        this->symbolId = symbolId;
-    }
-
-    PTNodeData(PTNodeData&& ptnode)
-    {
-        this->symbolId = ptnode.symbolId;
-    }
-};
-
-struct PTNode
-{
-    pPTNodeData data;
-    pChildrenList children;
-
-    PTNode(PTNodeData&& data, pChildrenList children)
-    {
-        this->data = new PTNodeData(std::move(data));
-        this->children = children;
-    }
-
-    /* free memory */
-    bool free()
-    {
-        return true;
-    }
-};
-
-using stackTuple = std::tuple<unsigned, comm::pSyntaxDFA, pPTNode>;
+using stackTuple = std::tuple<unsigned, comm::pSyntaxDFA, pASTNode>;
 
 class ParseTree
 {
 
     public:
-        bool parse(const std::vector<std::pair<unsigned, std::string>>& lexResult, comm::pSyntaxDFA pDFAStart)
+        pASTNode parse(const std::vector<std::pair<unsigned, std::string>>& lexResult, comm::pSyntaxDFA pDFAStart)
         {
             bool b = init();
             assert(b == true);
 
-            pPTNode pRoot = genParseTree(lexResult, pDFAStart);
-            showTree(pRoot);
+            pASTNode pRoot = genParseTree(lexResult, pDFAStart);
+            // ASTNode::showTree(pRoot);
 
-            return true;
+            return pRoot;
         }
 
         /* return root node of parse tree */
-        pPTNode genParseTree(const std::vector<std::pair<unsigned, std::string>>& lexResult, comm::pSyntaxDFA pDFAStart)
+        pASTNode genParseTree(const std::vector<std::pair<unsigned, std::string>>& lexResult, comm::pSyntaxDFA pDFAStart)
         {
-            pPTNode pRoot = nullptr;
+            pASTNode pRoot = nullptr;
             std::stack<stackTuple> st;
             st.push(std::make_tuple(SYNTAX_TOKEN_BEGIN, pDFAStart, nullptr));
 
@@ -101,8 +53,8 @@ class ParseTree
                     idx ++;
                 } else {
                     /* reduce */
-                    pPTNode pNonterminal = nullptr;
-                    pChildrenList children = new std::vector<pPTNode>();
+                    pASTNode pNonterminal = nullptr;
+                    pChildrenList children = new std::vector<pASTNode>();
                     if (!pNFA->isEPSILON()) {
                         /* production E -> EPSILON. should not pop stack */
                         std::vector<stackTuple> vTuple = comm::stackPopGetN(st, pNFA->production.size());
@@ -110,11 +62,11 @@ class ParseTree
                         for (const auto& item: vTuple) {
                             children->push_back(std::get<2>(item));
                         }
-                        pNonterminal = new PTNode(PTNodeData(pNFA->nonTerminal), children);
+                        pNonterminal = new ASTNode(ASTNodeData(pNFA->nonTerminal), children);
                     } else {
                         /* construct E -> EPSILON production */
                         children->push_back(mSymbolId2PT[SYNTAX_EPSILON_IDX]);
-                        pNonterminal = new PTNode(PTNodeData(pNFA->nonTerminal), children);
+                        pNonterminal = new ASTNode(ASTNodeData(pNFA->nonTerminal), children);
                     }
 
                     if (pNFA->nonTerminal == NON_TERMINAL_IDX_MIN) {
@@ -129,7 +81,7 @@ class ParseTree
             }
             /* $ has been shifted, stack:
              * #, pStart, nullptr;
-             * Prog', special, pPTNode;
+             * Prog', special, pASTNode;
              * $, nullptr, nullptr;
              * */
 
@@ -138,42 +90,9 @@ class ParseTree
             return pRoot;
         }
 
-        void showTree(pPTNode pRoot)
-        {
-            std::string graphFile = "/Users/luwenjie/git/jhin/jhin/src/ast/graph.py";
-            std::tuple<std::string, unsigned> tree = parseTree2String(pRoot, 0);
-            std::string sPy = "tree = \n";
-            comm::Log::singleton(INFO, false, graphFile) >> sPy >> std::get<0>(tree) >> comm::newline;
-        }
-
-        std::tuple<std::string, unsigned> parseTree2String(pPTNode pRoot, int indent)
-        {
-            if (pRoot == nullptr) return std::make_tuple("[]", 0);
-
-            std::string sBlank(indent * 4, ' ');
-            /* (symbolString, wide, symboltype) */
-            SymbolType stype = comm::symbolId2Type(pRoot->data->symbolId);
-            std::string s1 = "[(\"" + pRoot->data->toString() + "\", ";
-            std::string s2 = ", " + std::to_string(stype) + ")";
-            unsigned curWide = 1;
-            if (pRoot->children != nullptr) {
-                for (pPTNode p: *(pRoot->children)) {
-                    /* pPTNodes we push_back before can not be nullptr */
-                    assert(p != nullptr);
-                    auto tu = parseTree2String(p, indent + 1);
-                    curWide += std::get<1>(tu);
-                    s2 += ", \n" + sBlank + std::get<0>(tu);
-                }
-            }
-            curWide = (curWide == 1 ? 1 : curWide - 1);
-            s2 += "]";
-
-            return std::make_tuple(s1 + std::to_string(curWide) + s2, curWide);
-        }
-
     private:
         /* create token nodes when initing */
-        std::unordered_map<unsigned, pPTNode> mSymbolId2PT;
+        std::unordered_map<unsigned, pASTNode> mSymbolId2PT;
 
         bool init()
         {
@@ -183,16 +102,16 @@ class ParseTree
         bool initTokens()
         {
             /* init mSymbolId2PT */
-            pPTNode pPT = nullptr;
+            pASTNode pPT = nullptr;
             for (unsigned token: lex::tokenSet) {
-                pPT = new PTNode(PTNodeData(token), nullptr);
+                pPT = new ASTNode(ASTNodeData(token), nullptr);
                 mSymbolId2PT[token] = pPT;
             }
 
             /* shift: $ -> nullptr */
             mSymbolId2PT[SYNTAX_TOKEN_END] = nullptr;
-            /* reduce: EPSILON -> PTNode */
-            mSymbolId2PT[SYNTAX_EPSILON_IDX] = new PTNode(PTNodeData(SYNTAX_EPSILON_IDX), nullptr);
+            /* reduce: EPSILON -> ASTNode */
+            mSymbolId2PT[SYNTAX_EPSILON_IDX] = new ASTNode(ASTNodeData(SYNTAX_EPSILON_IDX), nullptr);
 
             return true;
         }
@@ -202,5 +121,4 @@ class ParseTree
 };  /* namsspace ast */
 };  /* namespace jhin */
 
-#endif
 

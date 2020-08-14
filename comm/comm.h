@@ -44,7 +44,12 @@ std::string symbolId2String(unsigned symbolId)
     if (syntax::id_to_non_terminal.find(symbolId) != syntax::id_to_non_terminal.end()) {
         s += syntax::id_to_non_terminal[symbolId];
     } else if (lex::tokenId2String.find(symbolId) != lex::tokenId2String.end()) {
-        s += lex::tokenId2String[symbolId];
+        std::string tokenString = lex::tokenId2String[symbolId];
+        if (syntax::token_string_to_symbol.find(tokenString) != syntax::token_string_to_symbol.end()) {
+            s += syntax::token_string_to_symbol[tokenString];
+        } else {
+            s += tokenString;
+        }
     } else if (symbolId == SYNTAX_EPSILON_IDX) {
         s += SYNTAX_EPSILON_STR;
     } else if (symbolId == SYNTAX_TOKEN_BEGIN) {
