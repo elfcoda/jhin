@@ -49,24 +49,24 @@ class ParseTree
                      * */
                     st.push(std::make_tuple(item.first,
                                             std::get<1>(st.top())->mEdges[item.first],
-                                            mSymbolId2PT[item.first]));
+                                            new ASTNode(ASTNodeData(item.first, item.second), nullptr)));
                     idx ++;
                 } else {
                     /* reduce */
                     pASTNode pNonterminal = nullptr;
                     pChildrenList children = new std::vector<pASTNode>();
                     if (!pNFA->isEPSILON()) {
-                        /* production E -> EPSILON. should not pop stack */
+                        /* production E -> EPSILON. would not pop stack */
                         std::vector<stackTuple> vTuple = comm::stackPopGetN(st, pNFA->production.size());
                         /* construct non-terminal sub-tree */
                         for (const auto& item: vTuple) {
                             children->push_back(std::get<2>(item));
                         }
-                        pNonterminal = new ASTNode(ASTNodeData(pNFA->nonTerminal), children);
+                        pNonterminal = new ASTNode(ASTNodeData(pNFA->nonTerminal, AST_DEFAULT_TEXT), children);
                     } else {
                         /* construct E -> EPSILON production */
-                        children->push_back(mSymbolId2PT[SYNTAX_EPSILON_IDX]);
-                        pNonterminal = new ASTNode(ASTNodeData(pNFA->nonTerminal), children);
+                        children->push_back(new ASTNode(ASTNodeData(SYNTAX_EPSILON_IDX, AST_DEFAULT_TEXT), nullptr));
+                        pNonterminal = new ASTNode(ASTNodeData(pNFA->nonTerminal, AST_DEFAULT_TEXT), children);
                     }
 
                     if (pNFA->nonTerminal == NON_TERMINAL_IDX_MIN) {
@@ -91,9 +91,6 @@ class ParseTree
         }
 
     private:
-        /* create token nodes when initing */
-        std::unordered_map<unsigned, pASTNode> mSymbolId2PT;
-
         bool init()
         {
             return initTokens();
@@ -101,18 +98,6 @@ class ParseTree
 
         bool initTokens()
         {
-            /* init mSymbolId2PT */
-            pASTNode pPT = nullptr;
-            for (unsigned token: lex::tokenSet) {
-                pPT = new ASTNode(ASTNodeData(token), nullptr);
-                mSymbolId2PT[token] = pPT;
-            }
-
-            /* shift: $ -> nullptr */
-            mSymbolId2PT[SYNTAX_TOKEN_END] = nullptr;
-            /* reduce: EPSILON -> ASTNode */
-            mSymbolId2PT[SYNTAX_EPSILON_IDX] = new ASTNode(ASTNodeData(SYNTAX_EPSILON_IDX), nullptr);
-
             return true;
         }
 };

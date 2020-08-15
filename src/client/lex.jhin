@@ -4,8 +4,9 @@ class Animal {
     x1: Int
     x2: String
 
-    def fun1() {
-        xm: Int <- 6
+    def fun1(x1: Int, x2: Int): Unit {
+        xn: (a + b)
+        xm: (a + b) <- 6
         if (x1 == 7) {
             xo <- 0
         } else {
@@ -18,4 +19,10 @@ class Cat {
     ym: Int
 }
 
-def ju1(xi:Int, yi:Int){}
+def f1() {
+    x1: Int
+}
+
+def f2(x2: Int) {
+}
+

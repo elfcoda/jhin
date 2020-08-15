@@ -26,7 +26,10 @@ class AST
         {
             init();
             cut(pRoot, nullptr, 0);
+
             ASTNode::showTree(pRoot);
+            ASTNode::switchAST(pRoot);
+
             return pRoot;
         }
 
@@ -51,17 +54,17 @@ class AST
                 } else if ((singleChild = p->getSingle()) != nullptr) {
                     if (parent != nullptr) {
                         (*(parent->children))[idx] = singleChild;
+                        singleChild->setNotation(p->getNotation());
                         p = singleChild;
                     } else if (!singleChild->hasChildren()) {
-                        p->setSymbolId(singleChild->getSymbolId());
-                        p->children = nullptr;
+                        // p->setSymbolId(singleChild->getSymbolId());
+                        // p->children = nullptr;
                         return false;
                     } else {
                         /* if single child has children, we move the children to p */
-                        p->children = singleChild->children;
+                        // p->children = singleChild->children;
                         return false;
                     }
-                    // what if parent is nullptr
                 } else {
                     for (int i = 0; i < p->children->size();) {
                         pASTNode child = (*(p->children))[i];
@@ -78,13 +81,14 @@ class AST
                         singleChild = (*(p->children))[0];
                         if (parent != nullptr) {
                             (*(parent->children))[idx] = singleChild;
+                            singleChild->setNotation(p->getNotation());
                             return false;
                         } else if (!singleChild->hasChildren()) {
-                            p->setSymbolId(singleChild->getSymbolId());
-                            p->children = nullptr;
+                            // p->setSymbolId(singleChild->getSymbolId());
+                            // p->children = nullptr;
                             return false;
                         } else {
-                            p->children = singleChild->children;
+                            // p->children = singleChild->children;
                             return false;
                         }
                     }

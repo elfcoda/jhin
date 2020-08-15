@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <tuple>
+#include <unordered_set>
+#include <unordered_map>
 #include "../../comm/log.h"
 #include "../../comm/comm.h"
 
@@ -10,6 +12,84 @@ namespace jhin
 {
 namespace ast
 {
+
+#define AST_NON_LEAF_START  1
+#define AST_LEAF_START      2048
+#define AST_NOTATION_START  4096
+#define AST_DEFAULT_TEXT    ""
+
+/* nonLeaf and leaf nodes are basically all tokens
+ * but ast should redefine the nodes ID, which is diff from lex::TokenID and syntax::NonterminalID */
+const std::unordered_map<unsigned, std::string> astNonLeaf = {};
+const std::unordered_map<unsigned, std::string> astLeaf = {};
+
+enum EASTNonLeaf
+{
+    AST_NON_LEAF_ASSIGN = AST_NON_LEAF_START,
+    AST_NON_LEAF_WHILE,
+    AST_NON_LEAF_IF,
+    AST_NON_LEAF_IF_ELSE,
+    AST_NON_LEAF_CLASS,
+    AST_NON_LEAF_CLASS_INHERITS,
+    AST_NON_LEAF_FUNCTION,
+    AST_NON_LEAF_IS_VOID,
+    AST_NON_LEAF_NOT,
+    AST_NON_LEAF_NEW,
+
+    AST_NON_LEAF_PLUS,
+    AST_NON_LEAF_MINUS,
+    AST_NON_LEAF_STAR,
+    AST_NON_LEAF_SLASH,
+
+    AST_NON_LEAF_EQ,
+    AST_NON_LEAF_LT,
+    AST_NON_LEAF_LE,
+    AST_NON_LEAF_GT,
+    AST_NON_LEAF_GE,
+
+    AST_NON_LEAF_LAMBDA,
+    AST_NON_LEAF_FN_CALL,
+    AST_NON_LEAF_OBJECT_FN_CALL,
+    AST_NON_LEAF_OBJECT_FN_CALL_DISPATCH,
+    AST_NON_LEAF_EXP_OBJECT_FN_CALL,
+    AST_NON_LEAF_EXP_OBJECT_FN_CALL_DISPATCH,
+
+    AST_NON_LEAF_LET_IN,
+    AST_NON_LEAF_RETURN,
+    AST_NON_LEAF_CASE_OF_OTHERWISE,
+
+    AST_NON_LEAF_DCL,
+};
+
+enum EASTLeaf
+{
+    AST_LEAF_RE_ID = AST_LEAF_START,
+    AST_LEAF_RE_VALUE,
+    AST_LEAF_RE_INT,
+    AST_LEAF_RE_DECIMAL,
+    AST_LEAF_RE_STRING,
+
+    AST_LEAF_TRUE,
+    AST_LEAF_FALSE,
+
+    AST_LEAF_OBJECT,
+    AST_LEAF_BOOL,
+    AST_LEAF_INT,
+    AST_LEAF_FLOAT,
+    AST_LEAF_DOUBLE,
+    AST_LEAF_LONG,
+    AST_LEAF_STRING,
+    AST_LEAF_UNIT,
+
+    AST_LEAF_THIS,
+    AST_LEAF_TYPE,
+};
+
+enum EASTNotation
+{
+    AST_NOTATION_FN_ARGS = AST_NOTATION_START,
+
+};
 
 struct ASTNodeData;
 using pASTNodeData = ASTNodeData*;
@@ -23,21 +103,34 @@ struct ASTNodeData
 {
     /* non-terminal id or token id */
     unsigned symbolId;
+    /* semantics notation, eg, if this node is a function parameter */
+    unsigned notation;
+
+    /* raw string */
+    std::string text;
 
     std::string toString()
     {
-        std::string s = comm::symbolId2String(symbolId);
-        return s;
+        if (text != AST_DEFAULT_TEXT) {
+            if (text == "\n") return "'/n'";
+            else return text;
+        }
+
+        return comm::symbolId2String(symbolId) + "[" + comm::symbolId2String(notation) + "]";
     }
 
-    ASTNodeData(unsigned symbolId)
+    ASTNodeData(unsigned symbolId, const std::string& text)
     {
         this->symbolId = symbolId;
+        this->text = text;
+        this->notation = symbolId;
     }
 
     ASTNodeData(ASTNodeData&& ptnode)
     {
         this->symbolId = ptnode.symbolId;
+        this->text = ptnode.text;
+        this->notation = ptnode.symbolId;
     }
 };
 
@@ -61,6 +154,16 @@ struct ASTNode
     void setSymbolId(unsigned symbolId)
     {
         data->symbolId = symbolId;
+    }
+
+    void setNotation(unsigned notation)
+    {
+        data->notation = notation;
+    }
+
+    unsigned getNotation()
+    {
+        return data->notation;
     }
 
     unsigned getSymbolId()
@@ -107,6 +210,7 @@ struct ASTNode
 
     static void showTree(pASTNode pRoot);
     static std::tuple<std::string, unsigned, unsigned> parseTree2String(pASTNode pRoot, int indent);
+    static bool switchAST(pASTNode pRoot);
 };
 
 void ASTNode::showTree(pASTNode pRoot)
@@ -145,6 +249,12 @@ std::tuple<std::string, unsigned, unsigned> ASTNode::parseTree2String(pASTNode p
     s2 += "]";
 
     return std::make_tuple(s1 + std::to_string(curWidth) + s2, curWidth, maxDepth + 1);
+}
+
+bool ASTNode::switchAST(pASTNode pRoot)
+{
+
+    return true;
 }
 
 
