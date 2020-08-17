@@ -2,13 +2,60 @@
 
 #include <string>
 #include "log.h"
-#include "../src/syntax/non_terminal.h"
 #include "../src/lex/keywords.h"
+#include "../src/syntax/non_terminal.h"
+#include "../src/ast/ast_leaf.h"
 
 namespace jhin
 {
 namespace comm
 {
+
+bool isNonTerminal(unsigned id)
+{
+    return syntax::id_to_non_terminal.find(id) != syntax::id_to_non_terminal.end();
+}
+
+bool isToken(unsigned id)
+{
+    return lex::tokenId2String.find(id) != lex::tokenId2String.end();
+}
+
+unsigned getTokenLeafId(unsigned token)
+{
+    if (lex::tokenId2String.find(token) == lex::tokenId2String.end()) return 0;
+    std::string tokenString = lex::tokenId2String[token];
+
+    if (ast::ast_string_to_leafid.find(tokenString) != ast::ast_string_to_leafid.end())
+        return ast::ast_string_to_leafid.at(tokenString);
+
+    return 0;
+}
+
+unsigned getTokenLeafId(const std::string& tokenString)
+{
+    if (lex::string2TokenId.find(tokenString) == lex::string2TokenId.end()) return 0;
+
+    if (ast::ast_string_to_leafid.find(tokenString) != ast::ast_string_to_leafid.end())
+        return ast::ast_string_to_leafid.at(tokenString);
+
+    return 0;
+}
+
+bool isTokenLeaf(unsigned token)
+{
+    if (lex::tokenId2String.find(token) == lex::tokenId2String.end()) return false;
+    std::string tokenString = lex::tokenId2String[token];
+
+    return ast::ast_string_to_leafid.find(tokenString) != ast::ast_string_to_leafid.end();
+}
+
+bool isTokenLeaf(const std::string& tokenString)
+{
+    if (lex::string2TokenId.find(tokenString) == lex::string2TokenId.end()) return false;
+
+    return ast::ast_string_to_leafid.find(tokenString) != ast::ast_string_to_leafid.end();
+}
 
 enum SymbolType
 {
@@ -37,7 +84,7 @@ SymbolType symbolId2Type(unsigned symbolId)
     return SymbolNone;
 }
 
-std::string symbolId2String(unsigned symbolId)
+std::string symbolId2String(unsigned symbolId, bool readable = true)
 {
     std::string s = "";
 
@@ -45,7 +92,7 @@ std::string symbolId2String(unsigned symbolId)
         s += syntax::id_to_non_terminal[symbolId];
     } else if (lex::tokenId2String.find(symbolId) != lex::tokenId2String.end()) {
         std::string tokenString = lex::tokenId2String[symbolId];
-        if (syntax::token_string_to_symbol.find(tokenString) != syntax::token_string_to_symbol.end()) {
+        if (readable && syntax::token_string_to_symbol.find(tokenString) != syntax::token_string_to_symbol.end()) {
             s += syntax::token_string_to_symbol[tokenString];
         } else {
             s += tokenString;

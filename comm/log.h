@@ -45,10 +45,10 @@ namespace jhin
 namespace comm
 {
     template <class T>
-    constexpr bool isString = std::is_same_v<typename std::decay<T>::type, std::string>;
+    constexpr bool is_string = std::is_same_v<typename std::decay<T>::type, std::string>;
 
     template <class T>
-    constexpr bool isShowType = std::is_arithmetic_v<T> || isString<T>;
+    constexpr bool isShowType = std::is_arithmetic_v<T> || is_string<T>;
 
     const std::string sLogFilename = "log.log";
 
@@ -131,7 +131,7 @@ namespace comm
                 } else if constexpr (sizeof...(As) == 3) {
                     if constexpr (std::is_same_v<C<As...>, std::set<As...>>) {
                         s = genSingleStr(container);
-                    } else if constexpr (isString<C<As...>>) {
+                    } else if constexpr (is_string<C<As...>>) {
                         s = container;
                     }
                 } else if constexpr (sizeof...(As) == 4) {
@@ -169,7 +169,7 @@ namespace comm
                     /* A is arithmetic type */
                     s += "{";
                     for (A item: se) {
-                        if constexpr (isString<A>) {
+                        if constexpr (is_string<A>) {
                             s += item + ", ";
                         } else {
                             s += std::to_string(item) + ", ";
@@ -205,7 +205,7 @@ namespace comm
                 s += "{";
                 for (const auto& item: ma) {
                     /* Key */
-                    if constexpr (isString<K>) {
+                    if constexpr (is_string<K>) {
                         s += item.first + " => ";
                     } else if constexpr (std::is_arithmetic_v<K>) {
                         s += std::to_string(item.first) + " => ";
@@ -214,7 +214,7 @@ namespace comm
                     }
 
                     /* Value */
-                    if constexpr (isString<V>) {
+                    if constexpr (is_string<V>) {
                         s += item.second + ", ";
                     } else if constexpr (std::is_arithmetic_v<V>) {
                         s += std::to_string(item.second) + ", ";

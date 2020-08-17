@@ -1,5 +1,4 @@
-#ifndef __HASH_H__
-#define __HASH_H__
+#pragma once
 
 #include <set>
 #include "log.h"
@@ -37,5 +36,4 @@ namespace jhin
 
 
 
-#endif
 

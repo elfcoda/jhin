@@ -7,6 +7,7 @@
 #include <string>
 #include "pt.h"
 #include "ast_node.h"
+#include "../../comm/log.h"
 #include "../lex/keywords.h"
 #include "../syntax/non_terminal.h"
 #include "../syntax/syntax_nfa.h"
@@ -21,14 +22,15 @@ const std::unordered_set<std::string> cutSetStr = {"LPAREN", "RPAREN", "LCURLY",
 class AST
 {
     public:
-        // TODO
         pASTNode parseTree2AST(pASTNode pRoot)
         {
             init();
             cut(pRoot, nullptr, 0);
 
+            /* generate AST */
+            liftTokens(pRoot);
+
             ASTNode::showTree(pRoot);
-            ASTNode::switchAST(pRoot);
 
             return pRoot;
         }
@@ -94,6 +96,38 @@ class AST
                     }
                 }
             }
+        }
+
+        bool liftTokens(pASTNode pRoot)
+        {
+            std::string astLiftString = "";
+            if (!pRoot->hasChildren()) {
+                return true;
+            }
+
+            for (auto it = pRoot->children->begin(); it != pRoot->children->end(); ) {
+                pASTNode pChild = *it;
+                unsigned symbol = pChild->getSymbolId();
+                if (comm::isTokenLeaf(symbol)) {
+                    pChild->setAstSymbolId(getTokenLeafId(symbol));
+                    it++;
+                } else if (comm::isToken(symbol) && !comm::isTokenLeaf(symbol)) {
+                    astLiftString += comm::symbolId2String(symbol, true) + "_";
+                    it = pRoot->children->erase(it);
+                } else if (comm::isNonTerminal(symbol)) {
+                    liftTokens(pChild);
+                    it++;
+                } else {
+                    assert(false);
+                }
+            }
+            if (astLiftString == "") astLiftString = "AST";
+            else astLiftString.pop_back();
+
+            pRoot->setText(astLiftString);
+            comm::Log::singleton() >> astLiftString >> comm::newline;
+            // pRoot->setAstSymbolId(ASTNode::nonLeafId++);
+            return true;
         }
 
 

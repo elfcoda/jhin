@@ -13,6 +13,12 @@
 # NewLinePlus ::= '\n' NewLinePlus
 #             |   '\n'
 
+# split declarations with %%
+LEAF @ RE_ID, RE_INT, RE_VALUE, RE_DECIMAL, RE_STRING,
+       TRUE, FALSE, 
+       OBJECT, BOOL, INT, FLOAT, DOUBLE, LONG, STRING, UNIT, 
+       THIS, TYPE
+# %%
 ----------
 # program  
 Prog'   ::= Newls Prog  
@@ -92,7 +98,11 @@ Class   ::= class RE_VALUE Newls { Decls }
 ----------
 # procedure  
 # multi-newline to one
-Proc    ::= def RE_ID ( NOTE_QUES(Proc_ar) ) NOTE_QUES(: Type) Newls { Formals }
+Proc    ::= def RE_ID ( FnArg ) FnRetTp Newls { Formals }
+----------
+FnArg   ::= NOTE_QUES(Proc_ar)
+----------
+FnRetTp ::= NOTE_QUES(: Type)
 ----------
 Proc_ar ::= RE_ID : Type NOTE_STAR(, RE_ID : Type)
 ----------
