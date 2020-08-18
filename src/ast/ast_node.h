@@ -5,7 +5,7 @@
 #include <tuple>
 #include <unordered_set>
 #include <unordered_map>
-#include "ast_symbols.h"
+#include "ast_leaf.h"
 #include "../../comm/log.h"
 #include "../../comm/comm.h"
 
@@ -14,15 +14,79 @@ namespace jhin
 namespace ast
 {
 
+#define AST_NON_LEAF_START  1024
 #define AST_NOTATION_START  2048
-#define AST_DEFAULT_TEXT    ""
-
-/* nonLeaf and leaf nodes are basically all tokens
- * but ast should redefine the nodes ID, which is diff from lex::TokenID and syntax::NonterminalID */
-const std::unordered_map<unsigned, std::string> astNonLeaf = {};
-const std::unordered_map<unsigned, std::string> astLeaf = {};
+#define AST_DEFAULT_TEXT    "AST"
 
 
+/* SYMBOL */
+
+// enum EASTNonLeaf
+// {
+//     AST_NON_LEAF_ASSIGN = AST_NON_LEAF_START,
+//     AST_NON_LEAF_WHILE,
+//     AST_NON_LEAF_IF,
+//     AST_NON_LEAF_IF_ELSE,
+//     AST_NON_LEAF_CLASS,
+//     AST_NON_LEAF_CLASS_INHERITS,
+//     AST_NON_LEAF_FUNCTION,
+//     AST_NON_LEAF_IS_VOID,
+//     AST_NON_LEAF_NOT,
+//     AST_NON_LEAF_NEW,
+//
+//     AST_NON_LEAF_PLUS,
+//     AST_NON_LEAF_MINUS,
+//     AST_NON_LEAF_STAR,
+//     AST_NON_LEAF_SLASH,
+//
+//     AST_NON_LEAF_EQ,
+//     AST_NON_LEAF_LT,
+//     AST_NON_LEAF_LE,
+//     AST_NON_LEAF_GT,
+//     AST_NON_LEAF_GE,
+//
+//     AST_NON_LEAF_LAMBDA,
+//     AST_NON_LEAF_FN_CALL,
+//     AST_NON_LEAF_OBJECT_FN_CALL,
+//     AST_NON_LEAF_OBJECT_FN_CALL_DISPATCH,
+//     AST_NON_LEAF_EXP_OBJECT_FN_CALL,
+//     AST_NON_LEAF_EXP_OBJECT_FN_CALL_DISPATCH,
+//
+//     AST_NON_LEAF_LET_IN,
+//     AST_NON_LEAF_RETURN,
+//     AST_NON_LEAF_CASE_OF_OTHERWISE,
+//
+//     AST_NON_LEAF_DCL,
+// };
+
+/* readable text -> AstSymbolId */
+std::unordered_map<std::string, unsigned> mASTNonLeafStr2Id = {};
+std::unordered_map<unsigned, std::string> mASTNonLeafId2Str = {};
+
+unsigned getNonLeafId(const std::string& text)
+{
+    static unsigned u_NonLeafId = AST_NON_LEAF_START;
+    if (mASTNonLeafStr2Id.find(text) != mASTNonLeafStr2Id.end()) {
+        return mASTNonLeafStr2Id.at(text);
+    }
+
+    mASTNonLeafStr2Id[text] = u_NonLeafId++;
+    mASTNonLeafId2Str[u_NonLeafId - 1] = text;
+    return u_NonLeafId - 1;
+}
+
+std::string getNonLeafStr(unsigned id)
+{
+    if (mASTNonLeafId2Str.find(id) == mASTNonLeafId2Str.end()) {
+        comm::Log::singleton(ERROR) >> "error id: " >> id >> comm::newline;
+        return "";
+    }
+
+    return mASTNonLeafId2Str.at(id);
+}
+
+
+/* NODE */
 enum EASTNotation
 {
     AST_NOTATION_FN_ARGS = AST_NOTATION_START,
@@ -52,10 +116,10 @@ struct ASTNodeData
 
     std::string toString()
     {
-        if (text != AST_DEFAULT_TEXT) {
+        // if (text != AST_DEFAULT_TEXT) {
             if (text == "\n") return "'/n'";
             else return text;
-        }
+        // }
 
         return comm::symbolId2String(symbolId) + "[" + comm::symbolId2String(notation) + "]";
     }
@@ -77,8 +141,6 @@ struct ASTNodeData
 
 struct ASTNode
 {
-    static unsigned nonLeafId;
-
     pASTNodeData data;
     pChildrenList children;
 
@@ -92,6 +154,12 @@ struct ASTNode
     bool free()
     {
         return true;
+    }
+
+    pASTNode getChild(unsigned idx)
+    {
+        assert(children != nullptr && idx < size());
+        return (*children)[idx];
     }
 
     void setSymbolId(unsigned symbolId)
@@ -175,8 +243,6 @@ struct ASTNode
     static std::tuple<std::string, unsigned, unsigned> parseTree2String(pASTNode pRoot, int indent);
 };
 
-unsigned ASTNode::nonLeafId = AST_NON_LEAF_START;
-
 void ASTNode::showTree(pASTNode pRoot)
 {
     std::string graphFile = "/Users/luwenjie/git/jhin/jhin/src/ast/graph.py";
@@ -201,7 +267,7 @@ std::tuple<std::string, unsigned, unsigned> ASTNode::parseTree2String(pASTNode p
     unsigned maxDepth = 0;
     if (pRoot->children != nullptr) {
         for (pASTNode p: *(pRoot->children)) {
-            /* pASTNodes we push_back before can not be nullptr */
+            /* pASTNode(s) we push_back before can not be nullptr */
             assert(p != nullptr);
             auto tu = parseTree2String(p, indent + 1);
             maxDepth = std::max(std::get<2>(tu), maxDepth);

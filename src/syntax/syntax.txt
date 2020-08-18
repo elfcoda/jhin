@@ -114,7 +114,7 @@ Type    ::= Exp | TYPE
 # Exp, separate Exp by several sub-Exps, can be joint by '|', return value of multi-exp is the return value of the last exp  
 # add { } to fix conflict, add Exp0 to fix return and == conflict
 Exp     ::= return Exp
-        |   case Exp of { NOTE_STAR(RE_ID : Type => Exp) otherwise => Exp }
+        |   case Exp of Newls { NOTE_STAR(RE_ID : Type => Exp) otherwise => Exp Newls }
         |   THIS
         |   let DeclN NOTE_STAR(, DeclN) in { Exp }
         |   RE_ID ( NOTE_QUES(Exp_ar) )

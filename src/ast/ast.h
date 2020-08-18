@@ -30,6 +30,7 @@ class AST
             /* generate AST */
             liftTokens(pRoot);
 
+            comm::Log::singleton(INFO) >> mASTNonLeafStr2Id >> comm::newline;
             ASTNode::showTree(pRoot);
 
             return pRoot;
@@ -121,12 +122,11 @@ class AST
                     assert(false);
                 }
             }
-            if (astLiftString == "") astLiftString = "AST";
+            if (astLiftString == "") astLiftString = AST_DEFAULT_TEXT;
             else astLiftString.pop_back();
 
             pRoot->setText(astLiftString);
-            comm::Log::singleton() >> astLiftString >> comm::newline;
-            // pRoot->setAstSymbolId(ASTNode::nonLeafId++);
+            pRoot->setAstSymbolId(getNonLeafId(astLiftString));
             return true;
         }
 
