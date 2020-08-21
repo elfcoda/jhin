@@ -2,7 +2,9 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <memory>
+#include "type_tree.h"
 #include "../lex/lex_meta.h"
 
 namespace jhin
@@ -10,28 +12,7 @@ namespace jhin
 namespace ts
 {
 
-#define SYMBOL_TYPE_START_ID    1
-#define SYMBOL_TYPE_START_VALUE 1024
-
-enum ESymbolType
-{
-    /* RE_ID */
-    SYMBOL_TYPE_INT = SYMBOL_TYPE_START_ID,
-    SYMBOL_TYPE_FLOAT,
-    SYMBOL_TYPE_DOUBLE,
-    SYMBOL_TYPE_LONG,
-    SYMBOL_TYPE_OBJECT,
-    SYMBOL_TYPE_BOOL,
-    SYMBOL_TYPE_STRING,
-    SYMBOL_TYPE_UNIT,
-    SYMBOL_TYPE_TYPE,
-    SYMBOL_TYPE_FN,
-
-    /* RE_VALUE */
-    SYMBOL_TYPE_CLASS = SYMBOL_TYPE_START_VALUE,
-};
-
-/* affect symbols' lifetime */
+/* affect symbols' lifetime in scope */
 enum ESymbolMark
 {
     SYMBOL_MARK_SYMBOL = 1,
@@ -41,20 +22,23 @@ enum ESymbolMark
     SYMBOL_MARK_ELSE,
     SYMBOL_MARK_WHILE,
     SYMBOL_MARK_CASE_OF,
+    SYMBOL_MARK_LAMBDA,
+    SYMBOL_MARK_LET_IN,
 };
 
+const std::string TS_SYMBOL_ERROR = "UNKNOWN ERROR";
 struct symbolItem
 {
     /* text */
-    std::string     symbolName;
-    ESymbolType     type;
+    // std::string     symbolName; // deprecated
+    pTypeTree       type;
     lex::pMetaInfo  symbolInfo;
+
     /* mark */
     ESymbolMark     mark;
 
-    symbolItem(ESymbolMark sm, const std::string& name, ESymbolType tp) {
+    symbolItem(ESymbolMark sm, pTypeTree tp) {
         mark = sm;
-        symbolName = name;
         type = tp;
     }
 
@@ -66,53 +50,98 @@ struct symbolItem
     bool isWhileMark() {return mark == SYMBOL_MARK_WHILE; }
     bool isCaseOfmark() {return mark == SYMBOL_MARK_CASE_OF; }
 
-    std::string getSymbolName() { return symbolName; }
+    std::string getSymbolName() {
+        if (type == nullptr) {
+            return TS_SYMBOL_ERROR;
+        }
+        return type->getSymbolName();
+    }
 };
-using pSymbolItem = symbolItem*;
+using psymbolItem = symbolItem*;
 
 struct symbolTable
 {
-    static std::vector<std::shared_ptr<SymbolItem>> table;
+    static std::vector<std::shared_ptr<symbolItem>> table;
 
-    bool add_symbol(ESymbolMark sm, const std::string& name, ESymbolType tp)
-    {
-        table.push_back(std::make_shared<symbolItem>(sm, name, tp));
-        return true;
-    }
-
-    bool pop_symbol(unsigned n)
-    {
-        while (n--) {
-            assert(!table.empty());
-            table.pop_back();
-        }
-        return true;
-    }
-
-    std::shared_ptr<SymbolItem> find_symbol(const std::string& symbolName)
-    {
-        for (unsigned idx = table.size() - 1; idx >= 0; idx--) {
-            if (table[idx]->getSymbolName() == symbolName) {
-                return table[idx];
-            }
-        }
-        return nullptr;
-    }
-
-    std::shared_ptr<SymbolItem> find_symbol_in_scope(const std::string& symbolName)
-    {
-        for (unsigned idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark() ; idx--) {
-            if (table[idx]->getSymbolName() == symbolName) {
-                return table[idx];
-            }
-        }
-        return nullptr;
-    }
-
-
+    static bool add_symbol_mark(ESymbolMark sm);
+    static bool add_symbol(ESymbolMark sm, const std::string& name, pTypeTree tp);
+    static bool pop_symbol();
+    static std::shared_ptr<symbolItem> find_symbol(const std::string& symbolName);
+    static std::shared_ptr<symbolItem> find_symbol_in_scope(const std::string& symbolName);
+    static std::vector<std::shared_ptr<symbolItem>> get_symbols_in_scope();
 };
 using pSymbolTable = symbolTable*;
-std::vector<std::shared_ptr<SymbolItem>> symbolTable::table;
+std::vector<std::shared_ptr<symbolItem>> symbolTable::table;
+
+bool symbolTable::add_symbol_mark(ESymbolMark sm)
+{
+    table.push_back(std::make_shared<symbolItem>(sm, nullptr));
+    return true;
+}
+
+bool symbolTable::add_symbol(ESymbolMark sm, pTypeTree tp)
+{
+    table.push_back(std::make_shared<symbolItem>(sm, tp));
+    return true;
+}
+
+/* deprecated */
+bool symbolTable::pop_symbol()
+{
+    assert(!table.empty());
+    table.pop_back();
+    return true;
+}
+
+/* @popMark: false when clear current block symbols */
+bool symbolTable::pop_symbol_block(bool popMark = true)
+{
+    assert(!table.empty());
+    /* pop symbol mark */
+    for (unsigned idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark(); idx--) {
+        table.pop_back();
+    }
+
+    /* pop non-symbol mark */
+    if (popMark && !table.empty()) table.pop_back();
+
+    return true;
+}
+
+std::shared_ptr<symbolItem> symbolTable::find_symbol(const std::string& symbolName)
+{
+    for (unsigned idx = table.size() - 1; idx >= 0; idx--) {
+        if (table[idx]->getSymbolName() == symbolName) {
+            return table[idx];
+        }
+    }
+    return nullptr;
+}
+
+std::shared_ptr<symbolItem> symbolTable::find_symbol_in_scope(const std::string& symbolName)
+{
+    for (unsigned idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark() ; idx--) {
+        if (table[idx]->getSymbolName() == symbolName) {
+            return table[idx];
+        }
+    }
+    return nullptr;
+}
+
+std::vector<std::shared_ptr<symbolItem>> symbolTable::get_symbols_in_scope()
+{
+    std::vector<std::shared_ptr<symbolItem>> ans;
+    for (unsigned idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark() ; idx--) {
+        ans.push_back(table[idx]);
+    }
+    std::reverse(ans.begin(), ans.end());
+    return ans;
+}
+
+void unnionSymbolItems2Class(std::vector<std::shared_ptr<symbolItem>>& vTable)
+{
+
+}
 
 
 };  /* namespace ts */

@@ -1,45 +1,12 @@
 #pragma once
 
 #include <vector>
-#include <string>
-#include <type_traits>
-#include <map>
-#include <unordered_map>
+#include "type.h"
 
 namespace jhin
 {
 namespace comm
 {
-
-/* is_vector */
-template <typename T>
-constexpr bool is_vector = std::is_same_v<typename std::decay<T>::type, std::vector<typename T::value_type, typename T::allocator_type>>;
-
-/* is_container */
-template <typename T, typename _ = void>
-struct is_container: std::false_type {};
-
-template <typename... Ts>
-struct is_container_helper {};
-
-template <typename T>
-struct is_container<T,
-                    std::conditional_t<false,
-                                       is_container_helper<typename T::value_type,
-                                                           typename T::allocator_type,
-                                                           typename T::size_type,
-                                                           typename T::iterator,
-                                                           typename T::const_iterator,
-                                                           decltype(std::declval<T>().size()),
-                                                           decltype(std::declval<T>().begin()),
-                                                           decltype(std::declval<T>().end()),
-                                                           decltype(std::declval<T>().cbegin()),
-                                                           decltype(std::declval<T>().cend())
-                                                           >,
-                                       void
-                                       >
-                    >: std::true_type {};
-
 
 /* 这个算法目前没有用到，先废弃
  * for production E -> A B C D C, if ParseTree has deduction E -> C D, function return {2, 3}, means other symbols may be cut by AST.
@@ -76,6 +43,6 @@ std::vector<std::pair<unsigned, unsigned>> matchProductionIdx(const std::vector<
 // }
 
 
-}   /* namespace comm */
-}   /* namespace jhin */
+};  /* namespace comm */
+};  /* namespace jhin */
 

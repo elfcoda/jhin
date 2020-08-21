@@ -107,8 +107,13 @@ FnRetTp ::= NOTE_QUES(: Type)
 Proc_ar ::= RE_ID : Type NOTE_STAR(, RE_ID : Type)
 ----------
 # Types  
-Type    ::= Exp | TYPE  
+Type    ::= Exp | TYPE | fnType
   
+----------
+fnType  ::= (fnType NOTE_PLUS(-> fnType))
+        |   (fnType NOTE_PLUS(-> Exp))
+        |   (Exp NOTE_PLUS(-> fnType))
+        |   (Exp NOTE_PLUS(-> Exp))
 ----------
   
 # Exp, separate Exp by several sub-Exps, can be joint by '|', return value of multi-exp is the return value of the last exp  

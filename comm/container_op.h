@@ -1,5 +1,4 @@
-#ifndef __CONTAINER_OP_H__
-#define __CONTAINER_OP_H__
+#pragma once
 
 #include <set>
 #include <unordered_set>
@@ -11,6 +10,8 @@
 #include <unordered_map>
 #include <cassert>
 #include <type_traits>
+#include "algorithm.h"
+#include "type.h"
 
 namespace jhin
 {
@@ -118,8 +119,30 @@ namespace comm
 
         return vIds;
     }
+
+    /* vector */
+    template <typename T, typename U>
+    std::enable_if_t<is_vector<T> &&
+                     is_vector<U> &&
+                     is_val_type_same<T, U>,
+                     void>
+    mergeVec2Vec(T&& v1, const U&& v2)
+    {
+        for (const auto& it: v2) {
+            /* r/l value of element follows container's */
+            v1.push_back(std::forward<U>(it));
+        }
+    }
+
+    template <typename T>
+    std::vector<T> element2Vec(const T&& e)
+    {
+        std::vector<T> vec;
+        vec.push_back(std::forward<T>(e));
+        return vec;
+    }
+
 };  /* namespace comm */
 };  /* namespace jhin */
 
-#endif
 

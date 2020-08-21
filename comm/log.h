@@ -1,5 +1,4 @@
-#ifndef __LOG_H__
-#define __LOG_H__
+#pragma once
 
 #include <string>
 #include <fstream>
@@ -9,8 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <mutex>
-
-
+#include "type.h"
 
 namespace jhin
 {
@@ -44,9 +42,6 @@ namespace jhin
 {
 namespace comm
 {
-    template <class T>
-    constexpr bool is_string = std::is_same_v<typename std::decay<T>::type, std::string>;
-
     template <class T>
     constexpr bool isShowType = std::is_arithmetic_v<T> || is_string<T>;
 
@@ -321,6 +316,5 @@ namespace comm
 };  /* namespace comm */
 };  /* namespace jhin */
 
-#endif
 
 

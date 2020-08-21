@@ -5,6 +5,7 @@
 #include "../src/lex/keywords.h"
 #include "../src/syntax/non_terminal.h"
 #include "../src/ast/ast_leaf.h"
+#include "../src/ast/ast_non_leaf.h"
 
 namespace jhin
 {
@@ -57,6 +58,19 @@ bool isTokenLeaf(const std::string& tokenString)
     return ast::ast_string_to_leafid.find(tokenString) != ast::ast_string_to_leafid.end();
 }
 
+/* ast
+ * symbol should be new ast symbol */
+bool isASTSymbolLeaf(unsigned symbol)
+{
+    return ast::ast_leafid_to_string.find(symbol) != ast::ast_leafid_to_string.end();
+}
+
+bool isASTSymbolNonLeaf(unsigned symbol)
+{
+    return ast::mASTNonLeafId2Str.find(symbol) != ast::mASTNonLeafId2Str.end();
+}
+
+/* defined for syntax analysis*/
 enum SymbolType
 {
     SymbolNone = 0,
