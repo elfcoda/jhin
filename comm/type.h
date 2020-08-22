@@ -160,7 +160,7 @@ constexpr EContainerType container_type_v = container_type<T>::value;
 /* value type */
 template <typename T, typename U>
 constexpr bool is_val_type_same = std::is_same_v<typename std::decay_t<T>::value_type,
-                                                 typename std::decay_t<T>::value_type>;
+                                                 typename std::decay_t<U>::value_type>;
 
 
 };  /* namespace comm */
