@@ -125,6 +125,12 @@ std::string symbolId2String(unsigned symbolId, bool readable = true)
     return s;
 }
 
+template <typename ENUM>
+bool isUnsignedEquals2Enum(unsigned id, ENUM e)
+{
+    return id == static_cast<unsigned>(e);
+}
+
 };  /* namespace comm */
 };  /* namespace jhin */
 

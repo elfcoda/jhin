@@ -135,6 +135,15 @@ namespace comm
     }
 
     template <typename T>
+    void mergeVec2Vec(std::vector<T>* v1, const std::vector<T>* v2)
+    {
+        for (const auto& it: *v2) {
+            /* r/l value of element follows container's */
+            v1->push_back(it);
+        }
+    }
+
+    template <typename T>
     std::vector<T> element2Vec(const T&& e)
     {
         std::vector<T> vec;

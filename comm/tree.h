@@ -9,7 +9,6 @@ namespace jhin
 namespace comm
 {
 
-
 /* TODO: unique_ptr */
 template <typename T>
 using pChildrenList = std::vector<T*>*;
@@ -26,21 +25,22 @@ class tree
         virtual ~tree() { free(); }
         virtual void free(){}
 
-        virtual pTree getChild(unsigned idx)
+        virtual tree<T>* getChild(unsigned idx)
         {
             assert(children != nullptr && idx < size());
             return (*children)[idx];
         }
 
         /* single child */
-        virtual pTree getSingle()
+        virtual tree<T>* getSingle()
         {
             if (children == nullptr) return nullptr;
             if (size() == 1) return (*children)[0];
             return nullptr;
         }
 
-        virtual bool hasChildren()
+        /* marked const? */
+        virtual bool hasChildren() const
         {
             return children != nullptr && !children->empty();
         }
@@ -73,7 +73,7 @@ class tree
             return children;
         }
 
-        virtual std::vector<pTree> getChildrenListR()
+        virtual std::vector<T*> getChildrenListR()
         {
             return *children;
         }
@@ -87,7 +87,7 @@ class tree
         {
             std::reverse(children->begin(), children->end());
         }
-    private:
+    public:
         pChildrenList<T> children;
 };
 

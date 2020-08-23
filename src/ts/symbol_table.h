@@ -27,6 +27,7 @@ enum ESymbolMark
 };
 
 const std::string TS_SYMBOL_ERROR = "UNKNOWN ERROR";
+/* 简单树形结构不会造成循环引用的话，可以使用shared_ptr */
 struct symbolItem
 {
     /* text */
@@ -56,19 +57,36 @@ struct symbolItem
         }
         return type->getSymbolName();
     }
+
+    std::string getExpandType() {
+        if (type == nullptr) {
+            return TS_SYMBOL_ERROR;
+        }
+        return type->getExpandType();
+    }
+
+    ~symbolItem()
+    {
+        // Todo: delete type
+    }
 };
 using psymbolItem = symbolItem*;
 
+/* store both symbols and expand types, both are expired out of scope */
 struct symbolTable
 {
     static std::vector<std::shared_ptr<symbolItem>> table;
 
     static bool add_symbol_mark(ESymbolMark sm);
-    static bool add_symbol(ESymbolMark sm, const std::string& name, pTypeTree tp);
+    static bool add_symbol(ESymbolMark sm, pTypeTree tp);
     static bool pop_symbol();
+    static bool pop_symbol_block(bool popMark);
     static std::shared_ptr<symbolItem> find_symbol(const std::string& symbolName);
     static std::shared_ptr<symbolItem> find_symbol_in_scope(const std::string& symbolName);
     static std::vector<std::shared_ptr<symbolItem>> get_symbols_in_scope();
+    static std::shared_ptr<symbolItem> get_last_symbol();
+    static void unionSymbolItems2Tree(pTypeTree pTT, const std::vector<std::shared_ptr<symbolItem>>& vTable);
+    static void unionSingleItem2Tree(pTypeTree pTT, const std::shared_ptr<symbolItem>& item);
 };
 using pSymbolTable = symbolTable*;
 std::vector<std::shared_ptr<symbolItem>> symbolTable::table;
@@ -81,6 +99,7 @@ bool symbolTable::add_symbol_mark(ESymbolMark sm)
 
 bool symbolTable::add_symbol(ESymbolMark sm, pTypeTree tp)
 {
+    assert(find_symbol_in_scope(tp->getSymbolName()) == nullptr);
     table.push_back(std::make_shared<symbolItem>(sm, tp));
     return true;
 }
@@ -138,9 +157,63 @@ std::vector<std::shared_ptr<symbolItem>> symbolTable::get_symbols_in_scope()
     return ans;
 }
 
-void unnionSymbolItems2Class(std::vector<std::shared_ptr<symbolItem>>& vTable)
+std::shared_ptr<symbolItem> symbolTable::get_last_symbol()
 {
+    assert(!table.empty());
+    unsigned idx = table.size() - 1;
+    assert(table[idx]->isSymbolMark());
+    return table[idx];
+}
 
+void symbolTable::unionSymbolItems2Tree(pTypeTree pTT, const std::vector<std::shared_ptr<symbolItem>>& vTable)
+{
+    assert(pTT != nullptr);
+    if (pTT->children == nullptr) {
+        pTT->children = new std::vector<pTypeTree>();
+    }
+
+    for (const auto& item: vTable) {
+        pTT->children->push_back(item->type);
+    }
+}
+
+/* const_cast */
+void symbolTable::unionSingleItem2Tree(pTypeTree pTT, const std::shared_ptr<symbolItem>& item)
+{
+    assert(pTT != nullptr && item != nullptr);
+    appendTree(pTT, item->type);
+}
+
+const std::unordered_map<std::string, ESymbolType> trivialTypes = {
+    {"OBJECT", SYMBOL_TYPE_OBJECT}, {"BOOL", SYMBOL_TYPE_BOOL}, {"INT", SYMBOL_TYPE_INT},
+    {"FLOAT", SYMBOL_TYPE_FLOAT}, {"DOUBLE", SYMBOL_TYPE_DOUBLE},
+    {"LONG", SYMBOL_TYPE_LONG}, {"STRING", SYMBOL_TYPE_STRING}, {"UNIT", SYMBOL_TYPE_UNIT}
+};
+/**/
+enum EIDType
+{
+    /* value of trivlal type */
+    E_ID_TYPE_ERROR = 0,
+
+    E_ID_TYPE_TRIVIAL_VALUE,
+    E_ID_TYPE_EXPAND_VALUE,
+    E_ID_TYPE_TRIVIAL_TYPE,
+    E_ID_TYPE_EXPAND_TYPE,
+    E_ID_TYPE_FN_TYPE,
+    E_ID_TYPE_TYPE_LITERAL,
+};
+EIDType getSymbolType(const pTypeTree& pTT)
+{
+    ESymbolType tp = pTT->getType();
+    if (isTrivialType(tp)) return E_ID_TYPE_TRIVIAL_VALUE;
+    else if (tp == SYMBOL_TYPE_CLASS && pTT->getExpandType() != "") return E_ID_TYPE_EXPAND_VALUE;
+    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) != trivialTypes.end()) return E_ID_TYPE_TRIVIAL_TYPE;
+    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) == trivialTypes.end()) return E_ID_TYPE_EXPAND_TYPE;
+    else if (tp == SYMBOL_TYPE_FN) return E_ID_TYPE_FN_TYPE;
+    else if (tp == SYMBOL_TYPE_TYPE && pTT->getValue() == "Type") return E_ID_TYPE_TYPE_LITERAL;
+
+    assert(false);
+    return E_ID_TYPE_ERROR;
 }
 
 

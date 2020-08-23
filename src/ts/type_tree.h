@@ -26,8 +26,8 @@ enum ESymbolType
     /* trivial type */
     SYMBOL_TYPE_INT = SYMBOL_TYPE_START_TRIVIAL,
     SYMBOL_TYPE_FLOAT,
-    SYMBOL_TYPE_DOUBLE,
-    SYMBOL_TYPE_LONG,
+    SYMBOL_TYPE_DOUBLE, // TODO
+    SYMBOL_TYPE_LONG,   // TODO
     SYMBOL_TYPE_OBJECT,
     SYMBOL_TYPE_BOOL,
     SYMBOL_TYPE_STRING,
@@ -51,6 +51,21 @@ using Type = std::vector<ESymbolType>;
 bool isNoneType(ESymbolType type)
 {
     return type == SYMBOL_TYPE_START_NONE;
+}
+
+bool isSymbolNormalID(const std::string& text)
+{
+    return true;
+}
+
+bool isSymbolFunctionType(const std::string& text)
+{
+    return true;
+}
+
+bool isSymbolFunctionSymbol(const std::string& text)
+{
+    return true;
 }
 
 bool isTrivialType(ESymbolType type)
@@ -95,15 +110,16 @@ std::string getDefaultValueByType(ESymbolType type)
 /* basic types include Int/Long/.../Type, which have no children, aka.leaf nodes
  * while other types(sum type/function type etc) have children field, aka. non-leaf nodes
  * */
-class TypeTree: public comm::tree<TypeTree>
+class TypeTree;
 using pTypeTree = TypeTree*;
+using pConstTypeTree = const TypeTree*;
 
 class TypeTree: public comm::tree<TypeTree>
 {
     public:
         /* children: std::vector<pTypeTree>* */
-        TypeTree(ESymbolType tp, const std::string& symbolName, const std::string& value, pChildrenList<TypeTree> pChildren):
-                 comm::tree<TypeTree>(pChildren), type(tp), symbolName(symbolName), value(value)
+        TypeTree(ESymbolType tp, const std::string& symbolName, const std::string& value, pChildrenList<TypeTree> pChildren, const std::string& et = ""):
+                 comm::tree<TypeTree>(pChildren), type(tp), symbolName(symbolName), value(value), expandType(et)
         {
         }
 
@@ -119,33 +135,83 @@ class TypeTree: public comm::tree<TypeTree>
 
         ~TypeTree() { free(); }
 
-        tree(tree&& t)
-        {
-            this->children = t.children;
-            t.children = nullptr;
-        }
+        // TypeTree(TypeTree&& t)
+        // {
+        //     this->children = t.children;
+        //     t.children = nullptr;
+        // }
 
         TypeTree& operator +(const TypeTree& tt)
         {
-            mergeVec2Vec(*children, *(tt.children));
+            comm::mergeVec2Vec(children, tt.children);
         }
 
         ESymbolType getType() const { return type; }
         std::string getSymbolName() const { return symbolName; }
         std::string getValue() const { return value; }
+        std::string getExpandType() const { return expandType; }
 
         void setType(ESymbolType st) { type = st; }
         void setSymbolName(const std::string& sm) { symbolName = sm; }
         void setValue(const std::string& val) { value = val; }
+        void setExpandType(const std::string& et) { expandType = et; }
     private:
         ESymbolType type;
 
+        /* type don't have tsymbolName field */
         std::string symbolName;
         std::string value;
         // chlidren
+
+        /* class name or function name, null if it's basic types */
+        std::string expandType;
 };
 
-void mergeTypeTree(pTypeTree p1, pTypeTree p2)
+pTypeTree makeFnTree()
+{
+    pTypeTree pTT = new TypeTree(SYMBOL_TYPE_FN, "", "", nullptr, "");
+    return pTT;
+}
+
+pTypeTree makeTrivial(ESymbolType type = SYMBOL_TYPE_UNIT, std::string value = "")
+{
+    if (value == "") value = getDefaultValueByType(type);
+    pTypeTree pTT = new TypeTree(type, "", value, nullptr);
+    return pTT;
+}
+
+bool setTrivial(pTypeTree pTT, ESymbolType type = SYMBOL_TYPE_UNIT)
+{
+    assert(pTT != nullptr);
+    if (pTT->children == nullptr) {
+        pTT->children = new std::vector<pTypeTree>();
+    }
+    pTT->children->resize(1);
+    (*(pTT->children))[0] = makeTrivial(type);
+    return true;
+}
+
+bool appendTrivial(pTypeTree pTT, ESymbolType type = SYMBOL_TYPE_UNIT)
+{
+    assert(pTT != nullptr);
+    if (pTT->children == nullptr) {
+        pTT->children = new std::vector<pTypeTree>();
+    }
+    pTT->children->push_back(makeTrivial(type));
+    return true;
+}
+
+bool appendTree(pTypeTree pTT, const pConstTypeTree child)
+{
+    assert(pTT != nullptr && child != nullptr);
+    if (pTT->children == nullptr) {
+        pTT->children = new std::vector<pTypeTree>();
+    }
+    pTT->children->push_back(const_cast<pTypeTree>(child));
+    return true;
+}
+
+void mergeTree(pTypeTree p1, const pConstTypeTree& p2)
 {
     assert(p1 != nullptr && p2 != nullptr);
     if (p1->children == nullptr) {
@@ -154,51 +220,15 @@ void mergeTypeTree(pTypeTree p1, pTypeTree p2)
     if (!p2->hasChildren()) {
         return;
     }
-    comm::mergeVec2Vec(*(p1->children), *(p2->children));
-}
-
-pTypeTree makeFnTree()
-{
-    pTypeTree pTT = new TypeTree(SYMBOL_TYPE_FN, "", "", nullptr);
-    return pTT;
-}
-
-pTypeTree makeTrivial(ESymbolType type = SYMBOL_TYPE_UNIT)
-{
-    pTypeTree pTT = new TypeTree(type, "", getDefaultValueByType(type), nullptr);
-    return pTT;
-}
-
-bool setTrivial(pTypeTree pTT, ESymbolType type = SYMBOL_TYPE_UNIT)
-{
-    assert(pTT != nullptr);
-    if (pTT->children == nullptr) {
-        pTT->children = new std::vector<pTypeTree>{makeTrivial(type)};
-        return true;
-    }
-    pTT->children->resize(1);
-    *(pTT->children)[0] = makeTrivial(type);
-    return true;
-}
-
-bool appendTrivial(pTypeTree pTT, ESymbolType type = SYMBOL_TYPE_UNIT)
-{
-    assert(pTT != nullptr);
-    if (pTT->children == nullptr) {
-        pTT->children = new std::vector<pTypeTree>{makeTrivial(type)};
-        return true;
-    }
-    pTT->children->push_back(makeTrivial(type));
-    return true;
+    comm::mergeVec2Vec(p1->children, p2->children);
 }
 
 bool popChild(pTypeTree pTT)
 {
     assert(pTT != nullptr && pTT->hasChildren());
     pTT->children->pop_back();
-    return true
+    return true;
 }
-
 
 };  /* namespace ts */
 };  /* namespace jhin */

@@ -1,5 +1,4 @@
-#ifndef __PT_CLIENT_H__
-#define __PT_CLIENT_H__
+#pragma once
 
 #include <memory>
 #include "../ast/pt.h"
@@ -24,5 +23,4 @@ void astClient(const std::vector<std::pair<unsigned, std::string>>& lexResult, c
 };  /* namespace jhin */
 
 
-#endif
 
