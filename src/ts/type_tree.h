@@ -143,7 +143,7 @@ class TypeTree: public comm::tree<TypeTree>
 
         TypeTree& operator +(const TypeTree& tt)
         {
-            comm::mergeVec2Vec(children, tt.children);
+            comm::mergeVec2Vec_P(children, tt.children);
         }
 
         ESymbolType getType() const { return type; }
@@ -220,7 +220,7 @@ void mergeTree(pTypeTree p1, const pConstTypeTree& p2)
     if (!p2->hasChildren()) {
         return;
     }
-    comm::mergeVec2Vec(p1->children, p2->children);
+    comm::mergeVec2Vec_P(p1->children, p2->children);
 }
 
 bool popChild(pTypeTree pTT)
