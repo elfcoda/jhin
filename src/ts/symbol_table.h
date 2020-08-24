@@ -184,39 +184,6 @@ void symbolTable::unionSingleItem2Tree(pTypeTree pTT, const std::shared_ptr<symb
     appendTree(pTT, item->type);
 }
 
-const std::unordered_map<std::string, ESymbolType> trivialTypes = {
-    {"OBJECT", SYMBOL_TYPE_OBJECT}, {"BOOL", SYMBOL_TYPE_BOOL}, {"INT", SYMBOL_TYPE_INT},
-    {"FLOAT", SYMBOL_TYPE_FLOAT}, {"DOUBLE", SYMBOL_TYPE_DOUBLE},
-    {"LONG", SYMBOL_TYPE_LONG}, {"STRING", SYMBOL_TYPE_STRING}, {"UNIT", SYMBOL_TYPE_UNIT}
-};
-/**/
-enum EIDType
-{
-    /* value of trivlal type */
-    E_ID_TYPE_ERROR = 0,
-
-    E_ID_TYPE_TRIVIAL_VALUE,
-    E_ID_TYPE_EXPAND_VALUE,
-    E_ID_TYPE_TRIVIAL_TYPE,
-    E_ID_TYPE_EXPAND_TYPE,
-    E_ID_TYPE_FN_TYPE,
-    E_ID_TYPE_TYPE_LITERAL,
-};
-EIDType getSymbolType(const pTypeTree& pTT)
-{
-    ESymbolType tp = pTT->getType();
-    if (isTrivialType(tp)) return E_ID_TYPE_TRIVIAL_VALUE;
-    else if (tp == SYMBOL_TYPE_CLASS && pTT->getExpandType() != "") return E_ID_TYPE_EXPAND_VALUE;
-    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) != trivialTypes.end()) return E_ID_TYPE_TRIVIAL_TYPE;
-    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) == trivialTypes.end()) return E_ID_TYPE_EXPAND_TYPE;
-    else if (tp == SYMBOL_TYPE_FN) return E_ID_TYPE_FN_TYPE;
-    else if (tp == SYMBOL_TYPE_TYPE && pTT->getValue() == "Type") return E_ID_TYPE_TYPE_LITERAL;
-
-    assert(false);
-    return E_ID_TYPE_ERROR;
-}
-
-
 };  /* namespace ts */
 };  /* namespace jhin */
 

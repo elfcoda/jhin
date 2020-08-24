@@ -48,24 +48,21 @@ enum ESymbolType
 using FnType = std::vector<ESymbolType>;
 using Type = std::vector<ESymbolType>;
 
+const std::unordered_set<ESymbolType> calcType = {
+    SYMBOL_TYPE_INT,
+    SYMBOL_TYPE_FLOAT,
+    SYMBOL_TYPE_DOUBLE,
+    SYMBOL_TYPE_LONG
+};
+
+bool isCaclType(ESymbolType est)
+{
+    return calcType.find(est) != calcType.end();
+}
+
 bool isNoneType(ESymbolType type)
 {
     return type == SYMBOL_TYPE_START_NONE;
-}
-
-bool isSymbolNormalID(const std::string& text)
-{
-    return true;
-}
-
-bool isSymbolFunctionType(const std::string& text)
-{
-    return true;
-}
-
-bool isSymbolFunctionSymbol(const std::string& text)
-{
-    return true;
 }
 
 bool isTrivialType(ESymbolType type)
@@ -141,11 +138,6 @@ class TypeTree: public comm::tree<TypeTree>
         //     t.children = nullptr;
         // }
 
-        TypeTree& operator +(const TypeTree& tt)
-        {
-            comm::mergeVec2Vec_P(children, tt.children);
-        }
-
         ESymbolType getType() const { return type; }
         std::string getSymbolName() const { return symbolName; }
         std::string getValue() const { return value; }
@@ -166,6 +158,7 @@ class TypeTree: public comm::tree<TypeTree>
         /* class name or function name, null if it's basic types */
         std::string expandType;
 };
+
 
 pTypeTree makeFnTree()
 {
@@ -228,6 +221,68 @@ bool popChild(pTypeTree pTT)
     assert(pTT != nullptr && pTT->hasChildren());
     pTT->children->pop_back();
     return true;
+}
+
+/* what kind of value */
+const std::unordered_map<std::string, ESymbolType> trivialTypes = {
+    {"OBJECT", SYMBOL_TYPE_OBJECT}, {"BOOL", SYMBOL_TYPE_BOOL}, {"INT", SYMBOL_TYPE_INT},
+    {"FLOAT", SYMBOL_TYPE_FLOAT}, {"DOUBLE", SYMBOL_TYPE_DOUBLE},
+    {"LONG", SYMBOL_TYPE_LONG}, {"STRING", SYMBOL_TYPE_STRING}, {"UNIT", SYMBOL_TYPE_UNIT}
+};
+/**/
+enum EIDType
+{
+    /* value of trivlal type */
+    E_ID_TYPE_ERROR = 0,
+
+    E_ID_TYPE_TRIVIAL_VALUE,
+    E_ID_TYPE_EXPAND_VALUE,
+    E_ID_TYPE_TRIVIAL_TYPE,
+    E_ID_TYPE_EXPAND_TYPE,
+    E_ID_TYPE_FN_TYPE,
+    E_ID_TYPE_TYPE_LITERAL,
+};
+EIDType getSymbolType(const pTypeTree& pTT)
+{
+    ESymbolType tp = pTT->getType();
+    if (isTrivialType(tp)) return E_ID_TYPE_TRIVIAL_VALUE;
+    else if (tp == SYMBOL_TYPE_CLASS && pTT->getExpandType() != "") return E_ID_TYPE_EXPAND_VALUE;
+    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) != trivialTypes.end()) return E_ID_TYPE_TRIVIAL_TYPE;
+    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) == trivialTypes.end()) return E_ID_TYPE_EXPAND_TYPE;
+    else if (tp == SYMBOL_TYPE_FN) return E_ID_TYPE_FN_TYPE;
+    else if (tp == SYMBOL_TYPE_TYPE && pTT->getValue() == "Type") return E_ID_TYPE_TYPE_LITERAL;
+
+    assert(false);
+    return E_ID_TYPE_ERROR;
+}
+
+bool isTypeEqual(pTypeTree t1, pTypeTree t2)
+{
+    EIDType e1 = getSymbolType(t1), e2 = getSymbolType(t2);
+    if (t1->getType() != t2->getType() || e1 != e2) return false;
+    if (e1 == E_ID_TYPE_TRIVIAL_TYPE) {
+        return true;
+    } else if (e1 == E_ID_TYPE_EXPAND_TYPE) {
+        return t1->getValue() == t2->getValue();
+    } else if (e1 == E_ID_TYPE_FN_TYPE) {
+        /* fb type */
+        if (!t1->hasChildren() && !t2->hasChildren()) return true;
+        if (!t1->hasChildren() && t2->hasChildren()) return false;
+        if (t1->hasChildren() && !t2->hasChildren()) return false;
+        pChildrenList<TypeTree> c1 = t1->children, c2 = t2->children;
+        /* both have children list */
+        unsigned n1 = c1->size(), n2 = c2->size();
+        if (n1 != n2) return false;
+        for (unsigned idx = 0; idx < n1; idx++) {
+            if (!isTypeEqual((*c1)[idx], (*c2)[idx])) return false;
+        }
+        return true;
+    } else {
+        /* not type, assert */
+        assert(!"parameter should be type!");
+    }
+
+    return false;
 }
 
 };  /* namespace ts */
