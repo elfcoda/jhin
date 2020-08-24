@@ -8,19 +8,23 @@
 #include "ts_client.h"
 #include "../../comm/log.h"
 
+using namespace jhin;
+
 
 int main()
 {
-    std::vector<std::pair<unsigned, std::string>> lexResult = jhin::client::lexClient();
-    jhin::comm::Log::singleton() >> "Token Id to String: \n" >> jhin::lex::tokenId2String >> jhin::comm::newline;
+    std::vector<std::pair<unsigned, std::string>> lexResult = client::lexClient();
+    comm::Log::singleton() >> "Token Id to String: \n" >> lex::tokenId2String >> comm::newline;
 
     /* append $ */
     lexResult.push_back(std::make_pair(SYNTAX_TOKEN_END, SYNTAX_TOKEN_END_MARK));
 
     /* syntaxResult */
-    jhin::comm::pSyntaxDFA pDFAStart = jhin::client::syntaxClient();
+    comm::pSyntaxDFA pDFAStart = client::syntaxClient();
 
-    jhin::client::astClient(lexResult, pDFAStart);
+    ast::pASTNode pRoot = client::astClient(lexResult, pDFAStart);
+
+    client::tsClient(pRoot);
 
     return 0;
 }

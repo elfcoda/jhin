@@ -1,28 +1,37 @@
 
 
-class Animal {
+-- class Animal is a class
+class Animal inherits Life {
     x1: Int
     x2: String
 
     def fun1(x1: Int, x2: Int): Unit {
-        xn: (a + b)
-        xm: (a + b) <- 6
-        if (x1 == 7) {
-            xo <- 0
-        } else {
-            return xx
-        }
+        xn: Int
+        xm: Int <- 6
+        xn <- xn + xm + 9
+        xn * xm
+        -- case xn of { otherwise   => 9 }
+
+        -- let i: Int in { 7 + i }
+
+        -- func1(xn, xm)
     }
 }
 
-class Cat {
-    ym: Int
-}
+def func() {
+    a: Animal <- new Animal
+    m: Int
+    n: Int
+    t: Int
+    while (m == n) {
+        if (m > n)
+            m <- m - t
+        else
+            m <- n - t
+    }
 
-def f1() {
-    x1: Int
-}
+    if (n == t) 9
 
-def f2(x2: Int) {
+    return a
 }
 

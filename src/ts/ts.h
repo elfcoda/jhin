@@ -53,6 +53,110 @@ class TypeSystem
     public:
         TypeSystem() {}
 
+        /* gen symbol table, type checker */
+        pTypeTree genSymbolTable(ast::pASTNode pRoot)
+        {
+            std::string text = pRoot->getText();
+            unsigned astSymId = pRoot->getAstSymbolId();
+            unsigned childrenNumber = pRoot->size();
+            assert(text != "" && AST_DEFAULT_TEXT != "");
+
+            if (comm::isASTSymbolLeaf(astSymId)) {
+                /* leaf node, no declarations and no blocks */
+                return handleLeaf(astSymId, text);
+            } else if (comm::isASTSymbolNonLeaf(astSymId)) {
+                /* non-leaf node */
+                if (text == AST_DEFAULT_TEXT) {
+                    for (ast::pASTNode child: *(pRoot->children)) {
+                        genSymbolTable(child);
+                    }
+                } else if (text == "class") {   /* block and declaration */
+                    handleClass(pRoot, false);
+                    return nullptr;
+                } else if (text == "class_inherits") {
+                    handleClass(pRoot, true);
+                    return nullptr;
+                } else if (text == "def") {
+                    handleFn(pRoot);
+                    return nullptr;
+                } else if (text == "while") {   /* block, command */
+                    handleCMD(pRoot, SYMBOL_MARK_WHILE);
+                    return nullptr;
+                } else if (text == "if") {
+                    handleCMD(pRoot, SYMBOL_MARK_IF);
+                    return nullptr;
+                } else if (text == "if_else") {
+                    handleCMD(pRoot, SYMBOL_MARK_IF);
+
+                    symbolTable::add_symbol_mark(SYMBOL_MARK_ELSE);
+                    genSymbolTable(pRoot->getChild(0));
+                    genSymbolTable(pRoot->getChild(2));
+                    symbolTable::pop_symbol_block();
+
+                    return nullptr;
+                } else if (text.length() >= 4 && text.substr(0, 4) == "case") {
+                    // symbolTable::add_symbol_mark(SYMBOL_MARK_CASE_OF);
+                    assert(!"case to be implemented");
+                } else if (text.length() >= 6 && text.substr(0, 6) == "lambda") {
+                    // symbolTable::add_symbol_mark(SYMBOL_MARK_LAMBDA);
+                    assert(!"lambda to be implemented");
+                } else if (text.length() >= 3 && text.substr(0, 3) == "let") {
+                    // symbolTable::add_symbol_mark(SYMBOL_MARK_LET_IN);
+                    assert(!"let...in... to be implemented");
+                } else if (text == ":") {     /* declaration */
+                    /* id: type: default_value */
+                    /* 统一把算法改成从符号表取相关符号，而不是把每个声明都搞成函数参数 */
+                    if (childrenNumber == 1) {
+                        /* function return type */
+                        return genSymbolTable(pRoot->getChild(0));
+                    } else if (childrenNumber == 2) {
+                        handleDecl(pRoot);
+                        return nullptr;
+                    } else if (childrenNumber == 3) {
+                        handleDecl(pRoot);
+                        /* recurse */
+                        genSymbolTable(pRoot->getChild(2));
+                        return nullptr;
+                    } else {
+                        assert(false);
+                    }
+                } else if (text == ":_<-") {
+                    if (childrenNumber == 3) {
+                        handleDeclAssign(pRoot);
+                        return nullptr;
+                    } else if (childrenNumber == 4) {
+                        handleDeclAssign(pRoot);
+                        genSymbolTable(pRoot->getChild(3));
+                        return nullptr;
+                    } else {
+                        assert(false);
+                    }
+                } else if (text == "->") {  // TODO: function type
+                } else if (isDoubleArgs(text)) {
+                    assert(childrenNumber == 2);
+                    pTypeTree pTT1 = genSymbolTable(pRoot->getChild(0));
+                    pTypeTree pTT2 = genSymbolTable(pRoot->getChild(1));
+                    return handleDoubleOps(pTT1, pTT2, text);
+                }
+                else if (isSingleArg(text)) {
+                    assert(childrenNumber == 1);
+                    pTypeTree pTT = genSymbolTable(pRoot->getChild(0));
+                    return handleSingleOp(pTT, text);
+                }
+                else {
+                    /* undefined op */
+                    comm::Log::singleton(ERROR) >> "text is: " >> text >> comm::newline;
+                    assert(!"undefined op");
+                }
+            } else {
+                assert(!"symbol should be leaf or non-leaf");
+            }
+
+            return nullptr;
+        }
+
+
+    private:
         pTypeTree handleLeaf(unsigned astSymId, const std::string& text)
         {
             switch (astSymId)
@@ -248,109 +352,6 @@ class TypeSystem
             symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT);
         }
 
-        /* gen symbol table, type checker */
-        pTypeTree genSymbolTable(ast::pASTNode pRoot)
-        {
-            std::string text = pRoot->getText();
-            unsigned astSymId = pRoot->getAstSymbolId();
-            unsigned childrenNumber = pRoot->size();
-            assert(text != "" && AST_DEFAULT_TEXT != "");
-
-            if (comm::isASTSymbolLeaf(astSymId)) {
-                /* leaf node, no declarations and no blocks */
-                return handleLeaf(astSymId, text);
-            } else if (comm::isASTSymbolNonLeaf(astSymId)) {
-                /* non-leaf node */
-                if (text == AST_DEFAULT_TEXT) {
-                    for (ast::pASTNode child: *(pRoot->children)) {
-                        genSymbolTable(child);
-                    }
-                } else if (text == "class") {   /* block and declaration */
-                    handleClass(pRoot, false);
-                    return nullptr;
-                } else if (text == "class_inherits") {
-                    handleClass(pRoot, true);
-                    return nullptr;
-                } else if (text == "def") {
-                    handleFn(pRoot);
-                    return nullptr;
-                } else if (text == "while") {   /* block, command */
-                    handleCMD(pRoot, SYMBOL_MARK_WHILE);
-                    return nullptr;
-                } else if (text == "if") {
-                    handleCMD(pRoot, SYMBOL_MARK_IF);
-                    return nullptr;
-                } else if (text == "if_else") {
-                    handleCMD(pRoot, SYMBOL_MARK_IF);
-
-                    symbolTable::add_symbol_mark(SYMBOL_MARK_ELSE);
-                    genSymbolTable(pRoot->getChild(0));
-                    genSymbolTable(pRoot->getChild(2));
-                    symbolTable::pop_symbol_block();
-
-                    return nullptr;
-                } else if (text.length() >= 4 && text.substr(0, 4) == "case") {
-                    // symbolTable::add_symbol_mark(SYMBOL_MARK_CASE_OF);
-                    assert(!"case to be implemented");
-                } else if (text.length() >= 6 && text.substr(0, 6) == "lambda") {
-                    // symbolTable::add_symbol_mark(SYMBOL_MARK_LAMBDA);
-                    assert(!"lambda to be implemented");
-                } else if (text.length() >= 3 && text.substr(0, 3) == "let") {
-                    // symbolTable::add_symbol_mark(SYMBOL_MARK_LET_IN);
-                    assert(!"let...in... to be implemented");
-                } else if (text == ":") {     /* declaration */
-                    /* id: type: default_value */
-                    /* 统一把算法改成从符号表取相关符号，而不是把每个声明都搞成函数参数 */
-                    if (childrenNumber == 1) {
-                        /* function return type */
-                        return genSymbolTable(pRoot->getChild(0));
-                    } else if (childrenNumber == 2) {
-                        handleDecl(pRoot);
-                        return nullptr;
-                    } else if (childrenNumber == 3) {
-                        handleDecl(pRoot);
-                        /* recurse */
-                        genSymbolTable(pRoot->getChild(2));
-                        return nullptr;
-                    } else {
-                        assert(false);
-                    }
-                } else if (text == ":_<-") {
-                    if (childrenNumber == 3) {
-                        handleDeclAssign(pRoot);
-                        return nullptr;
-                    } else if (childrenNumber == 4) {
-                        handleDeclAssign(pRoot);
-                        genSymbolTable(pRoot->getChild(3));
-                        return nullptr;
-                    } else {
-                        assert(false);
-                    }
-                } else if (text == "->") {  // TODO: function type
-                } else if (isDoubleArgs(text)) {
-                    assert(childrenNumber == 2);
-                    pTypeTree pTT1 = genSymbolTable(pRoot->getChild(0));
-                    pTypeTree pTT2 = genSymbolTable(pRoot->getChild(1));
-                    return handleDoubleOps(pTT1, pTT2, text);
-                }
-                else if (isSingleArg(text)) {
-                    assert(childrenNumber == 1);
-                    pTypeTree pTT = genSymbolTable(pRoot->getChild(0));
-                    return handleSingleOp(pTT, text);
-                }
-                else {
-                    /* undefined op */
-                    comm::Log::singleton(ERROR) >> "text is: " >> text >> comm::newline;
-                    assert(!"undefined op");
-                }
-            } else {
-                assert(!"symbol should be leaf or non-leaf");
-            }
-
-            return nullptr;
-        }
-
-    private:
         std::string getNotationStr(ast::pASTNode parent, unsigned idx)
         {
             unsigned notation = parent->getChild(idx)->getNotation();
