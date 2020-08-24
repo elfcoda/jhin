@@ -13,7 +13,7 @@ namespace jhin
 namespace ts
 {
 
-const std::unordered_set<std::string> doubleArgs = {"+", "-", "*" "/", "==", ">", ">=", "<", "<=", "!="};
+const std::unordered_set<std::string> doubleArgs = {"+", "-", "*", "/", "==", ">", ">=", "<", "<=", "!=", "<-"};
 const std::unordered_set<std::string> singleArg = {"!", "isVoid", "new", "return"};
 bool isDoubleArgs(const std::string& text)
 {
@@ -238,6 +238,8 @@ class TypeSystem
                 return checkOrder(pTT1, pTT2);
             } else if (text == "!=") {
                 return checkEquality(pTT1, pTT2);
+            } else if (text == "<-") {
+                return checkAssign(pTT1, pTT2);
             } else {
                 assert(!"unknown symbol");
             }

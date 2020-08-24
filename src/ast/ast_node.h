@@ -167,7 +167,8 @@ struct ASTNode
 
     unsigned size()
     {
-        return (*children).size();
+        if (children == nullptr) return 0;
+        return children->size();
     }
 
     static void showTree(pASTNode pRoot);

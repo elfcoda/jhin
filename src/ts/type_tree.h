@@ -16,6 +16,7 @@ namespace ts
 
 #define SYMBOL_TYPE_START_NONE      0
 #define SYMBOL_TYPE_START_TRIVIAL   1
+#define SYMBOL_TYPE_START_TYPE      512
 #define SYMBOL_TYPE_START_COMPLEX   1024
 
 enum ESymbolType
@@ -32,7 +33,8 @@ enum ESymbolType
     SYMBOL_TYPE_BOOL,
     SYMBOL_TYPE_STRING,
     SYMBOL_TYPE_UNIT,
-    SYMBOL_TYPE_TYPE,       /* type variable */
+
+    SYMBOL_TYPE_TYPE = SYMBOL_TYPE_START_TYPE,       /* type variable */
 
     /* complex recursive type */
     /* function type */
@@ -67,7 +69,7 @@ bool isNoneType(ESymbolType type)
 
 bool isTrivialType(ESymbolType type)
 {
-    return type >= SYMBOL_TYPE_START_TRIVIAL && type < SYMBOL_TYPE_START_COMPLEX;
+    return type >= SYMBOL_TYPE_START_TRIVIAL && type < SYMBOL_TYPE_START_TYPE;
 }
 
 bool isComplexType(ESymbolType type)
@@ -225,9 +227,9 @@ bool popChild(pTypeTree pTT)
 
 /* what kind of value */
 const std::unordered_map<std::string, ESymbolType> trivialTypes = {
-    {"OBJECT", SYMBOL_TYPE_OBJECT}, {"BOOL", SYMBOL_TYPE_BOOL}, {"INT", SYMBOL_TYPE_INT},
-    {"FLOAT", SYMBOL_TYPE_FLOAT}, {"DOUBLE", SYMBOL_TYPE_DOUBLE},
-    {"LONG", SYMBOL_TYPE_LONG}, {"STRING", SYMBOL_TYPE_STRING}, {"UNIT", SYMBOL_TYPE_UNIT}
+    {"Object", SYMBOL_TYPE_OBJECT}, {"Bool", SYMBOL_TYPE_BOOL}, {"Int", SYMBOL_TYPE_INT},
+    {"Float", SYMBOL_TYPE_FLOAT}, {"Double", SYMBOL_TYPE_DOUBLE},
+    {"Long", SYMBOL_TYPE_LONG}, {"String", SYMBOL_TYPE_STRING}, {"Unit", SYMBOL_TYPE_UNIT}
 };
 /**/
 enum EIDType

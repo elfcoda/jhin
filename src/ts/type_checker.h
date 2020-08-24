@@ -110,6 +110,21 @@ namespace ts
         return pTT;
     }
 
+    pTypeTree checkAssign(pTypeTree t1, pTypeTree t2)
+    {
+        EIDType e1 = getSymbolType(t1), e2 = getSymbolType(t2);
+        assert(t1->getSymbolName() != "");
+        assert(e1 == e2);
+        if (e1 == E_ID_TYPE_TRIVIAL_VALUE) {
+            assert(t1->getType() == t2->getType());
+        } else if (e1 == E_ID_TYPE_EXPAND_VALUE) {
+            assert(t1->getExpandType() == t2->getExpandType());
+        } else {
+            assert(!"type error.");
+        }
+        return nullptr;
+    }
+
     /* not: ! */
     pTypeTree checkNot(pTypeTree t)
     {

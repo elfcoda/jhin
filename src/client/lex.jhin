@@ -9,12 +9,13 @@ class Animal inherits Life {
         xn: Int
         xm: Int <- 6
         xn <- xn + xm + 9
-        xn * xm
+        zz: Bool
+        xn * 7
         -- case xn of { otherwise   => 9 }
 
         -- let i: Int in { 7 + i }
 
-        -- func1(xn, xm)
+        -- func1(xn, xm, xi)
     }
 }
 

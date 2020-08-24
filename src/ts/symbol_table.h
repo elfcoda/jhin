@@ -117,7 +117,7 @@ bool symbolTable::pop_symbol_block(bool popMark = true)
 {
     assert(!table.empty());
     /* pop symbol mark */
-    for (unsigned idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark(); idx--) {
+    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark(); idx--) {
         table.pop_back();
     }
 
@@ -129,7 +129,7 @@ bool symbolTable::pop_symbol_block(bool popMark = true)
 
 std::shared_ptr<symbolItem> symbolTable::find_symbol(const std::string& symbolName)
 {
-    for (unsigned idx = table.size() - 1; idx >= 0; idx--) {
+    for (int idx = table.size() - 1; idx >= 0; idx--) {
         if (table[idx]->getSymbolName() == symbolName) {
             return table[idx];
         }
@@ -139,7 +139,7 @@ std::shared_ptr<symbolItem> symbolTable::find_symbol(const std::string& symbolNa
 
 std::shared_ptr<symbolItem> symbolTable::find_symbol_in_scope(const std::string& symbolName)
 {
-    for (unsigned idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark() ; idx--) {
+    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark() ; idx--) {
         if (table[idx]->getSymbolName() == symbolName) {
             return table[idx];
         }
@@ -150,7 +150,7 @@ std::shared_ptr<symbolItem> symbolTable::find_symbol_in_scope(const std::string&
 std::vector<std::shared_ptr<symbolItem>> symbolTable::get_symbols_in_scope()
 {
     std::vector<std::shared_ptr<symbolItem>> ans;
-    for (unsigned idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark() ; idx--) {
+    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark() ; idx--) {
         ans.push_back(table[idx]);
     }
     std::reverse(ans.begin(), ans.end());
@@ -160,7 +160,7 @@ std::vector<std::shared_ptr<symbolItem>> symbolTable::get_symbols_in_scope()
 std::shared_ptr<symbolItem> symbolTable::get_last_symbol()
 {
     assert(!table.empty());
-    unsigned idx = table.size() - 1;
+    int idx = table.size() - 1;
     assert(table[idx]->isSymbolMark());
     return table[idx];
 }

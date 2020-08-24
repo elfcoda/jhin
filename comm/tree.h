@@ -65,6 +65,7 @@ class tree
 
         virtual unsigned size()
         {
+            if (children == nullptr) return 0;
             return children->size();
         }
 
