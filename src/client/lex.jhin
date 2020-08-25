@@ -1,38 +1,22 @@
-
+def fu() {}
 
 -- class Animal is a class
 class Animal inherits Life {
-    x1: Int
-    x2: String
-
     def fun1(x1: Int, x2: Int): Unit {
         xn: Int
         xm: Int <- 6
         xn <- xn + xm + 9
-        zz: Bool
-        xn * 7
-        -- case xn of { otherwise   => 9 }
-
+        fu()
+        fun1(xn + 1, xn, xm)
+        fun1(0)
+        fun1(1) + fu()
         -- let i: Int in { 7 + i }
-
-        -- func1(xn, xm, xi)
     }
 }
 
-def func() {
+def func(m: Int, n: Int) {
     a: Animal <- new Animal
-    m: Int
-    n: Int
-    t: Int
-    while (m == n) {
-        if (m > n)
-            m <- m - t
-        else
-            m <- n - t
-    }
-
-    if (n == t) 9
-
-    return a
+    fu()
+    func(1)
 }
 

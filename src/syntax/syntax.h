@@ -273,7 +273,7 @@ class Syntax
 
             pSyntaxNFAData pNFAStart = genNFA();
             comm::pDFANode<pSyntaxNFAData> pDFAStart = NFA2DFA(pNFAStart);
-            bool b = updateDFAFollowSetForNFA(pDFAStart, pNFAStart);
+            updateDFAFollowSetForNFA(pDFAStart, pNFAStart);
             pDFAStart = comm::travelDFA(pDFAStart, removeEPSILON);
             /* conflict detect */
             pDFAStart = comm::travelDFA(pDFAStart, +[](comm::pDFANode<pSyntaxNFAData> p){ p->isConflict(); });

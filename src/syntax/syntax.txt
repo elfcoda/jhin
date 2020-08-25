@@ -122,7 +122,7 @@ Exp     ::= return Exp
         |   case Exp of Newls { NOTE_STAR(RE_ID : Type => Exp) otherwise => Exp Newls }
         |   THIS
         |   let DeclN NOTE_STAR(, DeclN) in { Exp }
-        |   RE_ID ( NOTE_QUES(Exp_ar) )
+        #|   RE_ID ( NOTE_QUES(Exp_ar) )
 
         |   RE_ID . RE_ID ( NOTE_QUES(Exp_ar) )
         |   RE_ID @ RE_VALUE . RE_ID ( NOTE_QUES(Exp_ar) )
@@ -173,6 +173,8 @@ ExpN    ::= RE_INT
         |   LONG  
         |   STRING  
         |   UNIT  
+
+        |   RE_ID ( NOTE_QUES(Exp_ar) )
 ----------
 Exp_ar  ::= Exp NOTE_STAR(, Exp)
   

@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <queue>
 #include <cassert>
+#include <climits>
 #include <type_traits>
 #include "../src/lex/nfa.h"
 #include "../src/syntax/syntax_nfa.h"

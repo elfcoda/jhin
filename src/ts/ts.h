@@ -59,11 +59,14 @@ class TypeSystem
             std::string text = pRoot->getText();
             unsigned astSymId = pRoot->getAstSymbolId();
             unsigned childrenNumber = pRoot->size();
+            // comm::Log::singleton(INFO) >> "text: " >> text >> ", " >> "astSymId: " >> astSymId >> ", " >> "childrenNumber: " >> childrenNumber >> comm::newline;
             assert(text != "" && AST_DEFAULT_TEXT != "");
 
             if (comm::isASTSymbolLeaf(astSymId)) {
                 /* leaf node, no declarations and no blocks */
-                return handleLeaf(astSymId, text);
+                pTypeTree pTT = handleLeaf(astSymId, text);
+                // if (IS_FN_TYPE) // ExpN
+                return pTT;
             } else if (comm::isASTSymbolNonLeaf(astSymId)) {
                 /* non-leaf node */
                 if (text == AST_DEFAULT_TEXT) {
