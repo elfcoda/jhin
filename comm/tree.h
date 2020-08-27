@@ -25,14 +25,14 @@ class tree
         virtual ~tree() { free(); }
         virtual void free(){}
 
-        virtual tree<T>* getChild(unsigned idx)
+        virtual T* getChild(unsigned idx)
         {
             assert(children != nullptr && idx < size());
             return (*children)[idx];
         }
 
         /* single child */
-        virtual tree<T>* getSingle()
+        virtual T* getSingle()
         {
             if (children == nullptr) return nullptr;
             if (size() == 1) return (*children)[0];

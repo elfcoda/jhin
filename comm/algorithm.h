@@ -43,6 +43,15 @@ std::vector<std::pair<unsigned, unsigned>> matchProductionIdx(const std::vector<
 // }
 
 
+/* util functions */
+template <typename T>
+std::string getPtrString(const T* const t)
+{
+    if (t == nullptr) return "nullptr_str";
+    return t->toString();
+}
+
+
 };  /* namespace comm */
 };  /* namespace jhin */
 

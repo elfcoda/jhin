@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include "type_tree.h"
 #include "symbol_table.h"
+#include "../../comm/log.h"
 
 namespace jhin
 {
@@ -33,6 +34,24 @@ namespace ts
         }
 
         return pTT;
+    }
+
+    /* @pArgsTree: fn inputs */
+    pTypeTree checkFn(pTypeTree pArgsTree, pTypeTree fnType)
+    {
+        int argSize = fnType->size();
+        assert(argSize >= 2);
+        pTypeTree pLastType = fnType->getChild(argSize - 1);
+        /* return value type */
+        appendTree(pArgsTree, pLastType);
+        int inputSize = pArgsTree->size();
+        /* TODO: default argument, curry */
+        assert(inputSize == argSize);
+
+        bool fnTypeEqual = isTypeEqual(pArgsTree, fnType);
+        assert(fnTypeEqual);
+
+        return pLastType;
     }
 
     /* plus: + */

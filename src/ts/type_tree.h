@@ -46,6 +46,34 @@ enum ESymbolType
     /* Product */
     SYMBOL_TYPE_PRODUCT,    /* vector */
 };
+
+const std::unordered_map<ESymbolType, std::string> ESymbolType2String = {
+    {SYMBOL_TYPE_NO_TYPE, "SYMBOL_TYPE_NO_TYPE"},
+
+    {SYMBOL_TYPE_INT, "SYMBOL_TYPE_INT"},
+    {SYMBOL_TYPE_FLOAT, "SYMBOL_TYPE_FLOAT"},
+    {SYMBOL_TYPE_DOUBLE, "SYMBOL_TYPE_DOUBLE"},
+    {SYMBOL_TYPE_LONG, "SYMBOL_TYPE_LONG"},
+    {SYMBOL_TYPE_OBJECT, "SYMBOL_TYPE_OBJECT"},
+    {SYMBOL_TYPE_BOOL, "SYMBOL_TYPE_BOOL"},
+    {SYMBOL_TYPE_STRING, "SYMBOL_TYPE_STRING"},
+    {SYMBOL_TYPE_UNIT, "SYMBOL_TYPE_UNIT"},
+
+    {SYMBOL_TYPE_TYPE, "SYMBOL_TYPE_TYPE"},
+
+    {SYMBOL_TYPE_FN, "SYMBOL_TYPE_FN"},
+    {SYMBOL_TYPE_CLASS, "SYMBOL_TYPE_CLASS"},
+    {SYMBOL_TYPE_SUM, "SYMBOL_TYPE_SUM"},
+    {SYMBOL_TYPE_PRODUCT, "SYMBOL_TYPE_PRODUCT"},
+};
+
+std::string getESymbolType2String(ESymbolType e)
+{
+    assert(ESymbolType2String.find(e) != ESymbolType2String.end());
+    return ESymbolType2String.at(e);
+}
+
+
 /* eg: Int -> Int -> Float */
 using FnType = std::vector<ESymbolType>;
 using Type = std::vector<ESymbolType>;
@@ -122,8 +150,6 @@ class TypeTree: public comm::tree<TypeTree>
         {
         }
 
-        ESymbolType getSymbolType() { return type; }
-
         void free()
         {
             if (children != nullptr) {
@@ -149,13 +175,31 @@ class TypeTree: public comm::tree<TypeTree>
         void setSymbolName(const std::string& sm) { symbolName = sm; }
         void setValue(const std::string& val) { value = val; }
         void setExpandType(const std::string& et) { expandType = et; }
+
+        std::string toString() const
+        {
+            std::string s = "";
+            s += "{type: " + getESymbolType2String(type) + ", symbolName: " \
+                 + symbolName + ", value: " + value + ", expandType: " + expandType;
+            if (!hasChildren()) {
+                s += ", children: empty}\n";
+            } else {
+                s += ", children: \n";
+                for (pTypeTree child: *children) {
+                    s += child->toString();
+                }
+                s += "}\n";
+            }
+
+            return s;
+        }
     private:
         ESymbolType type;
 
         /* type don't have tsymbolName field */
         std::string symbolName;
         std::string value;
-        // chlidren
+        // children
 
         /* class name or function name, null if it's basic types */
         std::string expandType;
@@ -231,6 +275,13 @@ const std::unordered_map<std::string, ESymbolType> trivialTypes = {
     {"Float", SYMBOL_TYPE_FLOAT}, {"Double", SYMBOL_TYPE_DOUBLE},
     {"Long", SYMBOL_TYPE_LONG}, {"String", SYMBOL_TYPE_STRING}, {"Unit", SYMBOL_TYPE_UNIT}
 };
+
+ESymbolType getTrivialTypeByStr(const std::string& str)
+{
+    assert(trivialTypes.find(str) != trivialTypes.end());
+    return trivialTypes.at(str);
+}
+
 /**/
 enum EIDType
 {
@@ -246,6 +297,7 @@ enum EIDType
 };
 EIDType getSymbolType(const pTypeTree& pTT)
 {
+    if (pTT == nullptr) return E_ID_TYPE_ERROR;
     ESymbolType tp = pTT->getType();
     if (isTrivialType(tp)) return E_ID_TYPE_TRIVIAL_VALUE;
     else if (tp == SYMBOL_TYPE_CLASS && pTT->getExpandType() != "") return E_ID_TYPE_EXPAND_VALUE;
@@ -261,27 +313,38 @@ EIDType getSymbolType(const pTypeTree& pTT)
 bool isTypeEqual(pTypeTree t1, pTypeTree t2)
 {
     EIDType e1 = getSymbolType(t1), e2 = getSymbolType(t2);
-    if (t1->getType() != t2->getType() || e1 != e2) return false;
-    if (e1 == E_ID_TYPE_TRIVIAL_TYPE) {
+    if (t1->getType() != t2->getType()) return false;
+    if (e1 == E_ID_TYPE_TRIVIAL_VALUE) {
         return true;
+    } else if (e1 == E_ID_TYPE_EXPAND_VALUE) {
+        if ((t1->getExpandType() != "") && (t1->getExpandType() == t2->getExpandType())) return true;
+        else assert(!"expand type error.");
+    } else if (e1 == E_ID_TYPE_TRIVIAL_TYPE) {
+        /* for literal "Type" is stored as | Type | None | Type| nullptr | in symbol table.
+         * so we should make sure that t2's value field is not Type if we want to make
+         * type checker happy.
+         * we should just make their type field is all SYMBOL_TYPE_TYPE
+         * */
+        if (e2 == E_ID_TYPE_TYPE_LITERAL) assert(!"type error, can not be Type literal.");
+        else return true;
     } else if (e1 == E_ID_TYPE_EXPAND_TYPE) {
-        return t1->getValue() == t2->getValue();
+        /* same as above */
+        if (e2 == E_ID_TYPE_TYPE_LITERAL) assert(!"type error, can not be Type literal.");
+        else return true;
     } else if (e1 == E_ID_TYPE_FN_TYPE) {
         /* fb type */
-        if (!t1->hasChildren() && !t2->hasChildren()) return true;
-        if (!t1->hasChildren() && t2->hasChildren()) return false;
-        if (t1->hasChildren() && !t2->hasChildren()) return false;
+        if (!t1->hasChildren() || !t2->hasChildren()) assert(!"fn type should hsas children.");
         pChildrenList<TypeTree> c1 = t1->children, c2 = t2->children;
         /* both have children list */
         unsigned n1 = c1->size(), n2 = c2->size();
-        if (n1 != n2) return false;
+        if (n1 != n2) assert(!"fn types error.");
         for (unsigned idx = 0; idx < n1; idx++) {
-            if (!isTypeEqual((*c1)[idx], (*c2)[idx])) return false;
+            if (!isTypeEqual((*c1)[idx], (*c2)[idx])) assert(!"fn type error.");
         }
         return true;
     } else {
         /* not type, assert */
-        assert(!"parameter should be type!");
+        assert(!"type error.");
     }
 
     return false;

@@ -6,6 +6,7 @@
 #include "symbol_table.h"
 #include "../ast/ast_node.h"
 #include "../../comm/log.h"
+#include "../../comm/algorithm.h"
 #include "../../comm/container_op.h"
 
 namespace jhin
@@ -59,20 +60,41 @@ class TypeSystem
             std::string text = pRoot->getText();
             unsigned astSymId = pRoot->getAstSymbolId();
             unsigned childrenNumber = pRoot->size();
+                #include <iostream>
+                using namespace std;
+                cout << text << endl;
             // comm::Log::singleton(INFO) >> "text: " >> text >> ", " >> "astSymId: " >> astSymId >> ", " >> "childrenNumber: " >> childrenNumber >> comm::newline;
             assert(text != "" && AST_DEFAULT_TEXT != "");
 
             if (comm::isASTSymbolLeaf(astSymId)) {
                 /* leaf node, no declarations and no blocks */
-                pTypeTree pTT = handleLeaf(astSymId, text);
-                // if (IS_FN_TYPE) // ExpN
-                return pTT;
+                return handleLeaf(astSymId, text);
             } else if (comm::isASTSymbolNonLeaf(astSymId)) {
                 /* non-leaf node */
                 if (text == AST_DEFAULT_TEXT) {
+                    pTypeTree pTT = nullptr;
                     for (ast::pASTNode child: *(pRoot->children)) {
-                        genSymbolTable(child);
+                        pTT = genSymbolTable(child);
+                        if (getSymbolType(pTT) == E_ID_TYPE_FN_TYPE) {
+                            if (comm::symbolId2String(pRoot->getSymbolId()) == "ExpN") {
+                                /* this is a fuction with parmeter(s) */
+                                assert(childrenNumber == 2);
+                                pTypeTree pArgsTree = genFnTypes(pRoot->getChild(1));
+                                return checkFn(pArgsTree, pTT);
+                            } else {
+                                /* this is a fuction without parmeter(s) */
+                                pTypeTree pArgsTree = makeFnTree();
+                                appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
+                                return checkFn(pArgsTree, pTT);
+                            }
+
+                        }
                     }
+                    /* if this symbol is not function, AST_DEFAULT_TEXT Node is used to connect different expressions/cmds/declarations.
+                     * and we want to return last line of code as default return value of this function, we just return the last return
+                     * type of this non-terminal tree node, pTT, in this case.
+                     * */
+                    return pTT;
                 } else if (text == "class") {   /* block and declaration */
                     handleClass(pRoot, false);
                     return nullptr;
@@ -160,6 +182,37 @@ class TypeSystem
 
 
     private:
+        pTypeTree genFnTypes(ast::pASTNode pArgs)
+        {
+            /* for this tree:
+             *
+             *      \
+             *      AST
+             *     /   \
+             *   Arg1  AST
+             *         /  \
+             *       Arg2 Arg3
+             *
+             *  genFnTypes return pTypeTree whose children is [Arg1, Arg2, Arg3]
+             **/
+            assert(pArgs != nullptr);
+            pTypeTree pTT = new TypeTree(SYMBOL_TYPE_FN, "", "", nullptr);
+            if (pArgs->getText() == AST_DEFAULT_TEXT) {
+                unsigned childrenNumber = pArgs->size();
+                assert(childrenNumber == 2);
+                pTypeTree singleArg = genSymbolTable(pArgs->getChild(0));
+                appendTree(pTT, singleArg);
+                pTypeTree pSub = genFnTypes(pArgs->getChild(1));
+                mergeTree(pTT, pSub);
+            } else {
+                /* single argument */
+                pTypeTree singleArg = genSymbolTable(pArgs);
+                appendTree(pTT, singleArg);
+            }
+
+            return pTT;
+        }
+
         pTypeTree handleLeaf(unsigned astSymId, const std::string& text)
         {
             switch (astSymId)
@@ -221,6 +274,8 @@ class TypeSystem
 
         pTypeTree handleDoubleOps(pTypeTree pTT1, pTypeTree pTT2, const std::string& text)
         {
+            assert(pTT1 != nullptr);
+            assert(pTT2 != nullptr);
             if (text == "+") {
                 return checkPlus(pTT1, pTT2);
             } else if (text == "-") {
@@ -252,6 +307,7 @@ class TypeSystem
 
         pTypeTree handleSingleOp(pTypeTree pTT, const std::string& text)
         {
+            assert(pTT != nullptr);
             if (text == "!") {
                 return checkNot(pTT);
             } else if (text == "isVoid") {
@@ -269,9 +325,11 @@ class TypeSystem
 
         void handleFn(ast::pASTNode pRoot)
         {
+            // TODO: check return type
+
             pTypeTree fnType = makeFnTree();
             fnType->setSymbolName(pRoot->getChild(0)->getText());
-            // TODO set value
+            // TODO set value?
             symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, fnType);
 
 
@@ -279,6 +337,7 @@ class TypeSystem
             symbolTable::add_symbol_mark(SYMBOL_MARK_FN);
             for (int idx = 1; idx < pRoot->size(); idx++) {
                 pTypeTree pTp = genSymbolTable(pRoot->getChild(idx));
+                comm::Log::singleton(INFO) >> pRoot->getChild(0)->getText() >> ": " >> comm::getPtrString(pTp) >> comm::newline;
                 /* notation: symbol and non-terminal */
                 std::string notationStr = getNotationStr(pRoot, idx);
                 if (notationStr == "FnArg") {
@@ -295,6 +354,25 @@ class TypeSystem
                         /* pop redundant Unit symbol */
                         popChild(fnType);
                     }
+                    /* fn: check function's return type:
+                     * return type is a type, should be switch to value.
+                     * for this define: "def function(i: Int): Int",
+                     * the return type is pTypeTree(Type, "", "Int", nullptr, "")
+                     * turn to pTypeTree(Int, "", "", nullptr, "").
+                     * */
+                    if (getSymbolType(pTp) == E_ID_TYPE_TRIVIAL_TYPE) {
+                        pTp->setType(getTrivialTypeByStr(pTp->getValue()));
+                        pTp->setValue("");
+                    } else if (getSymbolType(pTp) == E_ID_TYPE_EXPAND_TYPE) {
+                        pTp->setType(SYMBOL_TYPE_CLASS);
+                        pTp->children = symbolTable::find_symbol(pTp->getValue())->type->children;
+                        pTp->setExpandType(pTp->getValue());
+                    } else if (getSymbolType(pTp) == E_ID_TYPE_TYPE_LITERAL) {
+                        assert(!"can not return Type.");
+                    } else {
+                        assert(!"return type error.");
+                    }
+
                     appendTree(fnType, static_cast<pConstTypeTree>(pTp));
                 }
             }

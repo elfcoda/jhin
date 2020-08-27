@@ -234,6 +234,9 @@ namespace comm
             /* write to file */
             static std::ostream& write(const std::string& s);
 
+            /* flush to file */
+            static void flush();
+
             /* switch to another file */
             static bool switchFile(const std::string& writefilename);
 
@@ -248,6 +251,7 @@ namespace comm
                 std::string s = getWriteString(static_cast<const DT&>(t));
 
                 write(s);
+                flush();
 
                 return *this;
             }
@@ -270,6 +274,12 @@ namespace comm
     std::ostream& Log::write(const std::string& s)
     {
         return file.write(s.c_str(), s.length());
+    }
+
+    /* flush to file */
+    void Log::flush()
+    {
+        file.flush();
     }
 
     /* switch to another file */
