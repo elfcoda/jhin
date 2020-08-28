@@ -228,7 +228,7 @@ struct ASTNode
         return checkMark(E_AST_MARK_FN_HAS_ARGS);
     }
 
-    /* @isAdd: default to set mark */
+    /* @isAdd: default to add mark */
     void setMark(E_AST_MARK idx, bool isAdd = true)
     {
         unsigned u_idx = static_cast<unsigned>(idx);
