@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "type_tree.h"
 #include "type_checker.h"
 #include "symbol_table.h"
@@ -14,6 +15,16 @@ namespace jhin
 namespace ts
 {
 
+/* vector as stack
+ * to check if every return expression is compatible with current function's return type,
+ * so a stack is used to track current function stack.
+ * stack is replaced by vector in this case.
+ *
+ * @pTypeTree: function type.
+ * */
+std::vector<pTypeTree> vFnRetStack = {};
+
+/* check which kind of op current string is. */
 const std::unordered_set<std::string> doubleArgs = {"+", "-", "*", "/", "==", ">", ">=", "<", "<=", "!=", "<-"};
 const std::unordered_set<std::string> singleArg = {"!", "isVoid", "new", "return"};
 bool isDoubleArgs(const std::string& text)
@@ -60,20 +71,18 @@ class TypeSystem
             std::string text = pRoot->getText();
             unsigned astSymId = pRoot->getAstSymbolId();
             unsigned childrenNumber = pRoot->size();
-                #include <iostream>
-                using namespace std;
-                cout << text << endl;
-            // comm::Log::singleton(INFO) >> "text: " >> text >> ", " >> "astSymId: " >> astSymId >> ", " >> "childrenNumber: " >> childrenNumber >> comm::newline;
+            comm::Log::singleton(DEBUG) >> "text: " >> text >> ", " >> "astSymId: " >> astSymId >> ", " >> "childrenNumber: " >> childrenNumber >> comm::newline;
             assert(text != "" && AST_DEFAULT_TEXT != "");
 
             if (comm::isASTSymbolLeaf(astSymId)) {
                 /* leaf node, no declarations and no blocks */
-                return handleLeaf(astSymId, text);
+                return handleLeaf(pRoot);
             } else if (comm::isASTSymbolNonLeaf(astSymId)) {
                 /* non-leaf node */
                 if (text == AST_DEFAULT_TEXT) {
                     pTypeTree pTT = nullptr;
-                    for (ast::pASTNode child: *(pRoot->children)) {
+                    for (int idx = 0; idx <  pRoot->size(); idx++) {
+                        ast::pASTNode child = pRoot->getChild(idx);
                         pTT = genSymbolTable(child);
                         if (getSymbolType(pTT) == E_ID_TYPE_FN_TYPE) {
                             if (comm::symbolId2String(pRoot->getSymbolId()) == "ExpN") {
@@ -85,7 +94,8 @@ class TypeSystem
                                 /* this is a fuction without parmeter(s) */
                                 pTypeTree pArgsTree = makeFnTree();
                                 appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
-                                return checkFn(pArgsTree, pTT);
+                                pTypeTree fnRet = checkFn(pArgsTree, pTT);
+                                if (idx == pRoot->size() - 1) return fnRet;
                             }
 
                         }
@@ -213,8 +223,10 @@ class TypeSystem
             return pTT;
         }
 
-        pTypeTree handleLeaf(unsigned astSymId, const std::string& text)
+        pTypeTree handleLeaf(ast::pASTNode pRoot)
         {
+            unsigned astSymId = pRoot->getAstSymbolId();
+            std::string text = pRoot->getText();
             switch (astSymId)
             {
                 /* may be symbol or function name */
@@ -225,6 +237,15 @@ class TypeSystem
                             comm::Log::singleton(ERROR) >> "symbol '" >> text >> "' not found in this context!" >> comm::newline;
                             assert(!"symbol not found!");
                         } else {
+                            EIDType EType = getSymbolType(symbol->type);
+                            bool isFn = pRoot->isFunction();
+                            comm::Log::singleton(DEBUG) >> comm::getPtrString(pRoot) >> comm::newline;
+                            /* check function's use type and declaration type be same */
+                            if (isFn && EType != E_ID_TYPE_FN_TYPE) assert(!"symbol not function type.");
+                            else if (!isFn && EType == E_ID_TYPE_FN_TYPE) assert(!"function should be called.");
+
+                            if (EType == E_ID_TYPE_FN_TYPE) {
+                            }
                             return symbol->type;
                         }
                     }
@@ -305,6 +326,14 @@ class TypeSystem
             return nullptr;
         }
 
+        pTypeTree getFnLastType(pTypeTree pTT)
+        {
+            assert(getSymbolType(pTT) == E_ID_TYPE_FN_TYPE);
+            unsigned childrenNum = pTT->size();
+            assert(childrenNum >= 2);
+            return pTT->getChild(childrenNum - 1);
+        }
+
         pTypeTree handleSingleOp(pTypeTree pTT, const std::string& text)
         {
             assert(pTT != nullptr);
@@ -315,7 +344,14 @@ class TypeSystem
             } else if (text == "new") {
                 return checkNew(pTT);
             } else if (text == "return") {
-                return checkReturn(pTT);
+                pTypeTree pRet = checkReturn(pTT);
+                /* check if return type is compatilbe with function's signature. */
+                if (vFnRetStack.empty()) assert(!"symbol \"return\" should be appear in functions.");
+                pTypeTree topTypeTree = stackTop(vFnRetStack);
+                pTypeTree pLastType = getFnLastType(topTypeTree);
+                assert(isTypeEqual(pRet, pLastType));
+                comm::Log::singleton(DEBUG) >> __LINE__ >> ", return check: " >> getPtrString(pRet) >> ", Fn Type: " >> getPtrString(pLastType) >> comm::newline;
+                return pRet;
             } else {
                 assert(!"unknown symbol");
             }
@@ -333,11 +369,13 @@ class TypeSystem
             symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, fnType);
 
 
+            stackPush(vFnRetStack, fnType);
+            pTypeTree fnBodyType = nullptr;
             /* generate the signature of function */
             symbolTable::add_symbol_mark(SYMBOL_MARK_FN);
             for (int idx = 1; idx < pRoot->size(); idx++) {
                 pTypeTree pTp = genSymbolTable(pRoot->getChild(idx));
-                comm::Log::singleton(INFO) >> pRoot->getChild(0)->getText() >> ": " >> comm::getPtrString(pTp) >> comm::newline;
+                comm::Log::singleton(DEBUG) >> pRoot->getChild(0)->getText() >> ": " >> comm::getPtrString(pTp) >> comm::newline;
                 /* notation: symbol and non-terminal */
                 std::string notationStr = getNotationStr(pRoot, idx);
                 if (notationStr == "FnArg") {
@@ -368,12 +406,18 @@ class TypeSystem
                         pTp->children = symbolTable::find_symbol(pTp->getValue())->type->children;
                         pTp->setExpandType(pTp->getValue());
                     } else if (getSymbolType(pTp) == E_ID_TYPE_TYPE_LITERAL) {
-                        assert(!"can not return Type.");
+                        assert(!"can not return 'Type'.");
                     } else {
                         assert(!"return type error.");
                     }
 
                     appendTree(fnType, static_cast<pConstTypeTree>(pTp));
+                } else {
+                    /* function body */
+                    fnBodyType = pTp;
+                    if (fnBodyType == nullptr) {
+                        fnBodyType = makeTrivial(SYMBOL_TYPE_UNIT);
+                    }
                 }
             }
             if (!fnType->hasChildren()) {
@@ -384,6 +428,10 @@ class TypeSystem
                 appendTrivial(fnType, SYMBOL_TYPE_UNIT);
             }
 
+            /* check function return type of the last expression. */
+            assert(isTypeEqual(getFnLastType(fnType), fnBodyType));
+
+            stackPop(vFnRetStack);
             symbolTable::pop_symbol_block();
         }
 

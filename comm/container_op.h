@@ -80,6 +80,7 @@ namespace comm
         for (const auto& e: snd) fst[e.first] = e.second;
     }
 
+    /* stack */
     template <typename T>
     void stackPopN(std::stack<T>& st, unsigned n)
     {
@@ -118,6 +119,35 @@ namespace comm
         std::reverse(vIds.begin(), vIds.end());
 
         return vIds;
+    }
+
+    /* vector as stack */
+    template <typename T>
+    std::enable_if_t<is_vector<T>, void>
+    stackPop(T&& vec)
+    {
+        assert(!vec.empty());
+        vec.pop_back();
+    }
+
+    template <typename T>
+    std::enable_if_t<is_vector<T>,
+                     typename std::decay_t<T>::value_type>
+    stackTop(T&& vec)
+    {
+        assert(!vec.empty());
+        unsigned size = vec.size();
+        return vec[size - 1];
+    }
+
+    template <typename T, typename Val>
+    std::enable_if_t<is_vector<T>, void>
+    stackPush(T&& vec, Val&& v)
+    {
+        // static_assert(std::is_same_v<typename std::decay_t<T>::value_type,
+        //                              typename std::decay_t<Val>>,
+        //               "value type error!");
+        vec.push_back(std::forward<Val>(v));
     }
 
     /* vector */

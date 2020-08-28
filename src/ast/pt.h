@@ -22,6 +22,39 @@ class ParseTree
 {
 
     public:
+        // template <class RET, class... Ts>
+        // using PTFunc = RET(Ts...);
+
+        // template <class RET = void, class... Ts>
+        // void travelParseTree(pASTNode pRoot, PTFunc<RET, Ts...> f, Ts... ts)
+        void travelHandleParseTree(pASTNode pRoot)
+        {
+            if (pRoot == nullptr) return;
+            /* do something to pRoot */
+            if (comm::symbolId2String(pRoot->getSymbolId()) == "FnCall") {
+                /* add fn mark */
+                assert(pRoot->hasChildren());
+                pASTNode child = pRoot->getChild(0);
+                child->setMark(E_AST_MARK_FN);
+                comm::Log::singleton(DEBUG) >> "set-> " >> child->getText() >> " " >> child->getMark() >> comm::newline;
+            }
+            if (!pRoot->hasChildren()) return;
+            for (int i = 0; i < pRoot->size(); i++) {
+                travelHandleParseTree(pRoot->getChild(i));
+            }
+        }
+
+        void travelParseTree(pASTNode pRoot)
+        {
+            if (pRoot == nullptr) return;
+            /* do something to pRoot */
+            comm::Log::singleton(DEBUG) >> pRoot->getText() >> " " >> pRoot->getMark() >> comm::newline;
+            if (!pRoot->hasChildren()) return;
+            for (int i = 0; i < pRoot->size(); i++) {
+                travelParseTree(pRoot->getChild(i));
+            }
+        }
+
         pASTNode parse(const std::vector<std::pair<unsigned, std::string>>& lexResult, comm::pSyntaxDFA pDFAStart)
         {
             bool b = init();
@@ -29,6 +62,8 @@ class ParseTree
 
             pASTNode pRoot = genParseTree(lexResult, pDFAStart);
             // ASTNode::showTree(pRoot);
+            travelHandleParseTree(pRoot);
+            // travelParseTree(pRoot);
 
             return pRoot;
         }

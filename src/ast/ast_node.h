@@ -32,6 +32,12 @@ using pASTNode = ASTNode*;
 
 using pChildrenList = std::vector<pASTNode>*;
 
+enum E_AST_MARK
+{
+    E_AST_MARK_FN = 0,
+    E_AST_MARK_FN_HAS_ARGS,
+};
+
 struct ASTNodeData
 {
     /* non-terminal id or token id */
@@ -45,12 +51,18 @@ struct ASTNodeData
     /* ast symbol id */
     unsigned astSymbolId;
 
+    /* all kinds of bit-marks
+     * bit-0: isFunction
+     * */
+    //////
+    unsigned mark;
+
     std::string toString()
     {
-        // if (text != AST_DEFAULT_TEXT) {
+        if (text != AST_DEFAULT_TEXT) {
             if (text == "\n") return "'/n'";
             else return text;
-        // }
+        }
 
         return comm::symbolId2String(symbolId) + "[" + comm::symbolId2String(notation) + "]";
     }
@@ -58,15 +70,19 @@ struct ASTNodeData
     ASTNodeData(unsigned symbolId, const std::string& text)
     {
         this->symbolId = symbolId;
-        this->text = text;
         this->notation = symbolId;
+        this->text = text;
+        this->astSymbolId = 0;
+        this->mark = 0;
     }
 
     ASTNodeData(ASTNodeData&& ptnode)
     {
         this->symbolId = ptnode.symbolId;
-        this->text = ptnode.text;
         this->notation = ptnode.symbolId;
+        this->text = ptnode.text;
+        this->astSymbolId = 0;
+        this->mark = 0;
     }
 };
 
@@ -79,6 +95,18 @@ struct ASTNode
     {
         this->data = new ASTNodeData(std::move(data));
         this->children = children;
+    }
+
+    std::string toString() const
+    {
+        std::string s = "";
+        s += "symbolId: " + std::to_string(data->symbolId) +
+             ", notation: " + std::to_string(data->notation) +
+             ", text: " + data->text +
+             ", astSymbolId: " + std::to_string(data->astSymbolId) +
+             ", mark: " + std::to_string(data->mark);
+        s += "\n";
+        return s;
     }
 
     /* free memory */
@@ -113,6 +141,11 @@ struct ASTNode
         data->text = text;
     }
 
+    void setMark(unsigned mark)
+    {
+        data->mark = mark;
+    }
+
     unsigned getNotation()
     {
         return data->notation;
@@ -133,22 +166,27 @@ struct ASTNode
         return data->text;
     }
 
+    unsigned getMark()
+    {
+        return data->mark;
+    }
+
     /* single child */
     pASTNode getSingle()
     {
         if (children == nullptr) return nullptr;
-        if ((*children).size() == 1) return (*children)[0];
+        if (children->size() == 1) return (*children)[0];
         return nullptr;
     }
 
     bool hasChildren()
     {
-        return children != nullptr && !(*children).empty();
+        return children != nullptr && !children->empty();
     }
 
     bool erase(unsigned idx)
     {
-        unsigned size = (*children).size();
+        unsigned size = children->size();
         if (idx >= size) {
             assert(false);
             return false;
@@ -170,6 +208,40 @@ struct ASTNode
         if (children == nullptr) return 0;
         return children->size();
     }
+
+    bool checkMark(E_AST_MARK idx)
+    {
+        unsigned u_idx = static_cast<unsigned>(idx);
+        auto m = data->mark;
+        unsigned bitNum = sizeof(decltype(m)) * 8;
+        assert(u_idx < bitNum);
+        return m & (1 << u_idx);
+    }
+
+    bool isFunction()
+    {
+        return checkMark(E_AST_MARK_FN);
+    }
+
+    bool fnHasArgs()
+    {
+        assert(!"disabled!");
+        return checkMark(E_AST_MARK_FN_HAS_ARGS);
+    }
+
+    /* @isAdd: default to set mark */
+    void setMark(E_AST_MARK idx, bool isAdd = true)
+    {
+        unsigned u_idx = static_cast<unsigned>(idx);
+        unsigned bitNum = sizeof(decltype(data->mark)) * 8;
+        assert(u_idx < bitNum);
+        if (isAdd) {
+            data->mark |= (1 << u_idx);
+        } else {
+            data->mark = (1 << u_idx);
+        }
+    }
+
 
     static void showTree(pASTNode pRoot);
     static std::tuple<std::string, unsigned, unsigned> parseTree2String(pASTNode pRoot, int indent);

@@ -43,13 +43,13 @@ class AST
         }
     private:
         /* return: current sub-tree should be cut or not
-         * @idx: pRoot is the idx children of parent. necessary when parent is not nullptr */
-        bool cut(pASTNode pRoot, pASTNode parent, unsigned idx)
+         * @idx: pNode is the idx children of parent. necessary when parent is not nullptr */
+        bool cut(pASTNode pNode, pASTNode parent, unsigned idx)
         {
             /**/
-            assert(pRoot != nullptr);
+            assert(pNode != nullptr);
 
-            pASTNode p = pRoot, singleChild = nullptr;
+            pASTNode p = pNode, singleChild = nullptr;
             while (true) {
                 if (!p->hasChildren()) {
                     if (inCutSet(p)) return true;

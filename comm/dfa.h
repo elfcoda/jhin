@@ -352,7 +352,10 @@ template <class RET, class PNFA, class... Ts>
 using DFAFunc = RET(pDFANode<PNFA>, Ts...);
 
 /* REPEAT: whether an old DFA node can be rehandled */
-template <class RET = void, class PNFA = syntax::pSyntaxNFAData, bool REPEAT = false, class... Ts>
+template <class RET = void,
+          class PNFA = syntax::pSyntaxNFAData,
+          bool REPEAT = false,
+          class... Ts>
 pDFANode<PNFA> travelDFA(pDFANode<PNFA> pStart,
                          DFAFunc<RET, PNFA, Ts...> f,
                          Ts... ts)

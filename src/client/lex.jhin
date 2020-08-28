@@ -13,15 +13,16 @@ def fu(): Int { return 0 }
 --     }
 -- }
 
-def func(m: Int, n: Int) {
+def func(m: Int, n: Int): Int {
     i: Int
-    def recFn() {}
+    def recFn(): Int { return 1 }
     
-    fu()
+    fu() + 1
 
     True
-    m <- 3
+    m <- 7
+    True
     fu()
-    
+    9
 }
 

@@ -174,7 +174,9 @@ ExpN    ::= RE_INT
         |   STRING  
         |   UNIT  
 
-        |   RE_ID ( NOTE_QUES(Exp_ar) )
+        |   FnCall
+----------
+FnCall  ::= RE_ID ( NOTE_QUES(Exp_ar) )
 ----------
 Exp_ar  ::= Exp NOTE_STAR(, Exp)
   
