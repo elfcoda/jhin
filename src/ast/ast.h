@@ -31,7 +31,7 @@ class AST
             liftTokens(pRoot);
 
             comm::Log::singleton(INFO) >> mASTNonLeafStr2Id >> comm::newline;
-            ASTNode::showTree(pRoot);
+            // ASTNode::showTree(pRoot);
 
             return pRoot;
         }

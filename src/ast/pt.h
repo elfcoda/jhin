@@ -27,6 +27,28 @@ class ParseTree
 
         // template <class RET = void, class... Ts>
         // void travelParseTree(pASTNode pRoot, PTFunc<RET, Ts...> f, Ts... ts)
+
+        void genFnLeafVector(std::vector<unsigned>& ans, pASTNode pNode)
+        {
+            if (!pNode->hasChildren()) ans.push_back(pNode->getSymbolId());
+            for (int i = 0; i < pNode->size(); i++) {
+                genFnLeafVector(ans, pNode->getChild(i));
+            }
+        }
+
+        bool isFnNoArgs(pASTNode pNode)
+        {
+            std::vector<unsigned> vLeaf;
+            genFnLeafVector(vLeaf, pNode);
+            assert(!vLeaf.empty());
+            if (vLeaf.size() == 1) {
+                assert(vLeaf[0] == SYNTAX_EPSILON_IDX);
+                return true;
+            }
+
+            return false;
+        }
+
         void travelHandleParseTree(pASTNode pRoot)
         {
             if (pRoot == nullptr) return;
@@ -37,6 +59,15 @@ class ParseTree
                 pASTNode child = pRoot->getChild(0);
                 child->setMark(E_AST_MARK_FN);
                 comm::Log::singleton(DEBUG) >> "set-> " >> child->getText() >> " " >> child->getMark() >> comm::newline;
+                /* handle FnArgs */
+                for (int i = 0; i < pRoot->size(); i++) {
+                    if (comm::symbolId2String(pRoot->getChild(i)->getSymbolId()) == "FnArgs") {
+                        if (!isFnNoArgs(pRoot->getChild(i))) {
+                            child->setMark(E_AST_MARK_FN_HAS_ARGS);
+                            break;
+                        }
+                    }
+                }
             }
             if (!pRoot->hasChildren()) return;
             for (int i = 0; i < pRoot->size(); i++) {
@@ -61,7 +92,7 @@ class ParseTree
             assert(b == true);
 
             pASTNode pRoot = genParseTree(lexResult, pDFAStart);
-            // ASTNode::showTree(pRoot);
+            ASTNode::showTree(pRoot);
             travelHandleParseTree(pRoot);
             // travelParseTree(pRoot);
 

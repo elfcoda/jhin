@@ -225,7 +225,6 @@ struct ASTNode
 
     bool fnHasArgs()
     {
-        assert(!"disabled!");
         return checkMark(E_AST_MARK_FN_HAS_ARGS);
     }
 

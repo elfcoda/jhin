@@ -15,14 +15,16 @@ def fu(): Int { return 0 }
 
 def func(m: Int, n: Int): Int {
     i: Int
-    def recFn(): Int { return 1 }
+    def recFn(i: Int): Int { return 1 }
     
-    fu() + 1
+    fu() + 1 + fu() * func(2, 3)
 
     True
     m <- 7
     True
     fu()
+    recFn(7)
+    func(1, 2)
     9
 }
 

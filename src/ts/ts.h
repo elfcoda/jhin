@@ -86,16 +86,19 @@ class TypeSystem
                         pTT = genSymbolTable(child);
                         if (getSymbolType(pTT) == E_ID_TYPE_FN_TYPE) {
                             if (comm::symbolId2String(pRoot->getSymbolId()) == "ExpN") {
+                                /* or we can use ASTNode mark field to recognize the existance of Args. */
                                 /* this is a fuction with parmeter(s) */
                                 assert(childrenNumber == 2);
                                 pTypeTree pArgsTree = genFnTypes(pRoot->getChild(1));
                                 return checkFn(pArgsTree, pTT);
                             } else {
+                                // 如果无参函数返回函数类型又炸了，所以这里不作处理
+                                // 况且无参函数在处理叶子节点的时候，都已经处理完了，这里本就不该处理，应该直接跳过
                                 /* this is a fuction without parmeter(s) */
-                                pTypeTree pArgsTree = makeFnTree();
-                                appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
-                                pTypeTree fnRet = checkFn(pArgsTree, pTT);
-                                if (idx == pRoot->size() - 1) return fnRet;
+                                // pTypeTree pArgsTree = makeFnTree();
+                                // appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
+                                // pTypeTree fnRet = checkFn(pArgsTree, pTT);
+                                // if (idx == pRoot->size() - 1) return fnRet;
                             }
 
                         }
@@ -244,8 +247,15 @@ class TypeSystem
                             if (isFn && EType != E_ID_TYPE_FN_TYPE) assert(!"symbol not function type.");
                             else if (!isFn && EType == E_ID_TYPE_FN_TYPE) assert(!"function should be called.");
 
-                            if (EType == E_ID_TYPE_FN_TYPE) {
+                            if (EType == E_ID_TYPE_FN_TYPE && !pRoot->fnHasArgs()) {
+                                /* 无参直接计算返回值好不好嘛 */
+                                pTypeTree pArgsTree = makeFnTree();
+                                appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
+                                pTypeTree fnRet = checkFn(pArgsTree, symbol->type);
+                                return fnRet;
                             }
+
+                            /* 这里也有可能返回函数类型哦><，在有函数参数的情况下 */
                             return symbol->type;
                         }
                     }
