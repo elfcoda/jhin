@@ -1,10 +1,14 @@
+/* data structure of types. used to generate symbol table, type check and code gen. */
+
 #pragma once
 
-#include "../../comm/tree.h"
+#include <unordered_set>
+#include "container_op.h"
+#include "tree.h"
 
 namespace jhin
 {
-namespace ts
+namespace comm
 {
 
 /* types:
@@ -332,7 +336,7 @@ bool isTypeEqual(pTypeTree t1, pTypeTree t2)
         if (e2 == E_ID_TYPE_TYPE_LITERAL) assert(!"type error, can not be Type literal.");
         else return true;
     } else if (e1 == E_ID_TYPE_FN_TYPE) {
-        /* fb type */
+        /* fn type */
         if (!t1->hasChildren() || !t2->hasChildren()) assert(!"fn type should hsas children.");
         pChildrenList<TypeTree> c1 = t1->children, c2 = t2->children;
         /* both have children list */
@@ -350,6 +354,6 @@ bool isTypeEqual(pTypeTree t1, pTypeTree t2)
     return false;
 }
 
-};  /* namespace ts */
+};  /* namespace comm */
 };  /* namespace jhin */
 

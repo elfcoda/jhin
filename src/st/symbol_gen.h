@@ -2,17 +2,19 @@
 
 #include <string>
 #include <vector>
-#include "type_tree.h"
-#include "type_checker.h"
+#include <memory>
 #include "symbol_table.h"
+#include "../cgen/code_gen.h"
+#include "../ts/type_checker.h"
 #include "../ast/ast_node.h"
+#include "../../comm/type_tree.h"
 #include "../../comm/log.h"
 #include "../../comm/algorithm.h"
 #include "../../comm/container_op.h"
 
 namespace jhin
 {
-namespace ts
+namespace st
 {
 
 /* vector as stack
@@ -22,7 +24,9 @@ namespace ts
  *
  * @pTypeTree: function type.
  * */
-std::vector<pTypeTree> vFnRetStack = {};
+
+// deprecated
+// std::vector<comm::pTypeTree> vFnRetStack = {};
 
 /* check which kind of op current string is. */
 const std::unordered_set<std::string> doubleArgs = {"+", "-", "*", "/", "==", ">", ">=", "<", "<=", "!=", "<-"};
@@ -37,7 +41,17 @@ bool isSingleArg(const std::string& text)
     return singleArg.find(text) != singleArg.end();
 }
 
-class TypeSystem
+struct symbolGenRtn
+{
+    pTypeTree pTT;
+    std::string asmCode;
+
+    symbolGenRtn(pTypeTree pTT, const std::string& asmCode): pTT(pTT), asmCode(asmCode) {}
+    pTypeTree getTypeTreePtr() { return pTT; }
+    std::string getAsmCode() { return asmCode; }
+};
+
+class SymbolGen
 {
     /*
      * valur in symbol table:
@@ -63,10 +77,13 @@ class TypeSystem
      * FUNCTION     ->   | FN   | func | uk  | ptr     |
      * */
     public:
-        TypeSystem() {}
+        SymbolGen()
+        {
+            symbolTable::initSymbolTable();
+        }
 
         /* gen symbol table, type checker */
-        pTypeTree genSymbolTable(ast::pASTNode pRoot)
+        std::shared_ptr<symbolGenRtn> genSymbolTable(ast::pASTNode pRoot)
         {
             std::string text = pRoot->getText();
             unsigned astSymId = pRoot->getAstSymbolId();
@@ -76,21 +93,21 @@ class TypeSystem
 
             if (comm::isASTSymbolLeaf(astSymId)) {
                 /* leaf node, no declarations and no blocks */
-                return handleLeaf(pRoot);
+                return std::make_shared<symbolGenRtn>(handleLeaf(pRoot));
             } else if (comm::isASTSymbolNonLeaf(astSymId)) {
                 /* non-leaf node */
                 if (text == AST_DEFAULT_TEXT) {
                     pTypeTree pTT = nullptr;
                     for (int idx = 0; idx <  pRoot->size(); idx++) {
                         ast::pASTNode child = pRoot->getChild(idx);
-                        pTT = genSymbolTable(child);
+                        pTT = genSymbolTable(child)->getTypeTreePtr();
                         if (getSymbolType(pTT) == E_ID_TYPE_FN_TYPE) {
                             if (comm::symbolId2String(pRoot->getSymbolId()) == "ExpN") {
                                 /* or we can use ASTNode mark field to recognize the existance of Args. */
                                 /* this is a fuction with parmeter(s) */
                                 assert(childrenNumber == 2);
                                 pTypeTree pArgsTree = genFnTypes(pRoot->getChild(1));
-                                return checkFn(pArgsTree, pTT);
+                                return std::make_shared<symbolGenRtn>(ts::checkFn(pArgsTree, pTT));
                             } else {
                                 // 如果无参函数返回函数类型又炸了，所以这里不作处理
                                 // 况且无参函数在处理叶子节点的时候，都已经处理完了，这里本就不该处理，应该直接跳过
@@ -107,22 +124,21 @@ class TypeSystem
                      * and we want to return last line of code as default return value of this function, we just return the last return
                      * type of this non-terminal tree node, pTT, in this case.
                      * */
-                    return pTT;
+                    return std::make_shared<symbolGenRtn>(pTT);
                 } else if (text == "class") {   /* block and declaration */
                     handleClass(pRoot, false);
-                    return nullptr;
+                    return std::make_shared<symbolGenRtn>(nullptr);
                 } else if (text == "class_inherits") {
                     handleClass(pRoot, true);
-                    return nullptr;
+                    return std::make_shared<symbolGenRtn>(nullptr);
                 } else if (text == "def") {
-                    handleFn(pRoot);
-                    return nullptr;
+                    return handleFn(pRoot);
                 } else if (text == "while") {   /* block, command */
                     handleCMD(pRoot, SYMBOL_MARK_WHILE);
-                    return nullptr;
+                    return std::make_shared<symbolGenRtn>(nullptr);
                 } else if (text == "if") {
                     handleCMD(pRoot, SYMBOL_MARK_IF);
-                    return nullptr;
+                    return std::make_shared<symbolGenRtn>(nullptr, genIf(pRoot));
                 } else if (text == "if_else") {
                     handleCMD(pRoot, SYMBOL_MARK_IF);
 
@@ -131,7 +147,7 @@ class TypeSystem
                     genSymbolTable(pRoot->getChild(2));
                     symbolTable::pop_symbol_block();
 
-                    return nullptr;
+                    return std::make_shared<symbolGenRtn>(nullptr);
                 } else if (text.length() >= 4 && text.substr(0, 4) == "case") {
                     // symbolTable::add_symbol_mark(SYMBOL_MARK_CASE_OF);
                     assert(!"case to be implemented");
@@ -149,37 +165,37 @@ class TypeSystem
                         return genSymbolTable(pRoot->getChild(0));
                     } else if (childrenNumber == 2) {
                         handleDecl(pRoot);
-                        return nullptr;
+                        return std::make_shared<symbolGenRtn>(nullptr);
                     } else if (childrenNumber == 3) {
                         handleDecl(pRoot);
                         /* recurse */
                         genSymbolTable(pRoot->getChild(2));
-                        return nullptr;
+                        return std::make_shared<symbolGenRtn>(nullptr);
                     } else {
                         assert(false);
                     }
                 } else if (text == ":_<-") {
                     if (childrenNumber == 3) {
                         handleDeclAssign(pRoot);
-                        return nullptr;
+                        return std::make_shared<symbolGenRtn>(nullptr);
                     } else if (childrenNumber == 4) {
                         handleDeclAssign(pRoot);
                         genSymbolTable(pRoot->getChild(3));
-                        return nullptr;
+                        return std::make_shared<symbolGenRtn>(nullptr);
                     } else {
                         assert(false);
                     }
                 } else if (text == "->") {  // TODO: function type
                 } else if (isDoubleArgs(text)) {
                     assert(childrenNumber == 2);
-                    pTypeTree pTT1 = genSymbolTable(pRoot->getChild(0));
-                    pTypeTree pTT2 = genSymbolTable(pRoot->getChild(1));
-                    return handleDoubleOps(pTT1, pTT2, text);
+                    std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
+                    std::shared_ptr<symbolGenRtn> rtn2 = genSymbolTable(pRoot->getChild(1));
+                    return handleDoubleOps(rtn1, rtn2, text);
                 }
                 else if (isSingleArg(text)) {
                     assert(childrenNumber == 1);
-                    pTypeTree pTT = genSymbolTable(pRoot->getChild(0));
-                    return handleSingleOp(pTT, text);
+                    std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
+                    return handleSingleOp(rtn1, text);
                 }
                 else {
                     /* undefined op */
@@ -190,7 +206,7 @@ class TypeSystem
                 assert(!"symbol should be leaf or non-leaf");
             }
 
-            return nullptr;
+            return std::make_shared<symbolGenRtn>(nullptr);
         }
 
 
@@ -213,19 +229,28 @@ class TypeSystem
             if (pArgs->getText() == AST_DEFAULT_TEXT) {
                 unsigned childrenNumber = pArgs->size();
                 assert(childrenNumber == 2);
-                pTypeTree singleArg = genSymbolTable(pArgs->getChild(0));
+                pTypeTree singleArg = genSymbolTable(pArgs->getChild(0))->getTypeTreePtr();
                 appendTree(pTT, singleArg);
                 pTypeTree pSub = genFnTypes(pArgs->getChild(1));
                 mergeTree(pTT, pSub);
             } else {
                 /* single argument */
-                pTypeTree singleArg = genSymbolTable(pArgs);
+                pTypeTree singleArg = genSymbolTable(pArgs)->getTypeTreePtr();
                 appendTree(pTT, singleArg);
             }
 
             return pTT;
         }
 
+        pTypeTree getFnLastType(pTypeTree pTT)
+        {
+            assert(getSymbolType(pTT) == E_ID_TYPE_FN_TYPE);
+            unsigned childrenNum = pTT->size();
+            assert(childrenNum >= 2);
+            return pTT->getChild(childrenNum - 1);
+        }
+
+    private:
         pTypeTree handleLeaf(ast::pASTNode pRoot)
         {
             unsigned astSymId = pRoot->getAstSymbolId();
@@ -251,7 +276,7 @@ class TypeSystem
                                 /* 无参直接计算返回值好不好嘛 */
                                 pTypeTree pArgsTree = makeFnTree();
                                 appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
-                                pTypeTree fnRet = checkFn(pArgsTree, symbol->type);
+                                pTypeTree fnRet = ts::checkFn(pArgsTree, symbol->type);
                                 return fnRet;
                             }
 
@@ -270,11 +295,26 @@ class TypeSystem
                             return makeTrivial(SYMBOL_TYPE_TYPE, text);
                         }
                     }
-                case ast::AST_LEAF_RE_INT:       return makeTrivial(SYMBOL_TYPE_INT, text);
-                case ast::AST_LEAF_RE_DECIMAL:   return makeTrivial(SYMBOL_TYPE_FLOAT, text);    // TODO: decimal as float or double
-                case ast::AST_LEAF_RE_STRING:    return makeTrivial(SYMBOL_TYPE_STRING, text);
-                case ast::AST_LEAF_TRUE:         return makeTrivial(SYMBOL_TYPE_BOOL, text);
-                case ast::AST_LEAF_FALSE:        return makeTrivial(SYMBOL_TYPE_BOOL, text);
+                case ast::AST_LEAF_RE_INT:
+                    {
+                        return makeTrivial(SYMBOL_TYPE_INT, text);
+                    }
+                case ast::AST_LEAF_RE_DECIMAL:
+                    {
+                        return makeTrivial(SYMBOL_TYPE_FLOAT, text);    // TODO: decimal as float or double
+                    }
+                case ast::AST_LEAF_RE_STRING:
+                    {
+                        return makeTrivial(SYMBOL_TYPE_STRING, text);
+                    }
+                case ast::AST_LEAF_TRUE:
+                    {
+                        return makeTrivial(SYMBOL_TYPE_BOOL, text);
+                    }
+                case ast::AST_LEAF_FALSE:
+                    {
+                        return makeTrivial(SYMBOL_TYPE_BOOL, text);
+                    }
 
                 case ast::AST_LEAF_OBJECT:
                 case ast::AST_LEAF_BOOL:
@@ -303,91 +343,118 @@ class TypeSystem
         }
 
 
-        pTypeTree handleDoubleOps(pTypeTree pTT1, pTypeTree pTT2, const std::string& text)
+        std::shared_ptr<symbolGenRtn> handleDoubleOps(std::shared_ptr<symbolGenRtn> rnt1, std::shared_ptr<symbolGenRtn> rnt2, const std::string& text)
         {
+            assert(rnt1 != nullptr && rnt2 != nullptr);
+            pTyprTree pTT1 = rnt1->getTypeTreePtr(), pTT2 = rnt2->getTypeTreePtr();
+            std::string asmCode1 = rnt1->getAsmCode(), asmCode2 = rnt2->getAsmCode();
             assert(pTT1 != nullptr);
             assert(pTT2 != nullptr);
+            pTypeTree pTT = nullptr;
+            std::string asmCode = "";
             if (text == "+") {
-                return checkPlus(pTT1, pTT2);
+                pTT = ts::checkPlus(pTT1, pTT2);
+                asmCode = cgen::genPlus(asmCode1, asmCode2);
             } else if (text == "-") {
-                return checkMinus(pTT1, pTT2);
+                pTT = ts::checkMinus(pTT1, pTT2);
+                asmCode = cgen::genMinus(asmCode1, asmCode2);
             } else if (text == "*") {
-                return checkStar(pTT1, pTT2);
+                pTT = ts::checkStar(pTT1, pTT2);
+                asmCode = cgen::genStar(asmCode1, asmCode2);
             } else if (text == "/") {
-                return checkSlash(pTT1, pTT2);
+                pTT = ts::checkSlash(pTT1, pTT2);
+                asmCode = cgen::genSlash(asmCode1, asmCode2);
             } else if (text == "==") {
-                return checkEquality(pTT1, pTT2);
+                pTT = ts::checkEquality(pTT1, pTT2);
+                asmCode = cgen::genCompare(asmCode1, asmCode2);
             } else if (text == ">") {
-                return checkOrder(pTT1, pTT2);
+                pTT = ts::checkOrder(pTT1, pTT2);
+                asmCode = cgen::genCompare(asmCode1, asmCode2);
             } else if (text == ">=") {
-                return checkOrder(pTT1, pTT2);
+                pTT = ts::checkOrder(pTT1, pTT2);
+                asmCode = cgen::genCompare(asmCode1, asmCode2);
             } else if (text == "<") {
-                return checkOrder(pTT1, pTT2);
+                pTT = ts::checkOrder(pTT1, pTT2);
+                asmCode = cgen::genCompare(asmCode1, asmCode2);
             } else if (text == "<=") {
-                return checkOrder(pTT1, pTT2);
+                pTT = ts::checkOrder(pTT1, pTT2);
+                asmCode = cgen::genCompare(asmCode1, asmCode2);
             } else if (text == "!=") {
-                return checkEquality(pTT1, pTT2);
+                pTT = ts::checkEquality(pTT1, pTT2);
+                asmCode = cgen::genCompare(asmCode1, asmCode2);
             } else if (text == "<-") {
-                return checkAssign(pTT1, pTT2);
+                pTT = ts::checkAssign(pTT1, pTT2);
+                /* find the stack address of symbol */
+                asmCode = cgen::genAssign(pTT1->getSymbolName(), asmCode2);
             } else {
                 assert(!"unknown symbol");
             }
 
-            return nullptr;
+            return std::make_shared<symbolGenRtn>(pTT, asmCode);
         }
 
-        pTypeTree getFnLastType(pTypeTree pTT)
+        std::shared_ptr<symbolGenRtn> handleSingleOp(std::shared_ptr<symbolGenRtn> rtn1, const std::string& text)
         {
-            assert(getSymbolType(pTT) == E_ID_TYPE_FN_TYPE);
-            unsigned childrenNum = pTT->size();
-            assert(childrenNum >= 2);
-            return pTT->getChild(childrenNum - 1);
-        }
+            assert(rtn1 != nullptr);
+            pTypeTree pTT1 = rtn1->getTypeTreePtr();
+            assert(pTT1 != nullptr);
+            pTypeTree pTT = nullptr;
+            std::string asmCode = "";
 
-        pTypeTree handleSingleOp(pTypeTree pTT, const std::string& text)
-        {
-            assert(pTT != nullptr);
             if (text == "!") {
-                return checkNot(pTT);
+                pTT = ts::checkNot(pTT1);
+                asmCode = genNot();
             } else if (text == "isVoid") {
-                return checkIsVoid(pTT);
+                pTT = ts::checkIsVoid(pTT1);
             } else if (text == "new") {
-                return checkNew(pTT);
+                pTT = ts::checkNew(pTT1);
             } else if (text == "return") {
-                pTypeTree pRet = checkReturn(pTT);
+                pTT = ts::checkReturn(pTT1);
                 /* check if return type is compatilbe with function's signature. */
-                if (vFnRetStack.empty()) assert(!"symbol \"return\" should be appear in functions.");
-                pTypeTree topTypeTree = stackTop(vFnRetStack);
+                if (stFnDeclNumber.empty()) assert(!"symbol \"return\" should be appear in functions.");
+                pTypeTree topTypeTree = stackTop(stFnDeclNumber)->getTypeTreePtr();
                 pTypeTree pLastType = getFnLastType(topTypeTree);
-                assert(isTypeEqual(pRet, pLastType));
+                assert(isTypeEqual(pTT, pLastType));
                 comm::Log::singleton(DEBUG) >> __LINE__ >> ", return check: " >> getPtrString(pRet) >> ", Fn Type: " >> getPtrString(pLastType) >> comm::newline;
-                return pRet;
             } else {
                 assert(!"unknown symbol");
             }
 
-            return nullptr;
+            return std::make_shared<symbolGenRtn>(pTT, asmCode);
         }
 
-        void handleFn(ast::pASTNode pRoot)
+        std::shared_ptr<symbolGenRtn> handleFn(ast::pASTNode pRoot)
         {
             // TODO: check return type
 
             pTypeTree fnType = makeFnTree();
+            std::string fnCode = "";
             fnType->setSymbolName(pRoot->getChild(0)->getText());
+
+
+            // stackPush(vFnRetStack, fnType);
+            unsigned stFnArgsSize = stFnDeclNumber.size();
+            unsigned symbolIdx = 0;
+            if (stFnArgsSize != 0) {
+                symbolIdx = stFnDeclNumber[stFnArgsSize-1].second;
+                stFnDeclNumber[stFnArgsSize-1].second += 1;
+            }
             // TODO set value?
-            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, fnType);
+            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, fnType, symbolIdx);
 
 
-            stackPush(vFnRetStack, fnType);
+            stFnDeclNumber.push_back(std::make_pair(fnType, 0));
             pTypeTree fnBodyType = nullptr;
             /* generate the signature of function */
             symbolTable::add_symbol_mark(SYMBOL_MARK_FN);
             for (int idx = 1; idx < pRoot->size(); idx++) {
-                pTypeTree pTp = genSymbolTable(pRoot->getChild(idx));
+                auto pSymGenRtn = genSymbolTable(pRoot->getChild(idx));
+                assert(pSymGenRtn != nullptr);
+                pTypeTree pTp = pSymGenRtn->getTypeTreePtr();
+                fnCode += pSymGenRtn->getAsmCode();
                 comm::Log::singleton(DEBUG) >> pRoot->getChild(0)->getText() >> ": " >> comm::getPtrString(pTp) >> comm::newline;
                 /* notation: symbol and non-terminal */
-                std::string notationStr = getNotationStr(pRoot, idx);
+                std::string notationStr = pRoot->getNotationStr(idx);
                 if (notationStr == "FnArg") {
                     assert(pTp == nullptr);
                     auto vTable = symbolTable::get_symbols_in_scope();
@@ -441,8 +508,13 @@ class TypeSystem
             /* check function return type of the last expression. */
             assert(isTypeEqual(getFnLastType(fnType), fnBodyType));
 
-            stackPop(vFnRetStack);
+            // stackPop(vFnRetStack);
+            unsigned declNum = stFnDeclNumber[stFnArgsSize-1].second;
+            stFnDeclNumber.pop_back();
+            std::string sDeclRemain = cgen::genDeclRemainSpace(declNum);
             symbolTable::pop_symbol_block();
+
+            return std::make_shared<symbolGenRtn>(nullptr, sDeclRemain + fnCode);
         }
 
         void handleClass(ast::pASTNode pRoot, bool isInherits)
@@ -451,7 +523,7 @@ class TypeSystem
                                          pRoot->getChild(0)->getText(),
                                          "",    // Todo
                                          new std::vector<pTypeTree>());
-            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT);
+            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT, 0);
 
             /* 1. add mark */
             symbolTable::add_symbol_mark(SYMBOL_MARK_CLASS);
@@ -475,33 +547,46 @@ class TypeSystem
 
         void handleDecl(ast::pASTNode pRoot)
         {
-            pTypeTree pNode = genSymbolTable(pRoot->getChild(1));
-            pTypeTree pTT = checkDecl(pNode);
+            unsigned stFnArgsSize = stFnDeclNumber.size();
+            unsigned symbolIdx = 0;
+            if (stFnArgsSize != 0) {
+                symbolIdx = stFnDeclNumber[stFnArgsSize-1].second;
+                stFnDeclNumber[stFnArgsSize-1].second += 1;
+            }
+
+            pTypeTree pNode = genSymbolTable(pRoot->getChild(1))->getTypeTreePtr();
+            pTypeTree pTT = ts::checkDecl(pNode);
             pTT->setSymbolName(pRoot->getChild(0)->getText());
-            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT);
+            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT, symbolIdx);
+            std::string genStr = genDecl(pTT->getSymbolName(), pTT->getValue());
         }
 
         void handleDeclAssign(ast::pASTNode pRoot)
         {
-            pTypeTree pNode = genSymbolTable(pRoot->getChild(1));
-            pTypeTree pTT = checkDecl(pNode);
+            unsigned stFnArgsSize = stFnDeclNumber.size();
+            unsigned symbolIdx = 0;
+            if (stFnArgsSize != 0) {
+                symbolIdx = stFnDeclNumber[stFnArgsSize-1].second;
+                stFnDeclNumber[stFnArgsSize-1].second += 1;
+            }
+
+            pTypeTree pNode = genSymbolTable(pRoot->getChild(1))->getTypeTreePtr();
+            pTypeTree pTT = ts::checkDecl(pNode);
             pTT->setSymbolName(pRoot->getChild(0)->getText());
             /* initial value */
-            pTypeTree pValue = genSymbolTable(pRoot->getChild(2));
+            pTypeTree pValue = genSymbolTable(pRoot->getChild(2))->getTypeTreePtr();
             pTT->setValue(pValue->getValue());
             /* add to symbol table */
-            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT);
+            symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT, symbolIdx);
+            std::string genStr = genDecl(pTT->getSymbolName(), pTT->getValue());
         }
 
-        std::string getNotationStr(ast::pASTNode parent, unsigned idx)
-        {
-            unsigned notation = parent->getChild(idx)->getNotation();
-            assert(syntax::id_to_non_terminal.find(notation) != syntax::id_to_non_terminal.end());
-            std::string notationStr = syntax::id_to_non_terminal.at(notation);
-
-            return notationStr;
-        }
+    public:
+        /* function name, number of declarations
+         */
+        static std::vector<std::pair<pTypeTree, unsigned>> stFnDeclNumber;
 };
+std::vector<std::pair<pTypeTree, unsigned>> SymbolGen::stFnDeclNumber;
 
-};  /* namespace ts */
+};  /* namespace st */
 };  /* namespace jhin */

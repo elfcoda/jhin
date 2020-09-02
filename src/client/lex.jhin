@@ -25,6 +25,6 @@ def func(m: Int, n: Int): Int {
     fu()
     recFn(7)
     func(1, 2)
-    9
+    return 7
 }
 

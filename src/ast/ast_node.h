@@ -9,6 +9,7 @@
 #include "ast_non_leaf.h"
 #include "../../comm/log.h"
 #include "../../comm/comm.h"
+#include "../syntax/non_terminal.h"
 
 namespace jhin
 {
@@ -241,6 +242,15 @@ struct ASTNode
         }
     }
 
+
+    std::string getNotationStr(unsigned idx)
+    {
+        unsigned notation = this->getChild(idx)->getNotation();
+        assert(syntax::id_to_non_terminal.find(notation) != syntax::id_to_non_terminal.end());
+        std::string notationStr = syntax::id_to_non_terminal.at(notation);
+
+        return notationStr;
+    }
 
     static void showTree(pASTNode pRoot);
     static std::tuple<std::string, unsigned, unsigned> parseTree2String(pASTNode pRoot, int indent);

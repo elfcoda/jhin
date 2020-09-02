@@ -2,14 +2,14 @@
 
 #include <string>
 #include <unordered_set>
-#include "type_tree.h"
-#include "symbol_table.h"
+#include "../../comm/type_tree.h"
 #include "../../comm/log.h"
 
 namespace jhin
 {
 namespace ts
 {
+    using namespace jhin::comm;
 
     /* type checker would not calculate the result */
     pTypeTree checkDecl(pTypeTree pTree)
@@ -20,7 +20,7 @@ namespace ts
             assert(trivialTypes.find(pTree->getValue()) != trivialTypes.end());
             pTT = new TypeTree(trivialTypes.at(pTree->getValue()), "", "", nullptr);
         } else if (getSymbolType(pTree) == E_ID_TYPE_EXPAND_TYPE) {
-            std::shared_ptr<symbolItem> si = symbolTable::find_symbol(pTree->getValue());
+            std::shared_ptr<st::symbolItem> si = st::symbolTable::find_symbol(pTree->getValue());
             assert(si != nullptr);
             pTT = new TypeTree(SYMBOL_TYPE_CLASS,
                                "",
@@ -164,7 +164,7 @@ namespace ts
     pTypeTree checkNew(pTypeTree t)
     {
         assert(getSymbolType(t) == E_ID_TYPE_EXPAND_TYPE);
-        auto ptr = symbolTable::find_symbol(t->getValue())->type->children;
+        auto ptr = st::symbolTable::find_symbol(t->getValue())->type->children;
         pTypeTree pTT = new TypeTree(SYMBOL_TYPE_CLASS, "", "", ptr, t->getValue());
         return pTT;
     }

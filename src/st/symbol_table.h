@@ -1,15 +1,17 @@
+/* available for type system and code generation phase */
+
 #pragma once
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <memory>
-#include "type_tree.h"
+#include "../../comm/type_tree.h"
 #include "../lex/lex_meta.h"
 
 namespace jhin
 {
-namespace ts
+namespace st
 {
 
 /* affect symbols' lifetime in scope */
@@ -35,27 +37,41 @@ struct symbolItem
     pTypeTree       type;
     lex::pMetaInfo  symbolInfo;
 
+    /* the declarations' index in the stack */
+    unsigned idx;
+
     /* mark */
     ESymbolMark     mark;
 
-    symbolItem(ESymbolMark sm, pTypeTree tp) {
-        mark = sm;
-        type = tp;
+    symbolItem(ESymbolMark sm, pTypeTree tp, unsigned idx) {
+        this->mark = sm;
+        this->type = tp;
+        this->idx = idx;
     }
 
     bool isSymbolMark() { return mark == SYMBOL_MARK_SYMBOL; }
     bool isFnMark() { return mark == SYMBOL_MARK_FN; }
     bool isClassMark() { return mark == SYMBOL_MARK_CLASS; }
-    bool isIfMark() {return mark == SYMBOL_MARK_IF; }
-    bool isElseMark() {return mark == SYMBOL_MARK_ELSE; }
-    bool isWhileMark() {return mark == SYMBOL_MARK_WHILE; }
-    bool isCaseOfmark() {return mark == SYMBOL_MARK_CASE_OF; }
+    bool isIfMark() { return mark == SYMBOL_MARK_IF; }
+    bool isElseMark() { return mark == SYMBOL_MARK_ELSE; }
+    bool isWhileMark() { return mark == SYMBOL_MARK_WHILE; }
+    bool isCaseOfmark() { return mark == SYMBOL_MARK_CASE_OF; }
 
     std::string getSymbolName() {
         if (type == nullptr) {
             return TS_SYMBOL_ERROR;
         }
         return type->getSymbolName();
+    }
+
+    void setIdx(unsigned idx)
+    {
+        this->idx = idx;
+    }
+
+    unsigned getIdx()
+    {
+        return idx;
     }
 
     std::string getExpandType() {
@@ -77,10 +93,11 @@ struct symbolTable
 {
     static std::vector<std::shared_ptr<symbolItem>> table;
 
+    static void initSymbolTable();
     static bool add_symbol_mark(ESymbolMark sm);
-    static bool add_symbol(ESymbolMark sm, pTypeTree tp);
+    static bool add_symbol(ESymbolMark sm, pTypeTree tp, unsigned idx);
     static bool pop_symbol();
-    static bool pop_symbol_block(bool popMark);
+    static unsigned pop_symbol_block(bool popMark);
     static std::shared_ptr<symbolItem> find_symbol(const std::string& symbolName);
     static std::shared_ptr<symbolItem> find_symbol_in_scope(const std::string& symbolName);
     static std::vector<std::shared_ptr<symbolItem>> get_symbols_in_scope();
@@ -91,16 +108,21 @@ struct symbolTable
 using pSymbolTable = symbolTable*;
 std::vector<std::shared_ptr<symbolItem>> symbolTable::table;
 
+void symbolTable::initSymbolTable()
+{
+    table.clear();
+}
+
 bool symbolTable::add_symbol_mark(ESymbolMark sm)
 {
-    table.push_back(std::make_shared<symbolItem>(sm, nullptr));
+    table.push_back(std::make_shared<symbolItem>(sm, nullptr, 0));
     return true;
 }
 
-bool symbolTable::add_symbol(ESymbolMark sm, pTypeTree tp)
+bool symbolTable::add_symbol(ESymbolMark sm, pTypeTree tp, unsigned idx)
 {
     assert(find_symbol_in_scope(tp->getSymbolName()) == nullptr);
-    table.push_back(std::make_shared<symbolItem>(sm, tp));
+    table.push_back(std::make_shared<symbolItem>(sm, tp, idx));
     return true;
 }
 
@@ -113,18 +135,20 @@ bool symbolTable::pop_symbol()
 }
 
 /* @popMark: false when clear current block symbols */
-bool symbolTable::pop_symbol_block(bool popMark = true)
+unsigned symbolTable::pop_symbol_block(bool popMark = true)
 {
+    unsigned cnt = 0;
     assert(!table.empty());
     /* pop symbol mark */
     for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolMark(); idx--) {
         table.pop_back();
+        cnt += 1;
     }
 
     /* pop non-symbol mark */
     if (popMark && !table.empty()) table.pop_back();
 
-    return true;
+    return cnt;
 }
 
 std::shared_ptr<symbolItem> symbolTable::find_symbol(const std::string& symbolName)
@@ -184,6 +208,6 @@ void symbolTable::unionSingleItem2Tree(pTypeTree pTT, const std::shared_ptr<symb
     appendTree(pTT, item->type);
 }
 
-};  /* namespace ts */
+};  /* namespace st */
 };  /* namespace jhin */
 
