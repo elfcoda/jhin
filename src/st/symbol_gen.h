@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include "symbol_def.h"
 #include "symbol_table.h"
 #include "../cgen/code_gen.h"
 #include "../ts/type_checker.h"
@@ -40,16 +41,6 @@ bool isSingleArg(const std::string& text)
 {
     return singleArg.find(text) != singleArg.end();
 }
-
-struct symbolGenRtn
-{
-    pTypeTree pTT;
-    std::string asmCode;
-
-    symbolGenRtn(pTypeTree pTT, const std::string& asmCode): pTT(pTT), asmCode(asmCode) {}
-    pTypeTree getTypeTreePtr() { return pTT; }
-    std::string getAsmCode() { return asmCode; }
-};
 
 class SymbolGen
 {
@@ -107,7 +98,7 @@ class SymbolGen
                                 /* this is a fuction with parmeter(s) */
                                 assert(childrenNumber == 2);
                                 pTypeTree pArgsTree = genFnTypes(pRoot->getChild(1));
-                                return std::make_shared<symbolGenRtn>(ts::checkFn(pArgsTree, pTT), genFnCall(pTT->getSymbolName(), pArgsTree));
+                                return std::make_shared<symbolGenRtn>(ts::checkFn(pArgsTree, pTT), cgen::genFnCall(pTT->getSymbolName(), pArgsTree));
                             } else {
                                 // 如果无参函数返回函数类型又炸了，所以这里不作处理
                                 // 况且无参函数在处理叶子节点的时候，都已经处理完了，这里本就不该处理，应该直接跳过
@@ -138,13 +129,13 @@ class SymbolGen
                     std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
                     std::shared_ptr<symbolGenRtn> rtn2 = genSymbolTable(pRoot->getChild(1));
                     symbolTable::pop_symbol_block();
-                    return std::make_shared<symbolGenRtn>(nullptr, genWhile(pRoot, rtn1, rtn2));
+                    return std::make_shared<symbolGenRtn>(nullptr, cgen::genWhile(pRoot, rtn1, rtn2));
                 } else if (text == "if") {
                     symbolTable::add_symbol_mark(SYMBOL_MARK_IF);
                     std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
                     std::shared_ptr<symbolGenRtn> rtn2 = genSymbolTable(pRoot->getChild(1));
                     symbolTable::pop_symbol_block();
-                    return std::make_shared<symbolGenRtn>(nullptr, genIf(pRoot, rtn1, rtn2));
+                    return std::make_shared<symbolGenRtn>(nullptr, cgen::genIf(pRoot, rtn1, rtn2));
                 } else if (text == "if_else") {
                     symbolTable::add_symbol_mark(SYMBOL_MARK_IF);
                     std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
@@ -156,7 +147,7 @@ class SymbolGen
                     std::shared_ptr<symbolGenRtn> rtn3 = genSymbolTable(pRoot->getChild(2));
                     symbolTable::pop_symbol_block();
 
-                    return std::make_shared<symbolGenRtn>(nullptr, genIfElse(pRoot, rtn1, rtn2, rtn3));
+                    return std::make_shared<symbolGenRtn>(nullptr, cgen::genIfElse(pRoot, rtn1, rtn2, rtn3));
                 } else if (text.length() >= 4 && text.substr(0, 4) == "case") {
                     // symbolTable::add_symbol_mark(SYMBOL_MARK_CASE_OF);
                     assert(!"case to be implemented");
@@ -286,7 +277,7 @@ class SymbolGen
                                 pTypeTree pArgsTree = makeFnTree();
                                 appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
                                 pTypeTree fnRet = ts::checkFn(pArgsTree, symbol->type);
-                                return std::make_shared<symbolGenRtn>(fnRet, genFnCall(text, nullptr));
+                                return std::make_shared<symbolGenRtn>(fnRet, cgen::genFnCall(text, nullptr));
                             }
 
                             if (isFn) {
@@ -294,7 +285,7 @@ class SymbolGen
                                 return std::make_shared<symbolGenRtn>(symbol->type, "");
                             } else {
                                 /* 不是函数，只是普通符号 */
-                                return std::make_shared<symbolGenRtn>(symbol->type, genBySymbol(symbol->type));
+                                return std::make_shared<symbolGenRtn>(symbol->type, cgen::genBySymbol(symbol->type));
                             }
                         }
                     }
@@ -311,23 +302,23 @@ class SymbolGen
                     }
                 case ast::AST_LEAF_RE_INT:
                     {
-                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_INT, text), genREInt(text));
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_INT, text), cgen::genREInt(text));
                     }
                 case ast::AST_LEAF_RE_DECIMAL:
                     {
-                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_FLOAT, text), genDecimal(text));    // TODO: decimal as float or double
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_FLOAT, text), cgen::genDecimal(text));    // TODO: decimal as float or double
                     }
                 case ast::AST_LEAF_RE_STRING:
                     {
-                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_STRING, text), genREString(text));
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_STRING, text), cgen::genREString(text));
                     }
                 case ast::AST_LEAF_TRUE:
                     {
-                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_BOOL, text), genBool(text));
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_BOOL, text), cgen::genBool(text));
                     }
                 case ast::AST_LEAF_FALSE:
                     {
-                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_BOOL, text), genBool(text));
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_BOOL, text), cgen::genBool(text));
                     }
 
                 case ast::AST_LEAF_OBJECT:
@@ -360,7 +351,7 @@ class SymbolGen
         std::shared_ptr<symbolGenRtn> handleDoubleOps(std::shared_ptr<symbolGenRtn> rnt1, std::shared_ptr<symbolGenRtn> rnt2, const std::string& text)
         {
             assert(rnt1 != nullptr && rnt2 != nullptr);
-            pTyprTree pTT1 = rnt1->getTypeTreePtr(), pTT2 = rnt2->getTypeTreePtr();
+            pTypeTree pTT1 = rnt1->getTypeTreePtr(), pTT2 = rnt2->getTypeTreePtr();
             std::string asmCode1 = rnt1->getAsmCode(), asmCode2 = rnt2->getAsmCode();
             assert(pTT1 != nullptr);
             assert(pTT2 != nullptr);
@@ -529,7 +520,7 @@ class SymbolGen
             symbolTable::pop_symbol_block();
 
             std::string sFnHead = "_" + fnType->getSymbolName() + ":\n";
-            std::string sFnTail = genFnTail();
+            std::string sFnTail = cgen::genFnTail();
 
             return std::make_shared<symbolGenRtn>(nullptr, sFnHead + sDeclRemain + fnCode + sFnTail);
         }
@@ -575,7 +566,7 @@ class SymbolGen
             pTypeTree pTT = ts::checkDecl(pNode);
             pTT->setSymbolName(pRoot->getChild(0)->getText());
             symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT, symbolIdx);
-            std::string genStr = genDecl(pTT->getSymbolName(), pTT->getValue());
+            std::string genStr = cgen::genDecl(pTT->getSymbolName(), pTT->getValue());
         }
 
         void handleDeclAssign(ast::pASTNode pRoot)
@@ -595,7 +586,7 @@ class SymbolGen
             pTT->setValue(pValue->getValue());
             /* add to symbol table */
             symbolTable::add_symbol(SYMBOL_MARK_SYMBOL, pTT, symbolIdx);
-            std::string genStr = genDecl(pTT->getSymbolName(), pTT->getValue());
+            std::string genStr = cgen::genDecl(pTT->getSymbolName(), pTT->getValue());
         }
 
     public:

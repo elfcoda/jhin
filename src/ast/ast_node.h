@@ -60,10 +60,10 @@ struct ASTNodeData
 
     std::string toString()
     {
-        if (text != AST_DEFAULT_TEXT) {
+        // if (text != AST_DEFAULT_TEXT) {
             if (text == "\n") return "'/n'";
             else return text;
-        }
+        // }
 
         return comm::symbolId2String(symbolId) + "[" + comm::symbolId2String(notation) + "]";
     }

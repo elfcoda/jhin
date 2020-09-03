@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include "../ast/ast_node.h"
+#include "../st/symbol_def.h"
 #include "../st/symbol_table.h"
 #include "../../comm/type_tree.h"
 
@@ -135,7 +136,7 @@ std::string genLabel(ELabelType lbltype = E_LABEL_TYPE_OTHER)
 
 unsigned getSymbolIdx(const std::string& symbolName)
 {
-    std::shared_ptr<symbolItem> ptr = st::symbolTable::find_symbol_in_fn(symbolName);
+    std::shared_ptr<st::symbolItem> ptr = st::symbolTable::find_symbol_in_fn(symbolName);
     if (ptr == nullptr) {
         /* varibles should be in this scope */
         assert(!"symbol should be in this fn scope.");
@@ -212,14 +213,14 @@ std::string genAssign(const std::string& symbolName, const std::string& asmCode2
     s += asmCode2;
     unsigned delta = getSymbolIdx(symbolName) * SIZE_OF_STACK_ELEMENT;
     /* save the data to memory */
-    s += "movq %rbx, -" + delta + "(%rbp)\n";
+    s += "movq %rbx, -" + std::to_string(delta) + "(%rbp)\n";
     return s;
 }
 
 std::string genDeclRemainSpace(unsigned declNum)
 {
     std::string s = "";
-    s += "subq " + SIZE_OF_STACK_ELEMENT * declNum + ", %rsp\n";
+    s += "subq " + std::to_string(SIZE_OF_STACK_ELEMENT * declNum) + ", %rsp\n";
     return s;
 }
 
@@ -235,7 +236,7 @@ std::string genDecl(const std::string& symbolName, const std::string& value)
     }
 
     unsigned delta = symbolIdx * SIZE_OF_STACK_ELEMENT;
-    s += "movq " + value + ", -" + delta + "(%rbp)\n";
+    s += "movq " + value + ", -" + std::to_string(delta) + "(%rbp)\n";
     return s;
 }
 
@@ -290,7 +291,7 @@ std::string genLeaf()
  * if-body: instruction
  * other instruction
  * */
-std::string genIf(ast::pASTNode pNode, std::shared_ptr<symbolGenRtn> rtn1, std::shared_ptr<symbolGenRtn> rtn2)
+std::string genIf(ast::pASTNode pNode, std::shared_ptr<st::symbolGenRtn> rtn1, std::shared_ptr<st::symbolGenRtn> rtn2)
 {
     std::string s = "";
     assert(pNode != nullptr && rtn1 != nullptr && rtn2 != nullptr);
@@ -345,7 +346,7 @@ std::string genIf(ast::pASTNode pNode, std::shared_ptr<symbolGenRtn> rtn1, std::
  * while-body: instruction
  * other instruction
  * */
-std::string genWhile(ast::pASTNode pNode, std::shared_ptr<symbolGenRtn> rtn1, std::shared_ptr<symbolGenRtn> rtn2)
+std::string genWhile(ast::pASTNode pNode, std::shared_ptr<st::symbolGenRtn> rtn1, std::shared_ptr<st::symbolGenRtn> rtn2)
 {
     std::string s = "";
     assert(pNode != nullptr && rtn1 != nullptr && rtn2 != nullptr);
@@ -413,9 +414,9 @@ std::string genWhile(ast::pASTNode pNode, std::shared_ptr<symbolGenRtn> rtn1, st
  * other instruction
  * */
 std::string genIfElse(ast::pASTNode pNode,
-                      std::shared_ptr<symbolGenRtn> rtn1,
-                      std::shared_ptr<symbolGenRtn> rtn2,
-                      std::shared_ptr<symbolGenRtn> rtn3)
+                      std::shared_ptr<st::symbolGenRtn> rtn1,
+                      std::shared_ptr<st::symbolGenRtn> rtn2,
+                      std::shared_ptr<st::symbolGenRtn> rtn3)
 {
     std::string s = "";
     assert(pNode != nullptr && rtn1 != nullptr && rtn2 != nullptr && rtn3 != nullptr);
@@ -494,14 +495,14 @@ std::string genFnCall(const std::string& fnName, pTypeTree pArgsTree)
         unsigned delta = pTT->getIdx() * SIZE_OF_STACK_ELEMENT;
         if (argType == SYMBOL_TYPE_INT) {
             /* Int Value */
-            s += "movq " + pTT->getValue() + ", " + delta + "(%rbp)\n";
+            s += "movq " + pTT->getValue() + ", " + std::to_string(delta) + "(%rbp)\n";
         } else if (argType == SYMBOL_TYPE_BOOL) {
             /* Bool value */
             std::string sValue = "";
             if (pTT->getValue() == "True") sValue = "1";
             else if (pTT->getValue() == "False") sValue = "0";
             else assert(!"invalid bool value!");
-            s += "movq " + sValue + ", " + delta + "(%rbp)\n";
+            s += "movq " + sValue + ", " + std::to_string(delta) + "(%rbp)\n";
         } else {
             /* unsupported value */
             assert(!"unsupported value type!");
@@ -521,10 +522,10 @@ std::string genBySymbol(pTypeTree pTT)
      * 这个符号的时候要去栈中取 */
     if (pTT->getType() == SYMBOL_TYPE_INT) {
         delta = pTT->getIdx() * SIZE_OF_STACK_ELEMENT;
-        s = "movq " + delta + "(%rbp), %rbx\n";
+        s = "movq " + std::to_string(delta) + "(%rbp), %rbx\n";
     } else if (pTT->getType() == SYMBOL_TYPE_BOOL) {
         delta = pTT->getIdx() * SIZE_OF_STACK_ELEMENT;
-        s = "movq " + delta + "(%rbp), %rbx\n";
+        s = "movq " + std::to_string(delta) + "(%rbp), %rbx\n";
     } else {
         assert(!"unsupported value type!");
     }

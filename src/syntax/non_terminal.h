@@ -13,24 +13,24 @@ namespace jhin {
 namespace syntax {
 
 	#define NON_TERMINAL_IDX_MIN    1
-	#define NON_TERMINAL_IDX_MAX    44
+	#define NON_TERMINAL_IDX_MAX    46
 	#define SYNTAX_EPSILON_STR      "EPSILON"
-	#define SYNTAX_EPSILON_IDX      45
+	#define SYNTAX_EPSILON_IDX      47
 
 	std::unordered_map<std::string, unsigned int> non_terminal_to_id = {
 			{"Prog'", 1}, {"Prog", 2}, {"Prog_u", 3}, {"Cmd", 4}, {"CmdN", 5}, {"CmdC", 6}, {"CmdU", 7}, {"Formals", 8}, {"Formalt", 9}, 
 			{"Formal", 10}, {"FormalU", 11}, {"Newlq", 12}, {"Newls", 13}, {"Newlp", 14}, {"Decls", 15}, {"Declt", 16}, {"Decl", 17}, {"DeclN", 18}, {"Class", 19}, 
 			{"Proc", 20}, {"FnArg", 21}, {"FnRetTp", 22}, {"Proc_ar", 23}, {"Type", 24}, {"Exp", 25}, {"Exp0", 26}, {"Exp1", 27}, {"Exp2", 28}, {"Exp3", 29}, 
-			{"ExpN", 30}, {"Exp_ar", 31}, {"GEN_TERMINAL_1", 32}, {"GEN_TERMINAL_2", 33}, {"GEN_TERMINAL_3", 34}, {"GEN_TERMINAL_4", 35}, {"GEN_TERMINAL_5", 36}, {"GEN_TERMINAL_6", 37}, {"GEN_TERMINAL_7", 38}, {"GEN_TERMINAL_8", 39}, 
-			{"GEN_TERMINAL_9", 40}, {"GEN_TERMINAL_10", 41}, {"GEN_TERMINAL_11", 42}, {"GEN_TERMINAL_12", 43}, {"GEN_TERMINAL_13", 44}
+			{"ExpN", 30}, {"FnCall", 31}, {"FnArgs", 32}, {"Exp_ar", 33}, {"GEN_TERMINAL_1", 34}, {"GEN_TERMINAL_2", 35}, {"GEN_TERMINAL_3", 36}, {"GEN_TERMINAL_4", 37}, {"GEN_TERMINAL_5", 38}, {"GEN_TERMINAL_6", 39}, 
+			{"GEN_TERMINAL_7", 40}, {"GEN_TERMINAL_8", 41}, {"GEN_TERMINAL_9", 42}, {"GEN_TERMINAL_10", 43}, {"GEN_TERMINAL_11", 44}, {"GEN_TERMINAL_12", 45}, {"GEN_TERMINAL_13", 46}
 	};
 
 	std::unordered_map<unsigned int, std::string> id_to_non_terminal = {
 			{1, "Prog'"}, {2, "Prog"}, {3, "Prog_u"}, {4, "Cmd"}, {5, "CmdN"}, {6, "CmdC"}, {7, "CmdU"}, {8, "Formals"}, {9, "Formalt"}, 
 			{10, "Formal"}, {11, "FormalU"}, {12, "Newlq"}, {13, "Newls"}, {14, "Newlp"}, {15, "Decls"}, {16, "Declt"}, {17, "Decl"}, {18, "DeclN"}, {19, "Class"}, 
 			{20, "Proc"}, {21, "FnArg"}, {22, "FnRetTp"}, {23, "Proc_ar"}, {24, "Type"}, {25, "Exp"}, {26, "Exp0"}, {27, "Exp1"}, {28, "Exp2"}, {29, "Exp3"}, 
-			{30, "ExpN"}, {31, "Exp_ar"}, {32, "GEN_TERMINAL_1"}, {33, "GEN_TERMINAL_2"}, {34, "GEN_TERMINAL_3"}, {35, "GEN_TERMINAL_4"}, {36, "GEN_TERMINAL_5"}, {37, "GEN_TERMINAL_6"}, {38, "GEN_TERMINAL_7"}, {39, "GEN_TERMINAL_8"}, 
-			{40, "GEN_TERMINAL_9"}, {41, "GEN_TERMINAL_10"}, {42, "GEN_TERMINAL_11"}, {43, "GEN_TERMINAL_12"}, {44, "GEN_TERMINAL_13"}
+			{30, "ExpN"}, {31, "FnCall"}, {32, "FnArgs"}, {33, "Exp_ar"}, {34, "GEN_TERMINAL_1"}, {35, "GEN_TERMINAL_2"}, {36, "GEN_TERMINAL_3"}, {37, "GEN_TERMINAL_4"}, {38, "GEN_TERMINAL_5"}, {39, "GEN_TERMINAL_6"}, 
+			{40, "GEN_TERMINAL_7"}, {41, "GEN_TERMINAL_8"}, {42, "GEN_TERMINAL_9"}, {43, "GEN_TERMINAL_10"}, {44, "GEN_TERMINAL_11"}, {45, "GEN_TERMINAL_12"}, {46, "GEN_TERMINAL_13"}
 	};
 
 
@@ -59,12 +59,14 @@ namespace syntax {
 			{"FnRetTp", {{"GEN_TERMINAL_8"}}}, 
 			{"Proc_ar", {{"RE_ID", "COLON", "Type", "GEN_TERMINAL_9"}}}, 
 			{"Type", {{"Exp"}, {"TYPE"}}}, 
-			{"Exp", {{"RETURN", "Exp"}, {"CASE", "Exp", "OF", "LCURLY", "GEN_TERMINAL_10", "OTHERWISE", "INFER", "Exp", "RCURLY"}, {"THIS"}, {"LET", "DeclN", "GEN_TERMINAL_11", "IN", "LCURLY", "Exp", "RCURLY"}, {"RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"RE_ID", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"RE_ID", "AT", "RE_VALUE", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"LPAREN", "Exp", "RPAREN", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"LPAREN", "Exp", "RPAREN", "AT", "RE_VALUE", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"LAMBDA", "ARROW", "LCURLY", "Exp", "RCURLY"}, {"LAMBDA", "DeclN", "GEN_TERMINAL_11", "ARROW", "LCURLY", "Exp", "RCURLY"}, {"Exp0"}}}, 
+			{"Exp", {{"RETURN", "Exp"}, {"CASE", "Exp", "OF", "Newls", "LCURLY", "GEN_TERMINAL_10", "OTHERWISE", "INFER", "Exp", "Newls", "RCURLY"}, {"THIS"}, {"LET", "DeclN", "GEN_TERMINAL_11", "IN", "LCURLY", "Exp", "RCURLY"}, {"RE_ID", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"RE_ID", "AT", "RE_VALUE", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"LPAREN", "Exp", "RPAREN", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"LPAREN", "Exp", "RPAREN", "AT", "RE_VALUE", "DOT", "RE_ID", "LPAREN", "GEN_TERMINAL_12", "RPAREN"}, {"LAMBDA", "ARROW", "LCURLY", "Exp", "RCURLY"}, {"LAMBDA", "DeclN", "GEN_TERMINAL_11", "ARROW", "LCURLY", "Exp", "RCURLY"}, {"Exp0"}}}, 
 			{"Exp0", {{"Exp0", "EQ", "Exp1"}, {"Exp0", "LT", "Exp1"}, {"Exp0", "LE", "Exp1"}, {"Exp0", "GT", "Exp1"}, {"Exp0", "GE", "Exp1"}, {"Exp1"}}}, 
 			{"Exp1", {{"Exp1", "PLUS", "Exp2"}, {"Exp1", "MINUS", "Exp2"}, {"Exp2"}}}, 
 			{"Exp2", {{"Exp2", "STAR", "Exp3"}, {"Exp2", "SLASH", "Exp3"}, {"Exp3"}}}, 
 			{"Exp3", {{"NOT", "ExpN"}, {"ISVOID", "ExpN"}, {"ExpN"}, {"NEW", "RE_VALUE"}}}, 
-			{"ExpN", {{"RE_INT"}, {"RE_DECIMAL"}, {"RE_STRING"}, {"RE_ID"}, {"TRUE"}, {"FALSE"}, {"LPAREN", "Exp", "RPAREN"}, {"RE_VALUE"}, {"OBJECT"}, {"BOOL"}, {"INT"}, {"FLOAT"}, {"DOUBLE"}, {"LONG"}, {"STRING"}, {"UNIT"}}}, 
+			{"ExpN", {{"RE_INT"}, {"RE_DECIMAL"}, {"RE_STRING"}, {"RE_ID"}, {"TRUE"}, {"FALSE"}, {"LPAREN", "Exp", "RPAREN"}, {"RE_VALUE"}, {"OBJECT"}, {"BOOL"}, {"INT"}, {"FLOAT"}, {"DOUBLE"}, {"LONG"}, {"STRING"}, {"UNIT"}, {"FnCall"}}}, 
+			{"FnCall", {{"RE_ID", "LPAREN", "FnArgs", "RPAREN"}}}, 
+			{"FnArgs", {{"GEN_TERMINAL_12"}}}, 
 			{"Exp_ar", {{"Exp", "GEN_TERMINAL_13"}}}, 
 			{"GEN_TERMINAL_1", {{"Prog_u", "GEN_TERMINAL_1"}, {"EPSILON"}}}, 
 			{"GEN_TERMINAL_2", {{"Newlp", "Formalt"}, {"EPSILON"}}}, 

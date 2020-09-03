@@ -92,7 +92,7 @@ class ParseTree
             assert(b == true);
 
             pASTNode pRoot = genParseTree(lexResult, pDFAStart);
-            ASTNode::showTree(pRoot);
+            // ASTNode::showTree(pRoot);
             travelHandleParseTree(pRoot);
             // travelParseTree(pRoot);
 

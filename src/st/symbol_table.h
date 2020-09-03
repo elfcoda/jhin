@@ -100,6 +100,7 @@ struct symbolTable
     static unsigned pop_symbol_block(bool popMark);
     static std::shared_ptr<symbolItem> find_symbol(const std::string& symbolName);
     static std::shared_ptr<symbolItem> find_symbol_in_scope(const std::string& symbolName);
+    static std::shared_ptr<symbolItem> find_symbol_in_fn(const std::string& symbolName);
     static std::vector<std::shared_ptr<symbolItem>> get_symbols_in_scope();
     static std::shared_ptr<symbolItem> get_last_symbol();
     static void unionSymbolItems2Tree(pTypeTree pTT, const std::vector<std::shared_ptr<symbolItem>>& vTable);
