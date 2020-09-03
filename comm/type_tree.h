@@ -354,6 +354,20 @@ bool isTypeEqual(pTypeTree t1, pTypeTree t2)
     return false;
 }
 
+unsigned fnArgsNumber(pTypeTree pTT)
+{
+    unsigned cnt = 0;
+    assert(pTT != nullptr);
+    assert(getSymbolType(pTT) == E_ID_TYPE_FN_TYPE);
+    unsigned n = pTT->size();
+    assert(n >= 2);
+    if (pTT->getChild(0)->getType() == SYMBOL_TYPE_UNIT) {
+        return 0;
+    }
+    return n - 1;
+}
+
+
 };  /* namespace comm */
 };  /* namespace jhin */
 

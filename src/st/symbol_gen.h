@@ -93,7 +93,7 @@ class SymbolGen
 
             if (comm::isASTSymbolLeaf(astSymId)) {
                 /* leaf node, no declarations and no blocks */
-                return std::make_shared<symbolGenRtn>(handleLeaf(pRoot));
+                return handleLeaf(pRoot);
             } else if (comm::isASTSymbolNonLeaf(astSymId)) {
                 /* non-leaf node */
                 if (text == AST_DEFAULT_TEXT) {
@@ -107,7 +107,7 @@ class SymbolGen
                                 /* this is a fuction with parmeter(s) */
                                 assert(childrenNumber == 2);
                                 pTypeTree pArgsTree = genFnTypes(pRoot->getChild(1));
-                                return std::make_shared<symbolGenRtn>(ts::checkFn(pArgsTree, pTT));
+                                return std::make_shared<symbolGenRtn>(ts::checkFn(pArgsTree, pTT), genFnCall(pTT->getSymbolName(), pArgsTree));
                             } else {
                                 // 如果无参函数返回函数类型又炸了，所以这里不作处理
                                 // 况且无参函数在处理叶子节点的时候，都已经处理完了，这里本就不该处理，应该直接跳过
@@ -134,20 +134,29 @@ class SymbolGen
                 } else if (text == "def") {
                     return handleFn(pRoot);
                 } else if (text == "while") {   /* block, command */
-                    handleCMD(pRoot, SYMBOL_MARK_WHILE);
-                    return std::make_shared<symbolGenRtn>(nullptr);
+                    symbolTable::add_symbol_mark(SYMBOL_MARK_WHILE);
+                    std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
+                    std::shared_ptr<symbolGenRtn> rtn2 = genSymbolTable(pRoot->getChild(1));
+                    symbolTable::pop_symbol_block();
+                    return std::make_shared<symbolGenRtn>(nullptr, genWhile(pRoot, rtn1, rtn2));
                 } else if (text == "if") {
-                    handleCMD(pRoot, SYMBOL_MARK_IF);
-                    return std::make_shared<symbolGenRtn>(nullptr, genIf(pRoot));
+                    symbolTable::add_symbol_mark(SYMBOL_MARK_IF);
+                    std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
+                    std::shared_ptr<symbolGenRtn> rtn2 = genSymbolTable(pRoot->getChild(1));
+                    symbolTable::pop_symbol_block();
+                    return std::make_shared<symbolGenRtn>(nullptr, genIf(pRoot, rtn1, rtn2));
                 } else if (text == "if_else") {
-                    handleCMD(pRoot, SYMBOL_MARK_IF);
+                    symbolTable::add_symbol_mark(SYMBOL_MARK_IF);
+                    std::shared_ptr<symbolGenRtn> rtn1 = genSymbolTable(pRoot->getChild(0));
+                    std::shared_ptr<symbolGenRtn> rtn2 = genSymbolTable(pRoot->getChild(1));
+                    symbolTable::pop_symbol_block();
 
                     symbolTable::add_symbol_mark(SYMBOL_MARK_ELSE);
                     genSymbolTable(pRoot->getChild(0));
-                    genSymbolTable(pRoot->getChild(2));
+                    std::shared_ptr<symbolGenRtn> rtn3 = genSymbolTable(pRoot->getChild(2));
                     symbolTable::pop_symbol_block();
 
-                    return std::make_shared<symbolGenRtn>(nullptr);
+                    return std::make_shared<symbolGenRtn>(nullptr, genIfElse(pRoot, rtn1, rtn2, rtn3));
                 } else if (text.length() >= 4 && text.substr(0, 4) == "case") {
                     // symbolTable::add_symbol_mark(SYMBOL_MARK_CASE_OF);
                     assert(!"case to be implemented");
@@ -251,7 +260,7 @@ class SymbolGen
         }
 
     private:
-        pTypeTree handleLeaf(ast::pASTNode pRoot)
+        std::shared_ptr<symbolGenRtn> handleLeaf(ast::pASTNode pRoot)
         {
             unsigned astSymId = pRoot->getAstSymbolId();
             std::string text = pRoot->getText();
@@ -277,11 +286,16 @@ class SymbolGen
                                 pTypeTree pArgsTree = makeFnTree();
                                 appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
                                 pTypeTree fnRet = ts::checkFn(pArgsTree, symbol->type);
-                                return fnRet;
+                                return std::make_shared<symbolGenRtn>(fnRet, genFnCall(text, nullptr));
                             }
 
-                            /* 这里也有可能返回函数类型哦><，在有函数参数的情况下 */
-                            return symbol->type;
+                            if (isFn) {
+                                /* 这里也有可能返回函数类型哦><，在有函数参数的情况下 */
+                                return std::make_shared<symbolGenRtn>(symbol->type, "");
+                            } else {
+                                /* 不是函数，只是普通符号 */
+                                return std::make_shared<symbolGenRtn>(symbol->type, genBySymbol(symbol->type));
+                            }
                         }
                     }
                 /* class name */
@@ -292,28 +306,28 @@ class SymbolGen
                             comm::Log::singleton(ERROR) >> "symbol '" >> text >> "' not found in this context!" >> comm::newline;
                             assert(!"symbol not found!");
                         } else {
-                            return makeTrivial(SYMBOL_TYPE_TYPE, text);
+                            return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_TYPE, text), "");
                         }
                     }
                 case ast::AST_LEAF_RE_INT:
                     {
-                        return makeTrivial(SYMBOL_TYPE_INT, text);
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_INT, text), genREInt(text));
                     }
                 case ast::AST_LEAF_RE_DECIMAL:
                     {
-                        return makeTrivial(SYMBOL_TYPE_FLOAT, text);    // TODO: decimal as float or double
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_FLOAT, text), genDecimal(text));    // TODO: decimal as float or double
                     }
                 case ast::AST_LEAF_RE_STRING:
                     {
-                        return makeTrivial(SYMBOL_TYPE_STRING, text);
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_STRING, text), genREString(text));
                     }
                 case ast::AST_LEAF_TRUE:
                     {
-                        return makeTrivial(SYMBOL_TYPE_BOOL, text);
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_BOOL, text), genBool(text));
                     }
                 case ast::AST_LEAF_FALSE:
                     {
-                        return makeTrivial(SYMBOL_TYPE_BOOL, text);
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_BOOL, text), genBool(text));
                     }
 
                 case ast::AST_LEAF_OBJECT:
@@ -323,7 +337,7 @@ class SymbolGen
                 case ast::AST_LEAF_DOUBLE:
                 case ast::AST_LEAF_LONG:
                 case ast::AST_LEAF_STRING:
-                case ast::AST_LEAF_UNIT:         return makeTrivial(SYMBOL_TYPE_TYPE, text);
+                case ast::AST_LEAF_UNIT:         return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_TYPE, text), "");
                 case ast::AST_LEAF_THIS:
                     {
                         // TODO
@@ -331,7 +345,7 @@ class SymbolGen
                     }
                 case ast::AST_LEAF_TYPE:
                     {
-                        return makeTrivial(SYMBOL_TYPE_TYPE, text);
+                        return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_TYPE, text), "");
                     }
                 default:
                     {
@@ -339,7 +353,7 @@ class SymbolGen
                     }
             }
 
-            return nullptr;
+            return std::make_shared<symbolGenRtn>(nullptr, "");
         }
 
 
@@ -514,7 +528,10 @@ class SymbolGen
             std::string sDeclRemain = cgen::genDeclRemainSpace(declNum);
             symbolTable::pop_symbol_block();
 
-            return std::make_shared<symbolGenRtn>(nullptr, sDeclRemain + fnCode);
+            std::string sFnHead = "_" + fnType->getSymbolName() + ":\n";
+            std::string sFnTail = genFnTail();
+
+            return std::make_shared<symbolGenRtn>(nullptr, sFnHead + sDeclRemain + fnCode + sFnTail);
         }
 
         void handleClass(ast::pASTNode pRoot, bool isInherits)
@@ -590,3 +607,4 @@ std::vector<std::pair<pTypeTree, unsigned>> SymbolGen::stFnDeclNumber;
 
 };  /* namespace st */
 };  /* namespace jhin */
+

@@ -171,6 +171,16 @@ std::shared_ptr<symbolItem> symbolTable::find_symbol_in_scope(const std::string&
     return nullptr;
 }
 
+std::shared_ptr<symbolItem> symbolTable::find_symbol_in_fn(const std::string& symbolName)
+{
+    for (int idx = table.size() - 1; idx >= 0 && !table[idx]->isFnMark() ; idx--) {
+        if (table[idx]->getSymbolName() == symbolName) {
+            return table[idx];
+        }
+    }
+    return nullptr;
+}
+
 std::vector<std::shared_ptr<symbolItem>> symbolTable::get_symbols_in_scope()
 {
     std::vector<std::shared_ptr<symbolItem>> ans;
@@ -206,6 +216,16 @@ void symbolTable::unionSingleItem2Tree(pTypeTree pTT, const std::shared_ptr<symb
 {
     assert(pTT != nullptr && item != nullptr);
     appendTree(pTT, item->type);
+}
+
+/**/
+pTypeTree getRecentFn()
+{
+    int idx = 0;
+    for (idx = table.size() - 1; idx >= 0 && !table[idx]->isFnMark() ; idx--) {}
+    if (idx < 0) return nullptr;
+    assert(idx >= 1);
+    return table[idx - 1]->type;
 }
 
 };  /* namespace st */
