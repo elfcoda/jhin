@@ -417,7 +417,8 @@ class SymbolGen
                 pTT = ts::checkReturn(pTT1);
                 /* check if return type is compatilbe with function's signature. */
                 if (stFnDeclNumber.empty()) assert(!"symbol \"return\" should be appear in functions.");
-                pTypeTree topTypeTree = stackTop(stFnDeclNumber)->getTypeTreePtr();
+                // pTypeTree topTypeTree = stackTop(stFnDeclNumber)->getTypeTreePtr();
+                pTypeTree topTypeTree = stackTop(stFnDeclNumber).first;
                 pTypeTree pLastType = getFnLastType(topTypeTree);
                 assert(isTypeEqual(pTT, pLastType));
                 comm::Log::singleton(DEBUG) >> __LINE__ >> ", return check: " >> getPtrString(pRet) >> ", Fn Type: " >> getPtrString(pLastType) >> comm::newline;
