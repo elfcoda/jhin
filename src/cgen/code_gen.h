@@ -106,7 +106,7 @@ std::string double2LongStr(double d)
 std::string genCompareType(ECompareType eType, const std::string& lbl)
 {
     assert(mCmpType2Instr.find(eType) != mCmpType2Instr.end());
-    td::string sJmp = mCmpType2Instr.at(eType);
+    std::string sJmp = mCmpType2Instr.at(eType);
     return sJmp + lbl + "\n";
 }
 
@@ -478,13 +478,15 @@ std::string genFnTail()
 /* function call */
 std::string genFnCall(const std::string& fnName, pTypeTree pArgsTree)
 {
+    return "";
+    /*
     std::string fnLabel = "_" + fnName;
     std::string s = "";
     s += "pushq %rip\n";
     s += "pushq %rbp\n";
     s += "movq %rsp, %rbp\n";
     if (pArgsTree == nullptr || !pArgsTree->hasChildren()) {
-        /* call function */
+        // call function
         s += "jmp " + fnLabel + "\n";
         return s;
     }
@@ -494,32 +496,35 @@ std::string genFnCall(const std::string& fnName, pTypeTree pArgsTree)
         auto argType = pTT->getType();
         unsigned delta = pTT->getIdx() * SIZE_OF_STACK_ELEMENT;
         if (argType == SYMBOL_TYPE_INT) {
-            /* Int Value */
+            // Int Value
             s += "movq " + pTT->getValue() + ", " + std::to_string(delta) + "(%rbp)\n";
         } else if (argType == SYMBOL_TYPE_BOOL) {
-            /* Bool value */
+            // Bool value
             std::string sValue = "";
             if (pTT->getValue() == "True") sValue = "1";
             else if (pTT->getValue() == "False") sValue = "0";
             else assert(!"invalid bool value!");
             s += "movq " + sValue + ", " + std::to_string(delta) + "(%rbp)\n";
         } else {
-            /* unsupported value */
+            // unsupported value
             assert(!"unsupported value type!");
         }
     }
 
     s += "jmp " + fnLabel + "\n";
     return s;
+    */
 }
 
 std::string genBySymbol(pTypeTree pTT)
 {
+    return "";
+    /*
     assert(pTT != nullptr);
     std::string s = "";
     unsigned delta = 0;
-    /* pTypeTree里的value值是声明时的值，在声明的时候已经放入栈中，这里使用
-     * 这个符号的时候要去栈中取 */
+    // pTypeTree里的value值是声明时的值，在声明的时候已经放入栈中，这里使用
+    // 这个符号的时候要去栈中取
     if (pTT->getType() == SYMBOL_TYPE_INT) {
         delta = pTT->getIdx() * SIZE_OF_STACK_ELEMENT;
         s = "movq " + std::to_string(delta) + "(%rbp), %rbx\n";
@@ -531,6 +536,7 @@ std::string genBySymbol(pTypeTree pTT)
     }
 
     return s;
+    */
 }
 
 ////////////////////////////////simd instructions

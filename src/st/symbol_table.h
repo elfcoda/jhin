@@ -223,10 +223,10 @@ void symbolTable::unionSingleItem2Tree(pTypeTree pTT, const std::shared_ptr<symb
 pTypeTree getRecentFn()
 {
     int idx = 0;
-    for (idx = table.size() - 1; idx >= 0 && !table[idx]->isFnMark() ; idx--) {}
+    for (idx = symbolTable::table.size() - 1; idx >= 0 && !symbolTable::table[idx]->isFnMark() ; idx--) {}
     if (idx < 0) return nullptr;
     assert(idx >= 1);
-    return table[idx - 1]->type;
+    return symbolTable::table[idx - 1]->type;
 }
 
 };  /* namespace st */

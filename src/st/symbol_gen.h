@@ -408,7 +408,7 @@ class SymbolGen
 
             if (text == "!") {
                 pTT = ts::checkNot(pTT1);
-                asmCode = genNot();
+                // asmCode = cgen::genNot();
             } else if (text == "isVoid") {
                 pTT = ts::checkIsVoid(pTT1);
             } else if (text == "new") {
