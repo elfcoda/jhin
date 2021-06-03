@@ -115,13 +115,13 @@ class SymbolGen
                      * and we want to return last line of code as default return value of this function, we just return the last return
                      * type of this non-terminal tree node, pTT, in this case.
                      * */
-                    return std::make_shared<symbolGenRtn>(pTT);
+                    return std::make_shared<symbolGenRtn>(pTT, "");
                 } else if (text == "class") {   /* block and declaration */
                     handleClass(pRoot, false);
-                    return std::make_shared<symbolGenRtn>(nullptr);
+                    return std::make_shared<symbolGenRtn>(nullptr, "");
                 } else if (text == "class_inherits") {
                     handleClass(pRoot, true);
-                    return std::make_shared<symbolGenRtn>(nullptr);
+                    return std::make_shared<symbolGenRtn>(nullptr, "");
                 } else if (text == "def") {
                     return handleFn(pRoot);
                 } else if (text == "while") {   /* block, command */
@@ -165,23 +165,23 @@ class SymbolGen
                         return genSymbolTable(pRoot->getChild(0));
                     } else if (childrenNumber == 2) {
                         handleDecl(pRoot);
-                        return std::make_shared<symbolGenRtn>(nullptr);
+                        return std::make_shared<symbolGenRtn>(nullptr, "");
                     } else if (childrenNumber == 3) {
                         handleDecl(pRoot);
                         /* recurse */
                         genSymbolTable(pRoot->getChild(2));
-                        return std::make_shared<symbolGenRtn>(nullptr);
+                        return std::make_shared<symbolGenRtn>(nullptr, "");
                     } else {
                         assert(false);
                     }
                 } else if (text == ":_<-") {
                     if (childrenNumber == 3) {
                         handleDeclAssign(pRoot);
-                        return std::make_shared<symbolGenRtn>(nullptr);
+                        return std::make_shared<symbolGenRtn>(nullptr, "");
                     } else if (childrenNumber == 4) {
                         handleDeclAssign(pRoot);
                         genSymbolTable(pRoot->getChild(3));
-                        return std::make_shared<symbolGenRtn>(nullptr);
+                        return std::make_shared<symbolGenRtn>(nullptr, "");
                     } else {
                         assert(false);
                     }
@@ -206,7 +206,7 @@ class SymbolGen
                 assert(!"symbol should be leaf or non-leaf");
             }
 
-            return std::make_shared<symbolGenRtn>(nullptr);
+            return std::make_shared<symbolGenRtn>(nullptr, "");
         }
 
 
@@ -421,7 +421,7 @@ class SymbolGen
                 pTypeTree topTypeTree = stackTop(stFnDeclNumber).first;
                 pTypeTree pLastType = getFnLastType(topTypeTree);
                 assert(isTypeEqual(pTT, pLastType));
-                comm::Log::singleton(DEBUG) >> __LINE__ >> ", return check: " >> getPtrString(pRet) >> ", Fn Type: " >> getPtrString(pLastType) >> comm::newline;
+                comm::Log::singleton(DEBUG) >> __LINE__ >> ", return check: " >> getPtrString(topTypeTree) >> ", Fn Type: " >> getPtrString(pLastType) >> comm::newline;
             } else {
                 assert(!"unknown symbol");
             }
