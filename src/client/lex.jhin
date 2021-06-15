@@ -1,30 +1,6 @@
-def fu(): Int { return 0 }
--- 
--- -- class Animal is a class
--- class Animal inherits Life {
---     def fun1(x1: Int, x2: Int): Int {
---         xn: Int
---         xm: Int <- 6
---         xn <- xn + xm + 9
---         fu()
---         fun1(xn + 1, xm) + fu()
---         -- fun1(0, 1)
---         -- let i: Int in { 7 + i }
---     }
--- }
-
 def func(m: Int, n: Int): Int {
-    i: Int
-    def recFn(i: Int): Int { return 1 }
-    
-    fu() + 1 + fu() * func(2, 3)
-
-    True
     m <- 7
-    True
-    fu()
-    recFn(7)
-    func(1, 2)
+    n <- 7
     return 7
 }
 

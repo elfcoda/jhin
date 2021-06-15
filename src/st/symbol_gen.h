@@ -79,7 +79,7 @@ class SymbolGen
             std::string text = pRoot->getText();
             unsigned astSymId = pRoot->getAstSymbolId();
             unsigned childrenNumber = pRoot->size();
-            comm::Log::singleton(DEBUG) >> "text: " >> text >> ", " >> "astSymId: " >> astSymId >> ", " >> "childrenNumber: " >> childrenNumber >> comm::newline;
+            comm::Log::singleton(INFO) >> "text: " >> text >> ", " >> "astSymId: " >> astSymId >> ", " >> "childrenNumber: " >> childrenNumber >> comm::newline;
             assert(text != "" && AST_DEFAULT_TEXT != "");
 
             if (comm::isASTSymbolLeaf(astSymId)) {

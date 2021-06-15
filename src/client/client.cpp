@@ -9,6 +9,7 @@
 #include "../../comm/log.h"
 
 using namespace jhin;
+using namespace std;
 
 
 int main()
@@ -18,13 +19,17 @@ int main()
 
     /* append $ */
     lexResult.push_back(std::make_pair(SYNTAX_TOKEN_END, SYNTAX_TOKEN_END_MARK));
+    cout << "Lex Completed." << endl;
 
     /* syntaxResult */
     comm::pSyntaxDFA pDFAStart = client::syntaxClient();
+    cout << "Syntax Completed." << endl;
 
     ast::pASTNode pRoot = client::astClient(lexResult, pDFAStart);
+    cout << "AST Completed." << endl;
 
     client::tsClient(pRoot);
+    cout << "TS Completed." << endl;
 
     return 0;
 }
