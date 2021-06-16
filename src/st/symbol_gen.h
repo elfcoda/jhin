@@ -515,7 +515,11 @@ class SymbolGen
             assert(isTypeEqual(getFnLastType(fnType), fnBodyType));
 
             // stackPop(vFnRetStack);
-            unsigned declNum = stFnDeclNumber[stFnArgsSize-1].second;
+            unsigned declNum = 0;
+            if (stFnArgsSize != 0) {
+                declNum = stFnDeclNumber[stFnArgsSize-1].second;
+            }
+            
             stFnDeclNumber.pop_back();
             std::string sDeclRemain = cgen::genDeclRemainSpace(declNum);
             symbolTable::pop_symbol_block();

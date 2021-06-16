@@ -226,17 +226,22 @@ std::string genDeclRemainSpace(unsigned declNum)
 
 std::string genDecl(const std::string& symbolName, const std::string& value)
 {
-    /* 生成代码的这个时候，符号已经刚刚被加入到符号表，所以能找到符号表中的这个符号 */
-    unsigned fnArgsCnt = comm::fnArgsNumber(st::getRecentFn());
     std::string s = "";
+
+/*
+    // 生成代码的这个时候，符号已经刚刚被加入到符号表，所以能找到符号表中的这个符号
+    unsigned fnArgsCnt = comm::fnArgsNumber(st::getRecentFn());
+
     unsigned symbolIdx = getSymbolIdx(symbolName);
     if (symbolIdx < fnArgsCnt) {
-        /* 暂时不支持默认参数，所以如果idx属于函数的参数列表的话，不生成代码 */
+        // 暂时不支持默认参数，所以如果idx属于函数的参数列表的话，不生成代码
         return "";
     }
 
     unsigned delta = symbolIdx * SIZE_OF_STACK_ELEMENT;
     s += "movq " + value + ", -" + std::to_string(delta) + "(%rbp)\n";
+*/
+
     return s;
 }
 
