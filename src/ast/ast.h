@@ -7,6 +7,7 @@
 #include <string>
 #include "pt.h"
 #include "ast_node.h"
+#include "ast_node_semantic.h"
 #include "../../comm/log.h"
 #include "../lex/keywords.h"
 #include "../syntax/non_terminal.h"
