@@ -20,7 +20,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 */
 
-#include "jhin/src/client/compiler_client.h"
+#include "src/client/compiler_client.h"
 /*
 #include <algorithm>
 #include <cassert>

@@ -103,7 +103,7 @@ class AST
         }
 
 
-        /// Index All From "jhin/src/syntax/syntax.txt"
+        /// Index All From "jhin/src/syntax/non_terminal.h"
         std::unique_ptr<ASTBase> parseTree2LLVMAST(pASTNode pRoot)
         {
             // top to down
