@@ -1,0 +1,202 @@
+# LALR(DRAFT):  
+# lexer need to implement '\n' first(or not)
+# RE_VALUE: TypeName(Int String), ClassName(Animal)  
+# solution: union multi-newline
+# DEFINE EPSILON
+# NOTE_DEFINE cannot include '|' and note recursion, in NOTE_STAR(, DeclN), "," and "DeclN" should separated by blank
+# DEFINE NOTE_STAR *
+# DEFINE NOTE_PLUS +
+# DEFINE NOTE_QUES ?
+
+# NewLineStar ::= '\n' NewLineStar
+#             |   EPSILON
+# NewLinePlus ::= '\n' NewLinePlus
+#             |   '\n'
+
+# split declarations with %%
+LEAF @ RE_ID, RE_INT, RE_VALUE, RE_DECIMAL, RE_STRING,
+       TRUE, FALSE, 
+       OBJECT, BOOL, INT, FLOAT, DOUBLE, LONG, STRING, UNIT, 
+       THIS, TYPE
+# %%
+----------
+# program  
+Prog'   ::= Newls Prog  
+----------
+Prog    ::= NOTE_STAR(Prog_u)
+----------
+Prog_u  ::= Class Newlp | Proc Newlp
+ 
+----------
+# elif may account for the complexity of code logic, so I remove the syntax. elif can be replaced by "recursive if-else" or "case of" syntax, return NoType?
+Cmd     ::= CmdN  
+        |   CmdC
+        |   CmdU
+
+----------
+# normal
+CmdN    ::= RE_ID <- Exp
+       
+----------
+# curly if(while)-exp can recurse, by other if(while)-exp  
+CmdC    ::= while ( Exp ) Newls { Formals }
+        |   if ( Exp ) Newls { Formals }  
+        |   if ( Exp ) Newls { Formals } else { Formals }
+        
+----------
+# uncurly. donot followed by if-exp and while-exp. in this case, recursive if-exp may lead to ambigious semantics, cannot recurse with other if(while)-exp  
+CmdU    ::= while ( Exp ) Newls FormalU 'back_n'
+        |   if ( Exp ) Newls FormalU Newlq else Newls FormalU 'back_n'
+        |   if ( Exp ) Newls FormalU 'back_n'
+  
+----------
+# Formal  
+# Formals ::= Newls Formal NOTE_STAR(Newlp Formal) 
+#       |   Newls
+
+Formals ::= Newls Formalt
+----------
+Formalt ::= Formal NOTE_QUES(Newlp Formalt)
+        |   EPSILON
+----------
+Formal  ::= Cmd
+        |   Exp
+        |   DeclN
+----------
+FormalU ::= CmdN
+        |   Exp
+        |   DeclN
+  
+----------
+Newlq   ::= NOTE_QUES('back_n')
+----------
+Newls   ::= NOTE_STAR('back_n')
+----------
+Newlp   ::= NOTE_PLUS('back_n')
+----------
+Decls   ::= Newls Declt
+----------
+Declt   ::= Decl NOTE_QUES(Newlp Declt)
+        |   EPSILON
+----------
+# Decl  
+Decl    ::= DeclN
+        |   Class
+  
+----------
+# DeclN  
+DeclN   ::= RE_ID : Type
+        |   RE_ID : Type <- Exp
+        |   Proc
+
+
+----------
+# class  
+Class   ::= class RE_VALUE Newls { Decls }
+        |   class RE_VALUE inherits RE_VALUE Newls { Decls }
+
+----------
+# procedure  
+# multi-newline to one
+Proc    ::= def RE_ID ( FnArg ) FnRetTp Newls { Formals }
+----------
+FnArg   ::= NOTE_QUES(Proc_ar)
+----------
+FnRetTp ::= NOTE_QUES(: Type)
+----------
+Proc_ar ::= RE_ID : Type NOTE_STAR(, RE_ID : Type)
+----------
+# Types  
+Type    ::= Exp | TYPE # | fnType
+  
+----------
+# fnType  ::= (fnType NOTE_PLUS(-> fnType))
+#         |   (fnType NOTE_PLUS(-> Exp))
+#         |   (Exp NOTE_PLUS(-> fnType))
+#         |   (Exp NOTE_PLUS(-> Exp))
+# ----------
+  
+# Exp, separate Exp by several sub-Exps, can be joint by '|', return value of multi-exp is the return value of the last exp  
+# add { } to fix conflict, add Exp0 to fix return and == conflict
+Exp     ::= return Exp
+        |   case Exp of Newls { NOTE_STAR(RE_ID : Type => Exp) otherwise => Exp Newls }
+        |   THIS
+        |   let DeclN NOTE_STAR(, DeclN) in { Exp }
+        #|   RE_ID ( NOTE_QUES(Exp_ar) )
+
+        |   RE_ID . RE_ID ( NOTE_QUES(Exp_ar) )
+        |   RE_ID @ RE_VALUE . RE_ID ( NOTE_QUES(Exp_ar) )
+        |   ( Exp ) . RE_ID ( NOTE_QUES(Exp_ar) )
+        |   ( Exp ) @ RE_VALUE . RE_ID ( NOTE_QUES(Exp_ar) )
+
+        |   lambda -> { Exp }
+        |   lambda DeclN NOTE_STAR(, DeclN) -> { Exp }
+        
+        |   Exp0
+----------
+Exp0    ::= Exp0 == Exp1
+        |   Exp0 < Exp1
+        |   Exp0 <= Exp1  
+        |   Exp0 > Exp1  
+        |   Exp0 >= Exp1  
+        |   Exp1
+----------
+Exp1    ::= Exp1 + Exp2  
+        |   Exp1 - Exp2
+        |   Exp2
+----------
+Exp2    ::= Exp2 * Exp3
+        |   Exp2 / Exp3
+        |   Exp3
+----------
+Exp3    ::= NotExp
+        |   VoidExp
+        |   ExpN
+        |   NewExp  
+----------
+NotExp  ::= ! ExpN
+----------
+VoidExp ::= isVoid ExpN
+----------
+NewExp  ::= new RE_VALUE
+----------
+ExpN    ::= ReInt  
+        |   ReDeci  
+        |   ReStr  
+        |   ReId
+        |   TRUE
+        |   FALSE
+        |   NewExp
+
+        |   ReValue     # Type is a kind of value(ClassName)  
+        |   OBJECT      # supertype of any type  
+        |   BOOL  
+        |   INT  
+        |   FLOAT  
+        |   DOUBLE  
+        |   LONG  
+        |   STRING  
+        |   UNIT  
+
+        |   FnCall
+----------
+ReInt   ::= RE_INT
+----------
+ReDeci  ::= RE_DECIMAL
+----------
+ReStr   ::= RE_STRING
+----------
+ReId    ::= RE_ID
+----------
+NewExp  ::= ( Exp )
+----------
+ReValue ::= RE_VALUE
+----------
+FnCall  ::= RE_ID ( FnArgs )
+----------
+FnArgs  ::= NOTE_QUES(Exp_ar)
+----------
+Exp_ar  ::= Exp NOTE_STAR(, Exp)
+  
+
+
