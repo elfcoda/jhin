@@ -5,7 +5,6 @@ how to pass a function type
 how to pass type variable  
 how to return a type  
 how to store a type  
-how to call a function  
 
 
 
