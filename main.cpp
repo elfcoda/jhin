@@ -1,5 +1,3 @@
-/*
-#include "../include/KaleidoscopeJIT.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -28,12 +26,18 @@
 #include <memory>
 #include <string>
 #include <vector>
-*/
-
 #include "src/client/compiler_client.h"
+#include "src/jhin_JIT.h"
 
 
 int main() {
+    InitializeNativeTarget();
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+
+    TheJIT = ExitOnErr(KaleidoscopeJIT::Create());
+    InitializeModule();
+
     compiler();
     return 0;
 }

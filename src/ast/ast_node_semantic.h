@@ -1,6 +1,7 @@
 #pragma once
 
 #include "llvm/IR/Value.h"
+#include "llvm/IR/Function.h"
 #include <string>
 #include <memory>
 #include <vector>
