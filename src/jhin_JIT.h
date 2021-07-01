@@ -1,25 +1,25 @@
 #pragma once
 
-#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/iterator_range.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
-#include "llvm/ExecutionEngine/Orc/CompileOnDemandLayer.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
-#include "llvm/ExecutionEngine/Orc/Core.h"
-#include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
-#include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
-#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
+#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
-#include "llvm/ExecutionEngine/Orc/TPCIndirectionUtils.h"
-#include "llvm/ExecutionEngine/Orc/TargetProcessControl.h"
+#include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IR/DataLayout.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Transforms/InstCombine/InstCombine.h"
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/IR/Mangler.h"
+#include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include <algorithm>
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace jhin
 {
@@ -30,92 +30,106 @@ namespace jhin
 
         class JhinJIT
         {
+            public:
+                using ObjLayerT = LegacyRTDyldObjectLinkingLayer;
+                using CompileLayerT = LegacyIRCompileLayer<ObjLayerT, SimpleCompiler>;
+
             private:
-                std::unique_ptr<TargetProcessControl> TPC;
-                std::unique_ptr<ExecutionSession> ES;
-                std::unique_ptr<TPCIndirectionUtils> TPCIU;
+                ExecutionSession ES;
+                std::shared_ptr<SymbolResolver> Resolver;
+                std::unique_ptr<TargetMachine> TM;
+                const DataLayout DL;
+                ObjLayerT ObjectLayer;
+                CompileLayerT CompileLayer;
+                std::vector<VModuleKey> ModuleKeys;
 
-                DataLayout DL;
-                MangleAndInterner Mangle;
-
-                RTDyldObjectLinkingLayer ObjectLayer;
-                IRCompileLayer CompileLayer;
-                IRTransformLayer OptimizeLayer;
-                CompileOnDemandLayer CODLayer;
-
-                JITDylib &MainJD;
-
-                static void handleLazyCallThroughError() 
+                JITSymbol findMangledSymbol(const std::string &Name)
                 {
-                    errs() << "LazyCallThrough error: Could not find function body";
-                    exit(1);
-                }
+                    #ifdef _WIN32
+                        // The symbol lookup of ObjectLinkingLayer uses the SymbolRef::SF_Exported
+                        // flag to decide whether a symbol will be visible or not, when we call
+                        // IRCompileLayer::findSymbolIn with ExportedSymbolsOnly set to true.
+                        //
+                        // But for Windows COFF objects, this flag is currently never set.
+                        // For a potential solution see: https://reviews.llvm.org/rL258665
+                        // For now, we allow non-exported symbols on Windows as a workaround.
+                        const bool ExportedSymbolsOnly = false;
+                    #else
+                        const bool ExportedSymbolsOnly = true;
+                    #endif
+
+                        // Search modules in reverse order: from last added to first added.
+                        // This is the opposite of the usual search order for dlsym, but makes more
+                        // sense in a REPL where we want to bind to the newest available definition.
+                        for (auto H : make_range(ModuleKeys.rbegin(), ModuleKeys.rend()))
+                            if (auto Sym = CompileLayer.findSymbolIn(H, Name, ExportedSymbolsOnly))
+                                return Sym;
+
+                        // If we can't find the symbol in the JIT, try looking in the host process.
+                        if (auto SymAddr = RTDyldMemoryManager::getSymbolAddressInProcess(Name))
+                            return JITSymbol(SymAddr, JITSymbolFlags::Exported);
+
+                    #ifdef _WIN32
+                        // For Windows retry without "_" at beginning, as RTDyldMemoryManager uses
+                        // GetProcAddress and standard libraries like msvcrt.dll use names
+                        // with and without "_" (for example "_itoa" but "sin").
+                        if (Name.length() > 2 && Name[0] == '_')
+                            if (auto SymAddr = RTDyldMemoryManager::getSymbolAddressInProcess(Name.substr(1)))
+                                return JITSymbol(SymAddr, JITSymbolFlags::Exported);
+                    #endif
+
+                        return nullptr;
+                    }
+
+                    std::string mangle(const std::string &Name)
+                    {
+                        std::string MangledName;
+                        {
+                            raw_string_ostream MangledNameStream(MangledName);
+                            Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
+                        }
+
+                        return MangledName;
+                    }
 
             public:
-                JhinJIT(std::unique_ptr<TargetProcessControl> TPC,
-                        std::unique_ptr<ExecutionSession> ES,
-                        std::unique_ptr<TPCIndirectionUtils> TPCIU,
-                        JITTargetMachineBuilder JTMB, 
-                        DataLayout DL)
-                      : TPC(std::move(TPC)), 
-                        ES(std::move(ES)), 
-                        TPCIU(std::move(TPCIU)),
-                        DL(std::move(DL)), 
-                        Mangle(*this->ES, this->DL),
-                        ObjectLayer(*this->ES,
-                                    []() { return std::make_unique<SectionMemoryManager>(); }),
-                        CompileLayer(*this->ES,
-                                    ObjectLayer,
-                                    std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
-                        OptimizeLayer(*this->ES, CompileLayer, optimizeModule),
-                        CODLayer(*this->ES, 
-                                OptimizeLayer,
-                                this->TPCIU->getLazyCallThroughManager(),
-                                [this] { return this->TPCIU->createIndirectStubsManager(); }),
-                        MainJD(this->ES->createBareJITDylib("<main>"))
+                JhinJIT()
+                        : Resolver(createLegacyLookupResolver(ES,
+                                                              [this](const std::string &Name) { return findMangledSymbol(Name); },
+                                                              [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); })),
+                          TM(EngineBuilder().selectTarget()),
+                          DL(TM->createDataLayout()),
+                          ObjectLayer(AcknowledgeORCv1Deprecation,
+                                      ES,
+                                      [this](VModuleKey) { return ObjLayerT::Resources{std::make_shared<SectionMemoryManager>(), Resolver};
+                                      }),
+                          CompileLayer(AcknowledgeORCv1Deprecation,
+                                       ObjectLayer,
+                                       SimpleCompiler(*TM))
                 {
-                    MainJD.addGenerator(cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
+                    llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
                 }
 
-                ~JhinJIT() 
+                TargetMachine &getTargetMachine() { return *TM; }
+
+                VModuleKey addModule(std::unique_ptr<Module> M)
                 {
-                    if (auto Err = ES->endSession())
-                        ES->reportError(std::move(Err));
-                    if (auto Err = TPCIU->cleanup())
-                        ES->reportError(std::move(Err));
+                    auto K = ES.allocateVModule();
+                    cantFail(CompileLayer.addModule(K, std::move(M)));
+                    ModuleKeys.push_back(K);
+                    return K;
                 }
 
-                static Expected<std::unique_ptr<JhinJIT>> Create() {
-                    // tODO
-                    auto SSP = std::make_shared<SymbolStringPool>();
-                    auto TPC = SelfTargetProcessControl::Create(SSP);
-                    if (!TPC)
-                    return TPC.takeError();
-
-                    auto ES = std::make_unique<ExecutionSession>(std::move(SSP));
-
-                    auto TPCIU = TPCIndirectionUtils::Create(**TPC);
-                    if (!TPCIU)
-                    return TPCIU.takeError();
-
-                    (*TPCIU)->createLazyCallThroughManager(
-                        *ES, pointerToJITTargetAddress(&handleLazyCallThroughError));
-
-                    if (auto Err = setUpInProcessLCTMReentryViaTPCIU(**TPCIU))
-                    return std::move(Err);
-
-                    JITTargetMachineBuilder JTMB((*TPC)->getTargetTriple());
-
-                    auto DL = JTMB.getDefaultDataLayoutForTarget();
-                    if (!DL)
-                    return DL.takeError();
-
-                    return std::make_unique<KaleidoscopeJIT>(std::move(*TPC), std::move(ES),
-                                                            std::move(*TPCIU), std::move(JTMB),
-                                                            std::move(*DL));
+                void removeModule(VModuleKey K)
+                {
+                    ModuleKeys.erase(find(ModuleKeys, K));
+                    cantFail(CompileLayer.removeModule(K));
                 }
-optimizeModule
 
+                JITSymbol findSymbol(const std::string Name)
+                {
+                    return findMangledSymbol(mangle(Name));
+                }
         };
     }
 }

@@ -8,6 +8,7 @@ set(LLVM_LINK_COMPONENTS
   RuntimeDyld
   ScalarOpts
   Support
+  TransformUtils
   native
   )
 
@@ -22,5 +23,5 @@ set_target_properties(jhin PROPERTIES
                       CXX_EXTENSIONS OFF
                       )
 
-target_compile_options(jhin PUBLIC -frtti)
+# target_compile_options(jhin PUBLIC -frtti)
 
