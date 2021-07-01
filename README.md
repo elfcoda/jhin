@@ -6,7 +6,7 @@ dependency：
 Python3  
 matplotlib  
   
- to deploy：  
+How to deploy：  
 1、 deploy LLVM  
 2、 go to llvm-project/llvm/examples/Kaleidoscope and add add_subdirectory(Jhin) to CMakeLists.txt    
 3、 git submodule add https://<token>@github.com/elfcoda/jhin.git Jhin   
