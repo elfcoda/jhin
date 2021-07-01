@@ -7,9 +7,9 @@ Python3
 matplotlib  
   
 How to deploy：  
-1、 deploy LLVM  
-2、 go to llvm-project/llvm/examples/Kaleidoscope and add add_subdirectory(Jhin) to CMakeLists.txt    
-3、 git submodule add https://<token>@github.com/elfcoda/jhin.git Jhin   
+1. deploy LLVM  
+2. go to llvm-project/llvm/examples/Kaleidoscope and add add_subdirectory(Jhin) to CMakeLists.txt    
+3. git submodule add https://<token>@github.com/elfcoda/jhin.git Jhin   
     You should create a personal access token to use in place of a password with the command line or with the API.  
     [how to get your token][1]  
   
