@@ -1,16 +1,21 @@
-# jhin语言  
-## jhin是面向对象的编译型语言  
+# jhin-lang  
   
   
-项目使用C++17编译  
-依赖：  
+Project built in C++17    
+dependency：  
 Python3  
 matplotlib  
   
-开发进度：  
-词法分析器      已完成   
-语法分析器      已完成  
-抽象语法树      已完成  
-符号表和类型系统 已完成  
-中间表示        开发中  
+ to deploy：  
+1、 deploy LLVM  
+2、 go to llvm-project/llvm/examples/Kaleidoscope and add add_subdirectory(Jhin) to CMakeLists.txt    
+3、 git submodule add https://<token>@github.com/elfcoda/jhin.git Jhin   
+    You should create a personal access token to use in place of a password with the command line or with the API.  
+    [how to get your token][1]  
+  
+      
+    
+[1]: https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token  
+
+  
   
