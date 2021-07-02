@@ -1,6 +1,6 @@
 # jhin-lang  
   
- ## [How to install](anc_0)  
+ ## [How to install](#anc_0)  
  ## [Developer tutorial]()
  ## [Architecture]()
  ## [Be a contributor]()
