@@ -1,3 +1,9 @@
+<a href="https://www.patreon.com/wenjielu"><img alt="Support Me" src="https://img.shields.io/badge/Support%20Me-%F0%9F%92%97-green"></a>
+<img alt="C++17" src="https://img.shields.io/badge/Language-C%2B%2B17-orange">
+<img alt="Python3" src="https://img.shields.io/badge/Language-Python3-blueviolet">
+<img alt="Version" src="https://img.shields.io/badge/Version-1.0-brightgreen">
+
+
 # jhin-lang  
   
  ## [Installation](#anc_0)  
