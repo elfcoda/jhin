@@ -1,7 +1,11 @@
+<a href="http://flowerdance.me/"><img alt="Home" src="https://img.shields.io/badge/Home-🌏-9cf"></a>
 <a href="https://www.patreon.com/wenjielu"><img alt="Support Me" src="https://img.shields.io/badge/Support%20Me-%F0%9F%92%97-green"></a>
 <img alt="C++17" src="https://img.shields.io/badge/Language-C%2B%2B17-orange">
 <img alt="Python3" src="https://img.shields.io/badge/Language-Python3-blueviolet">
-<img alt="Version" src="https://img.shields.io/badge/Version-1.0-brightgreen">
+<img alt="Version" src="https://img.shields.io/badge/Version-1.0-ff69b4">
+<img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-blue">  
+<a href="https://llvm.org/"><img alt="Dependency" src="https://img.shields.io/badge/Dependency-LLVM-C67DEA"></a>
+<img alt="Status" src="https://img.shields.io/badge/Status-🍇-15AC96">
 
 
 # jhin-lang  
