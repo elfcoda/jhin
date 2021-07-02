@@ -5,6 +5,7 @@
 #include <stack>
 #include <queue>
 #include <string>
+#include "llvm/Support/Casting.h"
 #include "pt.h"
 #include "ast_node.h"
 #include "ast_node_semantic.h"
@@ -388,7 +389,7 @@ class AST
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("NotExp" == symbolStr) {
                 std::unique_ptr<ASTBase> astNode = parseTree2LLVMAST(pRoot->getChild(1));
-                std::unique_ptr<BoolExprAST> boolNode = dynamic_cast_ast<BoolExprAST>(std::move(astNode));
+                std::unique_ptr<BoolExprAST> boolNode = llvm::unique_dyn_cast_or_null<BoolExprAST, ASTBase>(std::move(astNode));
                 boolNode->inverse();
                 return boolNode;
             } else if ("VoidExp" == symbolStr) {
