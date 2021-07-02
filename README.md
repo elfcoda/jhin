@@ -18,7 +18,7 @@ How to deploy：
     [how to get your token][6]  
   
 
-[1]: https://github.com/elfcoda/jhin
+[1]: https://github.com/elfcoda/jhin/blob/master/README.md#anc
 [5]: https://clang.llvm.org/get_started.html
 [6]: https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token  
 
