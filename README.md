@@ -8,18 +8,18 @@
 <img alt="Status" src="https://img.shields.io/badge/Status-🍇-15AC96">
 
 
-# jhin-lang  
+# Jhin-lang  
   
- ## [Installation](#anc_0)  
- ## [Developer tutorial](#anc_1)
- ## [Architecture](#anc_2)
- ## [Be a contributor](#anc_3)
+ ## [Installation 🥧](#anc_0)  
+ ## [Tutorial 🥙](#anc_1)
+ ## [Architecture 🥗](#anc_2)
+ ## [Contribute 🍖](#anc_3)
  
   
-<h2 name = "anc_0">Installation</h2>
-<h2 name = "anc_1">Developer tutorial</h2>
-<h2 name = "anc_2">Architecture</h2>
-<h2 name = "anc_3">Be a contributor</h2>
+<h2 name = "anc_0">Installation 🐇</h2>
+<h2 name = "anc_1">Tutorial 🐿</h2>
+<h2 name = "anc_2">Architecture 🐢</h2>
+<h2 name = "anc_3">Contribute 🦘</h2>
 
 Project built in C++17    
 dependency：  
@@ -39,6 +39,9 @@ How to deploy：
   
   
   
+Now you are starving right?  
   
 [0]: https://clang.llvm.org/get_started.html
 [1]: https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token  
+
+
