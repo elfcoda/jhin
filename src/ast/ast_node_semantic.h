@@ -1,17 +1,17 @@
 #pragma once
 
-#include "llvm/IR/Value.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
-#include <string>
-#include <memory>
-#include <vector>
-
+#include "llvm/IR/Value.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/APInt.h"
 
 using namespace llvm;
 
 namespace jhin
 {
-namespace semnode
+namespace ast
 {
 
     //===----------------------------------------------------------------------===//
@@ -21,6 +21,9 @@ namespace semnode
     class ASTBase
     {
         public:
+            virtual std::string toString() = 0;
+            virtual std::string getASTName() = 0;
+
             virtual bool IsEmpty() { return false; }
 
             virtual ~ASTBase() = default;
@@ -31,10 +34,15 @@ namespace semnode
     {
         public:
             bool IsEmpty() override { return true; }
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "EmptyAST"; }
     };
 
     class FormalAST : public ASTBase
     {
+        public:
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "FormalAST"; }
     };
 
     class FormalsAST : public ASTBase
@@ -57,6 +65,9 @@ namespace semnode
             {
                 Formals.push_back(std::move(FormalNode));
             }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "FormalsAST"; }
     };
 
     /// ExprAST - Base class for all expression nodes
@@ -64,6 +75,9 @@ namespace semnode
     {
         public:
             virtual Value *codegen() = 0;
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "ExprAST"; }
     };
 
     /// TypeExprAST - type for all type expression nodes
@@ -73,7 +87,10 @@ namespace semnode
 
         public:
             TypeExprAST(std::string typeName): typeName(typeName) {};
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "TypeExprAST"; }
     };
 
     /// BoolExprAST - Expression class for Bool literals like "True".
@@ -87,18 +104,27 @@ namespace semnode
                 Val = !Val;
             }
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "BoolExprAST"; }
     };
 
     /// IntExprAST - Expression class for Int literals like "1".
     class IntExprAST : public ExprAST {
         private:
-            int Val;
+            std::string Val;
 
         public:
-            IntExprAST(int Val) : Val(Val) {}
+            IntExprAST(std::string Val) : Val(Val) {}
 
-            Value *codegen() override;
+            Value *codegen() override
+            {
+                return ConstantInt::get(*TheContext, APInt(32, Val, 10));
+            }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "IntExprAST"; }
     };
 
     /// FloatExprAST - Expression class for float literals like "1.0".
@@ -109,7 +135,13 @@ namespace semnode
         public:
             FloatExprAST(float Val) : Val(Val) {}
 
-            Value *codegen() override;
+            Value *codegen() override
+            {
+                return ConstantFP::get(*TheContext, APFloat(Val));
+            }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "FloatExprAST"; }
     };
 
     /// StringExprAST - Expression class for String literals like "str".
@@ -120,7 +152,10 @@ namespace semnode
         public:
             StringExprAST(std::string Val) : Val(Val) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "StringExprAST"; }
     };
 
     /// VariableExprAST - Expression class for referencing a variable, like "a".
@@ -131,7 +166,10 @@ namespace semnode
         public:
             VariableExprAST(const std::string& Name) : Name(Name) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "VariableExprAST"; }
     };
 
     /// BinaryExprAST - Expression class for a binary operator.
@@ -147,7 +185,10 @@ namespace semnode
                                    std::unique_ptr<ExprAST> RHS)
                           : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "BinaryExprAST"; }
     };
 
     /// CallExprAST - Expression class for function calls.
@@ -169,7 +210,10 @@ namespace semnode
                 Args.push_back(std::move(Arg));
             }
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "CallExprAST"; }
     };
 
     /// CommandAST - Base class for all cmd nodes
@@ -177,6 +221,9 @@ namespace semnode
     {
         public:
             virtual Value *codegen() = 0;
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "CommandAST"; }
     };
 
     /// IfCmdAST - Command class for if/then/else.
@@ -201,7 +248,10 @@ namespace semnode
                 Else = std::make_unique<FormalsAST>(std::move(FormalElse));
             }
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "IfCmdAST"; }
     };
 
     /// ForCmdAST2 - Another command class for for/in.
@@ -218,7 +268,10 @@ namespace semnode
                        : Initial(std::move(Initial)), Cond(std::move(Cond)),
                        Upt(std::move(Upt)), Body(std::move(Body)) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "ForCmdAST2"; }
     };
 
     /// ForCmdAST - Command class for for/in.
@@ -235,7 +288,10 @@ namespace semnode
                        : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
                        Step(std::move(Step)), Body(std::move(Body)) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "ForCmdAST"; }
     };
 
     /// WhileCmdAST - Command class for while
@@ -257,7 +313,10 @@ namespace semnode
                 Body = std::make_unique<FormalsAST>(std::move(FormalBody));
             }
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "WhileCmdAST"; }
     };
 
     /// AssignCmdAST - Command class for assignment(<-)
@@ -272,7 +331,10 @@ namespace semnode
                          std::unique_ptr<ExprAST> exp)
                          : name(name), exp(std::move(exp)) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "AssignCmdAST"; }
     };
 
     /// DeclAST - Base class for all declarations nodes
@@ -280,6 +342,9 @@ namespace semnode
     {
         public:
             virtual Value *codegen() = 0;
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "DeclAST"; }
     };
 
     enum ClassMemberType
@@ -298,7 +363,10 @@ namespace semnode
     class ProgUnitAST : public DeclAST
     {
         public:
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "ProgUnitAST"; }
     };
 
     /// ProgUnitsAST - multiple ProgUnitAST
@@ -318,7 +386,10 @@ namespace semnode
                 ProgUnits.push_back(std::move(progUnit));
             }
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "ProgUnitsAST"; }
     };
 
     /// ClassAST - class definition AST
@@ -335,7 +406,10 @@ namespace semnode
             std::vector<ClassMemberItem> decls;
 
         public:
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "ClassAST"; }
     };
 
     /// DeclarationAST - single declaration node, regular declaration
@@ -356,7 +430,10 @@ namespace semnode
                            std::unique_ptr<ExprAST> value)
                            : name(name), type(std::move(type)), value(std::move(value)) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "DeclarationAST"; }
     };
 
     /// DeclarationsAST - multiple declarations nodes
@@ -381,7 +458,10 @@ namespace semnode
                 Decls.push_back(std::move(declAST));
             }
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "DeclarationsAST"; }
     };
 
     /// PrototypeAST - This class represents the "prototype" for a function,
@@ -400,11 +480,14 @@ namespace semnode
                          std::unique_ptr<TypeExprAST> RetType)
                          : Name(Name), Args(std::move(Args)), RetType(std::move(RetType)) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
 
             // code gen for function
-            Function *codegenFunc ();
+            Function *codegenFunc () { return nullptr; }
             const std::string &getName() const { return Name; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "PrototypeAST"; }
     };
 
     /// FunctionAST - This class represents a function definition itself.
@@ -418,11 +501,15 @@ namespace semnode
                         std::unique_ptr<FormalsAST> Body)
                         : Proto(std::move(Proto)), Body(std::move(Body)) {}
 
-            Value *codegen() override;
+            Value *codegen() override { return nullptr; }
 
             // code gen for function
-            Function *codegenFunc();
+            Function *codegenFunc() { return nullptr; }
+
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "FunctionAST"; }
+
     };
 
-}   /* namespace semnode */
+}   /* namespace ast */
 }   /* namespace jhin */

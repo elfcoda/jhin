@@ -27,11 +27,13 @@ int compiler()
     comm::pSyntaxDFA pDFAStart = client::syntaxClient();
     cout << "Syntax Completed." << endl;
 
-    ast::pASTNode pRoot = client::astClient(lexResult, pDFAStart);
-    cout << "AST Completed." << endl;
+    std::unique_ptr<ast::ASTBase> base = client::astClient(lexResult, pDFAStart);
+    cout << "AST Completed. " << base->getASTName() << endl;
 
-    client::tsClient(pRoot);
-    cout << "TS Completed." << endl;
+    // TODO: type checker
+
+    // client::tsClient(pRoot);
+    // cout << "TS Completed." << endl;
 
     return 0;
 }

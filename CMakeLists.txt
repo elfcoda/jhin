@@ -12,9 +12,12 @@ set(LLVM_LINK_COMPONENTS
   native
   )
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/build)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/build)
+
 add_kaleidoscope_chapter(jhin
   main.cpp
-  )
+)
 
 export_executable_symbols(jhin)
 

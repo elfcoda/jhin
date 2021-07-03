@@ -21,8 +21,6 @@ namespace jhin
 namespace ast
 {
 
-using namespace semnode;
-
 const std::unordered_set<std::string> cutSetStr = {"LPAREN", "RPAREN", "LCURLY", "RCURLY", "LBRACK", "RBRACK", "NEWLINE", "COMMA"};
 const std::string EpsilonStr = "EPSILON";
 
@@ -401,7 +399,7 @@ class AST
             } else if ("ExpN" == symbolStr) {    // ExpN
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("ReInt" == symbolStr) {
-                return std::make_unique<IntExprAST>(std::stoi(pRoot->getChild(0)->getText()));
+                return std::make_unique<IntExprAST>(pRoot->getChild(0)->getText());
             } else if ("ReDeci" == symbolStr) {
                 return std::make_unique<FloatExprAST>(std::stof(pRoot->getChild(0)->getText()));
             } else if ("ReStr" == symbolStr) {
