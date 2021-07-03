@@ -29,8 +29,8 @@ namespace jhin
             return ans;
         }
 
-    };  /* namespace tool*/
-};  /* namespace jhin */
+    }   /* namespace tool*/
+}   /* namespace jhin */
 
 
 

@@ -19,7 +19,7 @@ struct symbolGenRtn
     std::string getAsmCode() { return asmCode; }
 };
 
-};  /* namespace st */
-};  /* namespace jhin */
+}   /* namespace st */
+}   /* namespace jhin */
 
 

@@ -175,8 +175,8 @@ def gen_cpp_code(non_terminal_to_id, id_to_non_terminal, non_ter_cnt_min, non_te
     s += "\tstd::unordered_map<std::string, std::vector<std::vector<std::string>>> all_production = {" + all_production + "\n\t};\n\n"
     s += "\tstd::unordered_map<std::string, std::string> token_string_to_symbol = {" + token_string_to_symbol + "\n\t};\n\n"
 
-    s += "};    /* namespace syntax */\n"
-    s += "};    /* namespace jhin */\n\n\n"
+    s += "}     /* namespace syntax */\n"
+    s += "}     /* namespace jhin */\n\n\n"
     # end of file
     s += "#endif\n\n"
     with open("../src/syntax/" + non_terminal_file, "w") as non_ter_file:
@@ -281,8 +281,8 @@ def handleLEAF(body):
     src += genMap(body, LEAF_START_MACRO_VALUE, "unsigned", "std::string", "ast_leafid_to_string")
     src += genMap(body, LEAF_START_MACRO_VALUE, "std::string", "unsigned", "ast_string_to_leafid")
 
-    src += "};    /* namespace ast */\n"
-    src += "};    /* namespace jhin */\n\n\n"
+    src += "}     /* namespace ast */\n"
+    src += "}     /* namespace jhin */\n\n\n"
 
     with open("../src/ast/" + ast_leaf_file_name, "w") as ast_leaf_file:
         ast_leaf_file.write(src)

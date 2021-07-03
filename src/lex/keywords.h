@@ -256,8 +256,8 @@ std::string getStringByTokenId(unsigned id)
 
 
 
-};  /* namespace lex */
-};  /* namespace jhin */
+}   /* namespace lex */
+}   /* namespace jhin */
 
 
 #endif

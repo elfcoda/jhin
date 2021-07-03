@@ -20,8 +20,8 @@ ast::pASTNode astClient(const std::vector<std::pair<unsigned, std::string>>& lex
     return pRoot;
 }
 
-};  /* namespace client */
-};  /* namespace jhin */
+}   /* namespace client */
+}   /* namespace jhin */
 
 
 

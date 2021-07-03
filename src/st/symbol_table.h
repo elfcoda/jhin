@@ -230,6 +230,6 @@ pTypeTree getRecentFn()
     return symbolTable::table[idx - 1]->type;
 }
 
-};  /* namespace st */
-};  /* namespace jhin */
+}   /* namespace st */
+}   /* namespace jhin */
 

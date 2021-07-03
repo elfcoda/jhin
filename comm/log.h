@@ -36,7 +36,7 @@ namespace jhin
     const ELogLevel WRITE_LEVEL = INFO;
     const std::string WRITE_FILE_INFOMATION = "WRITE_LEVEL is: " + std::to_string(static_cast<unsigned>(WRITE_LEVEL)) + "\n";
 
-};  /* namespace jhin */
+}   /* namespace jhin */
 
 namespace jhin
 {
@@ -323,8 +323,8 @@ namespace comm
         return log;
     }
 
-};  /* namespace comm */
-};  /* namespace jhin */
+}   /* namespace comm */
+}   /* namespace jhin */
 
 
 

@@ -21,8 +21,8 @@ jhin::comm::pSyntaxDFA syntaxClient()
 }
 
 
-};  /* namespace client */
-};  /* namespace jhin */
+}   /* namespace client */
+}   /* namespace jhin */
 
 #endif
 

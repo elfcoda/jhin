@@ -132,7 +132,7 @@ bool isUnsignedEquals2Enum(unsigned id, ENUM e)
     return id == static_cast<unsigned>(e);
 }
 
-};  /* namespace comm */
-};  /* namespace jhin */
+}   /* namespace comm */
+}   /* namespace jhin */
 
 

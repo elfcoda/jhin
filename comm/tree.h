@@ -93,6 +93,6 @@ class tree
         pChildrenList<T> children;
 };
 
-};  /* namsspace comm */
-};  /* namespace jhin */
+}   /* namsspace comm */
+}   /* namespace jhin */
 

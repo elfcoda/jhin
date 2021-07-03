@@ -79,6 +79,6 @@ std::string getNonLeafStr(unsigned id)
 }
 
 
-};  /* namsspace ast */
-};  /* namespace jhin */
+}   /* namsspace ast */
+}   /* namespace jhin */
 

@@ -9,8 +9,8 @@ namespace jhin
 {
 namespace comm
 {
-};  /* namespace comm */
-};  /* namespace jhin */
+}   /* namespace comm */
+}   /* namespace jhin */
 
 
 #endif

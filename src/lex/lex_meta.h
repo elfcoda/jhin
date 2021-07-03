@@ -16,6 +16,6 @@ struct metaInfo
 using pMetaInfo = metaInfo*;
 
 
-};  /* namespace lex */
-};  /* namespace jhin */
+}   /* namespace lex */
+}   /* namespace jhin */
 

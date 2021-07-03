@@ -306,5 +306,5 @@ std::string getSymbolString(pASTNode pNode)
 }
 
 
-};  /* namsspace ast */
-};  /* namespace jhin */
+}   /* namsspace ast */
+}   /* namespace jhin */

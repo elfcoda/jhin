@@ -274,7 +274,7 @@ class SymbolGen
                             else if (!isFn && EType == E_ID_TYPE_FN_TYPE) JHIN_ASSERT_STR("function should be called.");
 
                             if (EType == E_ID_TYPE_FN_TYPE && !pRoot->fnHasArgs()) {
-                                /* 无参直接计算返回值好不好嘛 */
+                                /* 无参直接计算返回值 */
                                 pTypeTree pArgsTree = makeFnTree();
                                 appendTrivial(pArgsTree, SYMBOL_TYPE_UNIT);
                                 pTypeTree fnRet = ts::checkFn(pArgsTree, symbol->type);
@@ -282,13 +282,14 @@ class SymbolGen
                             }
 
                             if (isFn) {
-                                /* 这里也有可能返回函数类型哦><，在有函数参数的情况下 */
+                                /* 这里也有可能返回函数类型，在有函数参数的情况下 */
                                 return std::make_shared<symbolGenRtn>(symbol->type, "");
                             } else {
                                 /* 不是函数，只是普通符号 */
                                 return std::make_shared<symbolGenRtn>(symbol->type, cgen::genBySymbol(symbol->type));
                             }
                         }
+                        break;
                     }
                 /* class name */
                 case ast::AST_LEAF_RE_VALUE:
@@ -300,6 +301,7 @@ class SymbolGen
                         } else {
                             return std::make_shared<symbolGenRtn>(makeTrivial(SYMBOL_TYPE_TYPE, text), "");
                         }
+                        break;
                     }
                 case ast::AST_LEAF_RE_INT:
                     {
@@ -334,6 +336,7 @@ class SymbolGen
                     {
                         // TODO
                         JHIN_ASSERT_STR("have not implemented yet!");
+                        break;
                     }
                 case ast::AST_LEAF_TYPE:
                     {
@@ -602,6 +605,6 @@ class SymbolGen
 };
 std::vector<std::pair<pTypeTree, unsigned>> SymbolGen::stFnDeclNumber;
 
-};  /* namespace st */
-};  /* namespace jhin */
+}   /* namespace st */
+}   /* namespace jhin */
 

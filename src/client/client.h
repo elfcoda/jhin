@@ -37,6 +37,6 @@ std::string stack2String(std::stack<std::pair<unsigned, jhin::comm::pSyntaxDFA>>
     return s;
 }
 
-};  /* namespace client */
-};  /* namespace jhin */
+}   /* namespace client */
+}   /* namespace jhin */
 

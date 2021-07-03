@@ -53,6 +53,6 @@ std::string getPtrString(const T* const t)
 }
 
 
-};  /* namespace comm */
-};  /* namespace jhin */
+}   /* namespace comm */
+}   /* namespace jhin */
 

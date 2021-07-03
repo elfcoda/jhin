@@ -569,7 +569,7 @@ class Syntax
 
 
 
-};  /* namespace syntax*/
-};  /* namespace jhin */
+}   /* namespace syntax*/
+}   /* namespace jhin */
 
 

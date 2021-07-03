@@ -60,7 +60,7 @@ std::vector<std::pair<unsigned, std::string>> lexClient()
 }
 
 }   /* namespace client */
-};  /* namespace jhin */
+}   /* namespace jhin */
 
 
 #endif

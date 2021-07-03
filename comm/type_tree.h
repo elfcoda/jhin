@@ -368,6 +368,6 @@ unsigned fnArgsNumber(pTypeTree pTT)
 }
 
 
-};  /* namespace comm */
-};  /* namespace jhin */
+}   /* namespace comm */
+}   /* namespace jhin */
 

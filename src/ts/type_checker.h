@@ -185,6 +185,6 @@ namespace ts
         return pTT;
     }
 
-};  /* namespace ts */
-};  /* namespace jhin */
+}   /* namespace ts */
+}   /* namespace jhin */
 

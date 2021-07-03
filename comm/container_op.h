@@ -182,7 +182,7 @@ namespace comm
         return vec;
     }
 
-};  /* namespace comm */
-};  /* namespace jhin */
+}   /* namespace comm */
+}   /* namespace jhin */
 
 

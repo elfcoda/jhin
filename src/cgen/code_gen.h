@@ -563,6 +563,6 @@ std::string genREDouble(const std::string& text)
 }
 
 
-};  /* namespace cgen */
-};  /* namespace jhin */
+}   /* namespace cgen */
+}   /* namespace jhin */
 

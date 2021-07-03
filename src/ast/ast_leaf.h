@@ -44,7 +44,7 @@ const std::unordered_map<std::string, unsigned> ast_string_to_leafid = {
 	{"INT", 10}, {"FLOAT", 11}, {"DOUBLE", 12}, {"LONG", 13}, {"STRING", 14}, {"UNIT", 15}, {"THIS", 16}, {"TYPE", 17}
 };
 
-};    /* namespace ast */
-};    /* namespace jhin */
+}     /* namespace ast */
+}     /* namespace jhin */
 
 

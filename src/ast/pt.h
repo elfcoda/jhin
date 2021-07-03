@@ -170,7 +170,7 @@ class ParseTree
 };
 
 
-};  /* namsspace ast */
-};  /* namespace jhin */
+}   /* namsspace ast */
+}   /* namespace jhin */
 
 

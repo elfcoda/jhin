@@ -276,7 +276,7 @@ handle_non_blank:
 
 };
 
-};  /* namespace lex */
-};  /* namespace jhin */
+}   /* namespace lex */
+}   /* namespace jhin */
 #endif
 

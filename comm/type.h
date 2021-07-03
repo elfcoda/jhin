@@ -163,6 +163,6 @@ constexpr bool is_val_type_same = std::is_same_v<typename std::decay_t<T>::value
                                                  typename std::decay_t<U>::value_type>;
 
 
-};  /* namespace comm */
-};  /* namespace jhin */
+}   /* namespace comm */
+}   /* namespace jhin */
 

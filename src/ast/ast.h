@@ -568,5 +568,5 @@ class AST
         }
 };
 
-};  /* namespace ast */
-};  /* namespace jhin */
+}   /* namespace ast */
+}   /* namespace jhin */

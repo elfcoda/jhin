@@ -16,6 +16,6 @@ comm::pTypeTree tsClient(ast::pASTNode pRoot)
     return pTT;
 }
 
-};  /* namespace client */
-};  /* namespace jhin */
+}   /* namespace client */
+}   /* namespace jhin */
 

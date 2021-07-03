@@ -418,10 +418,8 @@ void minimalDFA()
 }
 
 
-};  /* namespace lex */
-};  /* namespace jhin */
-
-
+}   /* namespace lex */
+}   /* namespace jhin */
 
 #endif
 
