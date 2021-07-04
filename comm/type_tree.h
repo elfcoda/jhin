@@ -81,7 +81,7 @@ std::string getESymbolType2String(ESymbolType e)
 
 /* eg: Int -> Int -> Float */
 using FnType = std::vector<ESymbolType>;
-using Type = std::vector<ESymbolType>;
+using JType = std::vector<ESymbolType>;
 
 const std::unordered_set<ESymbolType> calcType = {
     SYMBOL_TYPE_INT,

@@ -4,9 +4,11 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Value.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Type.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "../jhin_module.h"
+#include "../../comm/jhin_assert.h"
 
 using namespace llvm;
 using namespace jhin;
@@ -16,6 +18,14 @@ namespace jhin
 {
 namespace ast
 {
+
+    /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
+    /// the function.  This is used for mutable variables etc.
+    static AllocaInst *CreateEntryBlockAlloca(Function *TheFunction, Type *tp, StringRef VarName)
+    {
+        IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
+        return TmpB.CreateAlloca(tp, nullptr, VarName);
+    }
 
     //===----------------------------------------------------------------------===//
     // Abstract Syntax Tree (aka Parse Tree)
@@ -87,13 +97,43 @@ namespace ast
     class TypeExprAST : public ExprAST {
         private:
             std::string typeName;
-
+            Type* tp;
         public:
-            TypeExprAST(std::string typeName): typeName(typeName) {};
+            TypeExprAST(std::string typeName): typeName(typeName)
+            {
+                if ("double" == typeName) {
+                    tp = Type::getDoubleTy(*CodeGenCollect::TheContext);
+                } else if ("float" == typeName) {
+                    tp = Type::getFloatTy(*CodeGenCollect::TheContext);
+                } else if ("int" == typeName) {
+                    JHIN_ASSERT_STR("typeName Error! int");
+                } else if ("string" == typeName) {
+                    JHIN_ASSERT_STR("typeName Error! string");
+                } else if ("bool" == typeName) {
+                    JHIN_ASSERT_STR("typeName Error! bool");
+                } else {
+                    JHIN_ASSERT_STR("typeName Error!");
+                }
+            }
+            Value *codegen() override { return nullptr; }
+
+            Type* getType() { return tp; }
+            std::string toString() override { return ""; }
+            std::string getASTName() override { return "TypeExprAST"; }
+    };
+
+    /// ComplitedTypeExprAST - type for all complited type expression nodes
+    class ComplitedTypeExprAST : public ExprAST {
+        private:
+            std::vector<Type *> CplType;
+        public:
+            ComplitedTypeExprAST()
+            {
+            }
             Value *codegen() override { return nullptr; }
 
             std::string toString() override { return ""; }
-            std::string getASTName() override { return "TypeExprAST"; }
+            std::string getASTName() override { return "ComplitedTypeExprAST"; }
     };
 
     /// BoolExprAST - Expression class for Bool literals like "True".
@@ -435,6 +475,10 @@ namespace ast
                            std::unique_ptr<ExprAST> value)
                            : name(name), type(std::move(type)), value(std::move(value)) {}
 
+            std::string getName() { return name; }
+            Type* getType() { return type->getType(); }
+            ExprAST* getValue() {return value.get(); }
+
             Value *codegen() override { return nullptr; }
 
             std::string toString() override { return ""; }
@@ -488,7 +532,28 @@ namespace ast
             Value *codegen() override { return nullptr; }
 
             // code gen for function
-            Function *codegenFunc () { return nullptr; }
+            Function *codegenFunc()
+            {
+                // Make the function type
+                std::vector<Type *> ArgsType;
+                for (unsigned i = 0; i < Args.size(); i++)
+                {
+                    ArgsType.push_back(Args[i]->getType());
+                }
+
+                FunctionType *FT = FunctionType::get(RetType->getType(), ArgsType, false);
+
+                // Set into Module
+                Function *F = Function::Create(FT, Function::ExternalLinkage, Name, CodeGenCollect::TheModule.get());
+
+                // Set names for all arguments.
+                unsigned Idx = 0;
+                for (auto &Arg : F->args())
+                    Arg.setName(Args[Idx++]->getName());
+
+                return F;
+            }
+
             const std::string &getName() const { return Name; }
 
             std::string toString() override { return ""; }
@@ -509,7 +574,48 @@ namespace ast
             Value *codegen() override { return nullptr; }
 
             // code gen for function
-            Function *codegenFunc() { return nullptr; }
+            Function *codegenFunc()
+            {
+                Function *TheFunction = Proto->codegenFunc();
+                if (!TheFunction)
+                    return nullptr;
+
+                // Create a new basic block to start insertion into.
+                BasicBlock *BB = BasicBlock::Create(*CodeGenCollect::TheContext, "entry", TheFunction);
+                CodeGenCollect::Builder->SetInsertPoint(BB);
+
+                // Record the function arguments in the NamedValues map.
+                CodeGenCollect::NamedValues.clear();
+                for (auto &Arg : TheFunction->args()) {
+                    // Create an alloca for this variable.
+                    AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getType(), Arg.getName());
+
+                    // Store the initial value into the alloca.
+                    CodeGenCollect::Builder->CreateStore(&Arg, Alloca);
+
+                    // Add arguments to variable symbol table.
+                    CodeGenCollect::NamedValues[std::string(Arg.getName())] = Alloca;
+                }
+
+                if (Value *RetVal = ConstantFP::get(*CodeGenCollect::TheContext, APFloat(1.5))) {
+                // if (Value *RetVal = Body->codegen()) { // TODO
+                    // Finish off the function.
+                    CodeGenCollect::Builder->CreateRet(RetVal);
+
+                    // Validate the generated code, checking for consistency.
+                    verifyFunction(*TheFunction);
+
+                    // Run the optimizer on the function.
+                    CodeGenCollect::TheFPM->run(*TheFunction);
+
+                    return TheFunction;
+                }
+
+                // Error reading body, remove function.
+                TheFunction->eraseFromParent();
+
+                return nullptr;
+            }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "FunctionAST"; }

@@ -13,7 +13,7 @@
 --     }
 -- }
 
-def func(): Int {
+def func(): Float {
 --    i: Int
 --    def recFn(i: Int): Int { return 1 }
     
@@ -26,6 +26,6 @@ def func(): Int {
 --    fu()
 --    recFn(7)
 --    func(1, 2)
-    return 7
+    return 1.2
 }
 
