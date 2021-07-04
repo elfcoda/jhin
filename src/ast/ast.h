@@ -135,7 +135,6 @@ class AST
                     } else if (EpsilonStr == genProgStr0) {
                         return decls;
                     } else {
-                        comm::Log::singleton(INFO) >> "While in Prog: " >> genProgStr0 >> comm::newline;
                         JHIN_ASSERT_STR("Prog Error!");
                     }
                 }
@@ -323,11 +322,15 @@ class AST
                 return std::make_unique<FunctionAST>(std::move(FuncProto), std::move(FuncBody));
             } else if ("FnRetTp" == symbolStr) {
                 std::string FnRetTpStr0 = ast::getSymbolString(pRoot->getChild(0)->getChild(0));
+                comm::Log::singleton(INFO) >> "FnRetTpStr0: " >> FnRetTpStr0 >> comm::newline;
+
                 if (EpsilonStr == FnRetTpStr0) {
                     return std::make_unique<EmptyAST>();
                 } else if (":" == FnRetTpStr0) {
-                    return parseTree2LLVMAST(pRoot->getChild(1));
-                } else { JHIN_ASSERT_STR("FnRetTp Error!"); }
+                    return parseTree2LLVMAST(pRoot->getChild(0)->getChild(1));
+                } else {
+                    JHIN_ASSERT_STR("FnRetTp Error!");
+                }
             } else if ("Type" == symbolStr) {
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("Exp" == symbolStr) {

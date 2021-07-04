@@ -166,6 +166,9 @@ struct ASTNode
 
     std::string getText()
     {
+        if (AST_DEFAULT_TEXT == data->text)
+            return comm::symbolId2String(data->symbolId);
+            
         return data->text;
     }
 
