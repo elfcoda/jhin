@@ -260,7 +260,7 @@ struct ASTNode
 
 void ASTNode::showTree(pASTNode pRoot)
 {
-    std::string graphFile = "/Users/luwenjie/git/llvm-project-2/llvm-project/llvm/examples/Kaleidoscope/Jhin/src/ast";
+    std::string graphFile = "/Users/luwenjie/git/llvm-project-2/llvm-project/llvm/examples/Kaleidoscope/Jhin/src/ast/graph.py";
     std::tuple<std::string, unsigned, unsigned> tree = parseTree2String(pRoot, 0);
     std::string sPy = "";
     sPy += "depth = " + std::to_string(std::get<2>(tree)) + "\n";
