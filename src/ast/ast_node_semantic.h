@@ -6,8 +6,11 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
+#include "../jhin_module.h"
 
 using namespace llvm;
+using namespace jhin;
+using namespace jhin::mdl;
 
 namespace jhin
 {
@@ -120,7 +123,8 @@ namespace ast
 
             Value *codegen() override
             {
-                return ConstantInt::get(*TheContext, APInt(32, Val, 10));
+                // return nullptr;
+                return ConstantInt::get(*CodeGenCollect::TheContext, APInt(32, Val, 10));
             }
 
             std::string toString() override { return ""; }
@@ -137,7 +141,8 @@ namespace ast
 
             Value *codegen() override
             {
-                return ConstantFP::get(*TheContext, APFloat(Val));
+                // return nullptr;
+                return ConstantFP::get(*CodeGenCollect::TheContext, APFloat(Val));
             }
 
             std::string toString() override { return ""; }
