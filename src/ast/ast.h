@@ -116,6 +116,7 @@ class AST
                 vSymStr.push_back(pRoot->getChild(i)->getText());
             }
 
+            comm::Log::singleton(INFO) >> "symbolStr: " >> symbolStr >> comm::newline;
             // travel ParseTree according to syntax definition file
             if ("Prog'" == symbolStr) {
                 return parseTree2LLVMAST(pRoot->getChild(1));
@@ -125,6 +126,7 @@ class AST
                 std::unique_ptr<ProgUnitsAST> decls = std::make_unique<ProgUnitsAST>();
                 while (genProg != nullptr) {
                     std::string genProgStr0 = genProg->getChild(0)->getText();
+
                     if ("Prog_u" == genProgStr0) {
                         // get a class or function definition
                         std::unique_ptr<ProgUnitAST> ProgDeclNode = dynamic_cast_ast<ProgUnitAST>(parseTree2LLVMAST(genProg->getChild(0)));
@@ -133,6 +135,7 @@ class AST
                     } else if (EpsilonStr == genProgStr0) {
                         return decls;
                     } else {
+                        comm::Log::singleton(INFO) >> "While in Prog: " >> genProgStr0 >> comm::newline;
                         JHIN_ASSERT_STR("Prog Error!");
                     }
                 }
