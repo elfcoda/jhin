@@ -28,7 +28,7 @@ int compiler()
     cout << "Syntax Completed." << endl;
 
     std::unique_ptr<ast::ASTBase> base = client::astClient(lexResult, pDFAStart);
-    cout << "AST Completed. " << base->getASTName() << endl;
+    cout << "AST Completed: " << base->getASTName() << endl;
 
     // TODO: type checker
 
