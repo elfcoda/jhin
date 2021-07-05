@@ -12,6 +12,8 @@ set(LLVM_LINK_COMPONENTS
   native
   )
 
+set(CMAKE_BUILD_TYPE Debug)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/build)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/build)
 
@@ -27,4 +29,3 @@ set_target_properties(jhin PROPERTIES
                       )
 
 target_compile_options(jhin PUBLIC -frtti)
-

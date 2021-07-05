@@ -126,7 +126,6 @@ class AST
                 std::unique_ptr<ProgUnitsAST> decls = std::make_unique<ProgUnitsAST>();
                 while (genProg != nullptr) {
                     std::string genProgStr0 = genProg->getChild(0)->getText();
-
                     if ("Prog_u" == genProgStr0) {
                         // get a class or function definition
                         std::unique_ptr<ProgUnitAST> ProgDeclNode = dynamic_cast_ast<ProgUnitAST>(parseTree2LLVMAST(genProg->getChild(0)));
@@ -399,7 +398,7 @@ class AST
             } else if ("VoidExp" == symbolStr) {
                 // TODO: add is void method
                 JHIN_ASSERT_STR("Should be implemented first!");
-            } else if ("NewExp" == symbolStr) {
+            } else if ("NewObj" == symbolStr) {
                 // TODO: new a class
                 JHIN_ASSERT_STR("Should be implemented first!");
             } else if ("ExpN" == symbolStr) {    // ExpN

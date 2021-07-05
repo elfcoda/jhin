@@ -152,13 +152,13 @@ Exp2    ::= Exp2 * Exp3
 Exp3    ::= NotExp
         |   VoidExp
         |   ExpN
-        |   NewExp  
+        |   NewObj
 ----------
 NotExp  ::= ! ExpN
 ----------
 VoidExp ::= isVoid ExpN
 ----------
-NewExp  ::= new RE_VALUE
+NewObj  ::= new RE_VALUE
 ----------
 ExpN    ::= ReInt  
         |   ReDeci  

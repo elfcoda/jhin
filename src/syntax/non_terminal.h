@@ -13,26 +13,26 @@ namespace jhin {
 namespace syntax {
 
 	#define NON_TERMINAL_IDX_MIN    1
-	#define NON_TERMINAL_IDX_MAX    54
+	#define NON_TERMINAL_IDX_MAX    55
 	#define SYNTAX_EPSILON_STR      "EPSILON"
-	#define SYNTAX_EPSILON_IDX      55
+	#define SYNTAX_EPSILON_IDX      56
 
 	std::unordered_map<std::string, unsigned int> non_terminal_to_id = {
 			{"Prog'", 1}, {"Prog", 2}, {"Prog_u", 3}, {"Cmd", 4}, {"CmdN", 5}, {"CmdC", 6}, {"CmdU", 7}, {"Formals", 8}, {"Formalt", 9}, 
 			{"Formal", 10}, {"FormalU", 11}, {"Newlq", 12}, {"Newls", 13}, {"Newlp", 14}, {"Decls", 15}, {"Declt", 16}, {"Decl", 17}, {"DeclN", 18}, {"Class", 19}, 
 			{"Proc", 20}, {"FnArg", 21}, {"FnRetTp", 22}, {"Proc_ar", 23}, {"Type", 24}, {"Exp", 25}, {"Exp0", 26}, {"Exp1", 27}, {"Exp2", 28}, {"Exp3", 29}, 
-			{"NotExp", 30}, {"VoidExp", 31}, {"NewExp", 32}, {"ExpN", 33}, {"ReInt", 34}, {"ReDeci", 35}, {"ReStr", 36}, {"ReId", 37}, {"ReValue", 38}, {"FnCall", 39}, 
-			{"FnArgs", 40}, {"Exp_ar", 41}, {"GEN_TERMINAL_1", 42}, {"GEN_TERMINAL_2", 43}, {"GEN_TERMINAL_3", 44}, {"GEN_TERMINAL_4", 45}, {"GEN_TERMINAL_5", 46}, {"GEN_TERMINAL_6", 47}, {"GEN_TERMINAL_7", 48}, {"GEN_TERMINAL_8", 49}, 
-			{"GEN_TERMINAL_9", 50}, {"GEN_TERMINAL_10", 51}, {"GEN_TERMINAL_11", 52}, {"GEN_TERMINAL_12", 53}, {"GEN_TERMINAL_13", 54}
+			{"NotExp", 30}, {"VoidExp", 31}, {"NewObj", 32}, {"ExpN", 33}, {"ReInt", 34}, {"ReDeci", 35}, {"ReStr", 36}, {"ReId", 37}, {"NewExp", 38}, {"ReValue", 39}, 
+			{"FnCall", 40}, {"FnArgs", 41}, {"Exp_ar", 42}, {"GEN_TERMINAL_1", 43}, {"GEN_TERMINAL_2", 44}, {"GEN_TERMINAL_3", 45}, {"GEN_TERMINAL_4", 46}, {"GEN_TERMINAL_5", 47}, {"GEN_TERMINAL_6", 48}, {"GEN_TERMINAL_7", 49}, 
+			{"GEN_TERMINAL_8", 50}, {"GEN_TERMINAL_9", 51}, {"GEN_TERMINAL_10", 52}, {"GEN_TERMINAL_11", 53}, {"GEN_TERMINAL_12", 54}, {"GEN_TERMINAL_13", 55}
 	};
 
 	std::unordered_map<unsigned int, std::string> id_to_non_terminal = {
 			{1, "Prog'"}, {2, "Prog"}, {3, "Prog_u"}, {4, "Cmd"}, {5, "CmdN"}, {6, "CmdC"}, {7, "CmdU"}, {8, "Formals"}, {9, "Formalt"}, 
 			{10, "Formal"}, {11, "FormalU"}, {12, "Newlq"}, {13, "Newls"}, {14, "Newlp"}, {15, "Decls"}, {16, "Declt"}, {17, "Decl"}, {18, "DeclN"}, {19, "Class"}, 
 			{20, "Proc"}, {21, "FnArg"}, {22, "FnRetTp"}, {23, "Proc_ar"}, {24, "Type"}, {25, "Exp"}, {26, "Exp0"}, {27, "Exp1"}, {28, "Exp2"}, {29, "Exp3"}, 
-			{30, "NotExp"}, {31, "VoidExp"}, {32, "NewExp"}, {33, "ExpN"}, {34, "ReInt"}, {35, "ReDeci"}, {36, "ReStr"}, {37, "ReId"}, {38, "ReValue"}, {39, "FnCall"}, 
-			{40, "FnArgs"}, {41, "Exp_ar"}, {42, "GEN_TERMINAL_1"}, {43, "GEN_TERMINAL_2"}, {44, "GEN_TERMINAL_3"}, {45, "GEN_TERMINAL_4"}, {46, "GEN_TERMINAL_5"}, {47, "GEN_TERMINAL_6"}, {48, "GEN_TERMINAL_7"}, {49, "GEN_TERMINAL_8"}, 
-			{50, "GEN_TERMINAL_9"}, {51, "GEN_TERMINAL_10"}, {52, "GEN_TERMINAL_11"}, {53, "GEN_TERMINAL_12"}, {54, "GEN_TERMINAL_13"}
+			{30, "NotExp"}, {31, "VoidExp"}, {32, "NewObj"}, {33, "ExpN"}, {34, "ReInt"}, {35, "ReDeci"}, {36, "ReStr"}, {37, "ReId"}, {38, "NewExp"}, {39, "ReValue"}, 
+			{40, "FnCall"}, {41, "FnArgs"}, {42, "Exp_ar"}, {43, "GEN_TERMINAL_1"}, {44, "GEN_TERMINAL_2"}, {45, "GEN_TERMINAL_3"}, {46, "GEN_TERMINAL_4"}, {47, "GEN_TERMINAL_5"}, {48, "GEN_TERMINAL_6"}, {49, "GEN_TERMINAL_7"}, 
+			{50, "GEN_TERMINAL_8"}, {51, "GEN_TERMINAL_9"}, {52, "GEN_TERMINAL_10"}, {53, "GEN_TERMINAL_11"}, {54, "GEN_TERMINAL_12"}, {55, "GEN_TERMINAL_13"}
 	};
 
 
@@ -65,15 +65,16 @@ namespace syntax {
 			{"Exp0", {{"Exp0", "EQ", "Exp1"}, {"Exp0", "LT", "Exp1"}, {"Exp0", "LE", "Exp1"}, {"Exp0", "GT", "Exp1"}, {"Exp0", "GE", "Exp1"}, {"Exp1"}}}, 
 			{"Exp1", {{"Exp1", "PLUS", "Exp2"}, {"Exp1", "MINUS", "Exp2"}, {"Exp2"}}}, 
 			{"Exp2", {{"Exp2", "STAR", "Exp3"}, {"Exp2", "SLASH", "Exp3"}, {"Exp3"}}}, 
-			{"Exp3", {{"NotExp"}, {"VoidExp"}, {"ExpN"}, {"NewExp"}}}, 
+			{"Exp3", {{"NotExp"}, {"VoidExp"}, {"ExpN"}, {"NewObj"}}}, 
 			{"NotExp", {{"NOT", "ExpN"}}}, 
 			{"VoidExp", {{"ISVOID", "ExpN"}}}, 
-			{"NewExp", {{"LPAREN", "Exp", "RPAREN"}}}, 
+			{"NewObj", {{"NEW", "RE_VALUE"}}}, 
 			{"ExpN", {{"ReInt"}, {"ReDeci"}, {"ReStr"}, {"ReId"}, {"TRUE"}, {"FALSE"}, {"NewExp"}, {"ReValue"}, {"OBJECT"}, {"BOOL"}, {"INT"}, {"FLOAT"}, {"DOUBLE"}, {"LONG"}, {"STRING"}, {"UNIT"}, {"FnCall"}}}, 
 			{"ReInt", {{"RE_INT"}}}, 
 			{"ReDeci", {{"RE_DECIMAL"}}}, 
 			{"ReStr", {{"RE_STRING"}}}, 
 			{"ReId", {{"RE_ID"}}}, 
+			{"NewExp", {{"LPAREN", "Exp", "RPAREN"}}}, 
 			{"ReValue", {{"RE_VALUE"}}}, 
 			{"FnCall", {{"RE_ID", "LPAREN", "FnArgs", "RPAREN"}}}, 
 			{"FnArgs", {{"GEN_TERMINAL_12"}}}, 
