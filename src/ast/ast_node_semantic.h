@@ -9,6 +9,7 @@
 #include "llvm/ADT/APInt.h"
 #include "../jhin_module.h"
 #include "../../comm/jhin_assert.h"
+#include "../../comm/log.h"
 
 using namespace llvm;
 using namespace jhin;
@@ -101,15 +102,16 @@ namespace ast
         public:
             TypeExprAST(std::string typeName): typeName(typeName)
             {
-                if ("double" == typeName) {
+                comm::Log::singleton(INFO) >> "typeName: " >> typeName >> comm::newline;
+                if ("Double" == typeName) {
                     tp = Type::getDoubleTy(*CodeGenCollect::TheContext);
-                } else if ("float" == typeName) {
+                } else if ("Float" == typeName) {
                     tp = Type::getFloatTy(*CodeGenCollect::TheContext);
-                } else if ("int" == typeName) {
+                } else if ("Int" == typeName) {
                     JHIN_ASSERT_STR("typeName Error! int");
-                } else if ("string" == typeName) {
+                } else if ("String" == typeName) {
                     JHIN_ASSERT_STR("typeName Error! string");
-                } else if ("bool" == typeName) {
+                } else if ("Bool" == typeName) {
                     JHIN_ASSERT_STR("typeName Error! bool");
                 } else {
                     JHIN_ASSERT_STR("typeName Error!");
