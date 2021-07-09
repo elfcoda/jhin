@@ -35,6 +35,7 @@ namespace ast
     class ASTBase
     {
         public:
+            virtual Value *codegen() = 0;
             virtual std::string toString() = 0;
             virtual std::string getASTName() = 0;
 
@@ -47,6 +48,7 @@ namespace ast
     class EmptyAST: public ASTBase
     {
         public:
+            Value *codegen() override { return nullptr; }
             bool IsEmpty() override { return true; }
             std::string toString() override { return ""; }
             std::string getASTName() override { return "EmptyAST"; }
@@ -55,6 +57,7 @@ namespace ast
     class FormalAST : public ASTBase
     {
         public:
+            virtual Value *codegen() override = 0;
             std::string toString() override { return ""; }
             std::string getASTName() override { return "FormalAST"; }
     };
@@ -75,6 +78,18 @@ namespace ast
 
             FormalsAST() {}
 
+            Value *codegen() override { return nullptr; }
+
+            std::vector<Value*> codegenFormals()
+            {
+                std::vector<Value*> ans;
+                for (const  auto& p: Formals)
+                {
+                    ans.push_back(p->codegen());
+                }
+                return ans;
+            }
+
             void addFormal(std::unique_ptr<FormalAST> FormalNode)
             {
                 Formals.push_back(std::move(FormalNode));
@@ -85,17 +100,17 @@ namespace ast
     };
 
     /// ExprAST - Base class for all expression nodes
-    class ExprAST: public FormalAST
+    class ExprAST : public FormalAST
     {
         public:
-            virtual Value *codegen() = 0;
+            virtual Value *codegen() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ExprAST"; }
     };
 
     /// TypeExprAST - type for all type expression nodes
-    class TypeExprAST : public ExprAST {
+    class TypeExprAST final : public ExprAST {
         private:
             std::string typeName;
             Type* tp;
@@ -125,7 +140,8 @@ namespace ast
     };
 
     /// ComplitedTypeExprAST - type for all complited type expression nodes
-    class ComplitedTypeExprAST : public ExprAST {
+    class ComplitedTypeExprAST final : public ExprAST
+    {
         private:
             std::vector<Type *> CplType;
         public:
@@ -133,13 +149,21 @@ namespace ast
             {
             }
             Value *codegen() override { return nullptr; }
+            std::vector<Value*> codegenType()
+            {
+                std::vector<Value*> ans;
+                // TODO
+                //
+                return ans;
+            }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ComplitedTypeExprAST"; }
     };
 
     /// BoolExprAST - Expression class for Bool literals like "True".
-    class BoolExprAST : public ExprAST {
+    class BoolExprAST final : public ExprAST
+    {
         private:
             bool Val;
 
@@ -156,7 +180,8 @@ namespace ast
     };
 
     /// IntExprAST - Expression class for Int literals like "1".
-    class IntExprAST : public ExprAST {
+    class IntExprAST final : public ExprAST
+    {
         private:
             std::string Val;
 
@@ -174,7 +199,8 @@ namespace ast
     };
 
     /// FloatExprAST - Expression class for float literals like "1.0".
-    class FloatExprAST : public ExprAST {
+    class FloatExprAST final : public ExprAST
+    {
         private:
             float Val;
 
@@ -192,7 +218,8 @@ namespace ast
     };
 
     /// StringExprAST - Expression class for String literals like "str".
-    class StringExprAST : public ExprAST {
+    class StringExprAST final : public ExprAST
+    {
         private:
             std::string Val;
 
@@ -206,7 +233,7 @@ namespace ast
     };
 
     /// VariableExprAST - Expression class for referencing a variable, like "a".
-    class VariableExprAST : public ExprAST {
+    class VariableExprAST final : public ExprAST {
         private:
             std::string Name;
 
@@ -220,7 +247,7 @@ namespace ast
     };
 
     /// BinaryExprAST - Expression class for a binary operator.
-    class BinaryExprAST : public ExprAST {
+    class BinaryExprAST final : public ExprAST {
         private:
             // Op: == < <= > >= + - * /
             std::string Op;
@@ -239,7 +266,7 @@ namespace ast
     };
 
     /// CallExprAST - Expression class for function calls.
-    class CallExprAST : public ExprAST {
+    class CallExprAST final : public ExprAST {
         private:
             std::string Callee;
             std::vector<std::unique_ptr<ExprAST>> Args;
@@ -267,14 +294,14 @@ namespace ast
     class CommandAST : public FormalAST
     {
         public:
-            virtual Value *codegen() = 0;
+            virtual Value *codegen() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "CommandAST"; }
     };
 
     /// IfCmdAST - Command class for if/then/else.
-    class IfCmdAST : public CommandAST
+    class IfCmdAST final : public CommandAST
     {
         private:
             std::unique_ptr<ExprAST> Cond;
@@ -302,7 +329,7 @@ namespace ast
     };
 
     /// ForCmdAST2 - Another command class for for/in.
-    class ForCmdAST2 : public CommandAST
+    class ForCmdAST2 final : public CommandAST
     {
         private:
             std::unique_ptr<ExprAST> Initial, Cond, Upt, Body;
@@ -322,7 +349,7 @@ namespace ast
     };
 
     /// ForCmdAST - Command class for for/in.
-    class ForCmdAST : public CommandAST
+    class ForCmdAST final : public CommandAST
     {
         private:
             std::string VarName;
@@ -342,7 +369,7 @@ namespace ast
     };
 
     /// WhileCmdAST - Command class for while
-    class WhileCmdAST : public CommandAST
+    class WhileCmdAST final : public CommandAST
     {
         private:
             std::unique_ptr<ExprAST> Cond;
@@ -367,7 +394,7 @@ namespace ast
     };
 
     /// AssignCmdAST - Command class for assignment(<-)
-    class AssignCmdAST : public CommandAST
+    class AssignCmdAST final : public CommandAST
     {
         private:
             std::string name;
@@ -388,7 +415,7 @@ namespace ast
     class DeclAST : public FormalAST
     {
         public:
-            virtual Value *codegen() = 0;
+            virtual Value *codegen() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "DeclAST"; }
@@ -410,7 +437,7 @@ namespace ast
     class ProgUnitAST : public DeclAST
     {
         public:
-            Value *codegen() override { return nullptr; }
+            virtual Value *codegen() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ProgUnitAST"; }
@@ -433,14 +460,29 @@ namespace ast
                 ProgUnits.push_back(std::move(progUnit));
             }
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                codegenProgUnits();
+                return nullptr;
+            }
+
+            std::vector<Value*> codegenProgUnits()
+            {
+                std::vector<Value*> ans;
+                for (const auto& p: ProgUnits)
+                {
+                    comm::Log::singleton(INFO) >> "testing codegenProgUnits" >> comm::newline;
+                    ans.push_back(p->codegen());
+                }
+                return ans;
+            }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ProgUnitsAST"; }
     };
 
     /// ClassAST - class definition AST
-    class ClassAST : public ProgUnitAST
+    class ClassAST final : public ProgUnitAST
     {
         private:
             // class name
@@ -460,7 +502,7 @@ namespace ast
     };
 
     /// DeclarationAST - single declaration node, regular declaration
-    class DeclarationAST: public DeclAST
+    class DeclarationAST final : public DeclAST
     {
         private:
             std::string name;
@@ -510,6 +552,15 @@ namespace ast
             }
 
             Value *codegen() override { return nullptr; }
+            std::vector<Value*> codegenDecl()
+            {
+                std::vector<Value*> ans;
+                for (const auto& p: Decls)
+                {
+                    ans.push_back(p->codegen());
+                }
+                return ans;
+            }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "DeclarationsAST"; }
@@ -518,7 +569,7 @@ namespace ast
     /// PrototypeAST - This class represents the "prototype" for a function,
     /// which captures its name, and its argument names (thus implicitly the number
     /// of arguments the function takes).
-    class PrototypeAST : public ProgUnitAST
+    class PrototypeAST final : public ProgUnitAST
     {
         private:
             std::string Name;
@@ -531,11 +582,16 @@ namespace ast
                          std::unique_ptr<TypeExprAST> RetType)
                          : Name(Name), Args(std::move(Args)), RetType(std::move(RetType)) {}
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                // codegenFunc();
+                return nullptr;
+            }
 
             // code gen for function
             Function *codegenFunc()
             {
+                comm::Log::singleton(INFO) >> "testing codegenFunc Proto" >> comm::newline;
                 // Make the function type
                 std::vector<Type *> ArgsType;
                 for (unsigned i = 0; i < Args.size(); i++)
@@ -563,7 +619,7 @@ namespace ast
     };
 
     /// FunctionAST - This class represents a function definition itself.
-    class FunctionAST : public ProgUnitAST {
+    class FunctionAST final : public ProgUnitAST {
         private:
             std::unique_ptr<PrototypeAST> Proto;
             std::unique_ptr<FormalsAST> Body;
@@ -573,11 +629,16 @@ namespace ast
                         std::unique_ptr<FormalsAST> Body)
                         : Proto(std::move(Proto)), Body(std::move(Body)) {}
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                codegenFunc();
+                return nullptr;
+            }
 
             // code gen for function
             Function *codegenFunc()
             {
+                comm::Log::singleton(INFO) >> "testing codegenFunc" >> comm::newline;
                 Function *TheFunction = Proto->codegenFunc();
                 if (!TheFunction)
                     return nullptr;
