@@ -4,8 +4,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include <fstream>
 #include <memory>
-#include "client.h"
 #include "../lex/lex.h"
+#include "client.h"
 #include "../../comm/comm_define.h"
 #include "../../comm/jhin_assert.h"
 using namespace jhin::comm;
