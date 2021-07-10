@@ -1,11 +1,11 @@
 #ifndef __LEX_CLIENT_H__
 #define __LEX_CLIENT_H__
 
-#include <iostream>
+#include "llvm/Support/raw_ostream.h"
 #include <fstream>
 #include <memory>
-#include "../lex/lex.h"
 #include "client.h"
+#include "../lex/lex.h"
 #include "../../comm/comm_define.h"
 #include "../../comm/jhin_assert.h"
 using namespace jhin::comm;
@@ -27,13 +27,13 @@ std::vector<std::pair<unsigned, std::string>> lexClient()
     srcfile.getline(src, MAX_FILE_SIZE, EOF);
     srcfile.close();
     std::string source = src;
-    std::cout << "length of file " << filename << ": " << source.length() << std::endl << std::endl;
+    llvm::outs() << "length of file " << filename << ": " << source.length() << "\n\n";
     if (source.length() >= MAX_FILE_SIZE - 5) {
-        std::cout << "ERROR: file too big" << std::endl;
+        llvm::outs() << "ERROR: file too big\n";
         JHIN_ASSERT_BOOL(false);
         return std::vector<std::pair<unsigned, std::string>>{};
     }
-    std::cout << source << std::endl;
+    llvm::outs() << source << "\n";
 
     /* start parsing */
     std::shared_ptr<Lex> l = std::make_shared<Lex>();
@@ -42,10 +42,10 @@ std::vector<std::pair<unsigned, std::string>> lexClient()
     std::pair<bool, std::string> res = l->parse(source, filename, parseResult);
 
     if (res.first == false) {
-        std::cout << res.second << std::endl << std::endl;
+        llvm::outs() << res.second << "\n\n";
         JHIN_ASSERT_BOOL(false);
     } else {
-        std::cout << "lexical parse successfully" << std::endl << std::endl;
+        llvm::outs() << "lexical parse successfully\n\n";
     }
 
     std::ofstream outfile;

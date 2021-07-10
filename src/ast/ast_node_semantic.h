@@ -13,7 +13,6 @@
 
 using namespace llvm;
 using namespace jhin;
-using namespace jhin::mdl;
 
 namespace jhin
 {
@@ -119,9 +118,9 @@ namespace ast
             {
                 comm::Log::singleton(INFO) >> "typeName: " >> typeName >> comm::newline;
                 if ("Double" == typeName) {
-                    tp = Type::getDoubleTy(*CodeGenCollect::TheContext);
+                    tp = Type::getDoubleTy(*mdl::TheContext);
                 } else if ("Float" == typeName) {
-                    tp = Type::getFloatTy(*CodeGenCollect::TheContext);
+                    tp = Type::getFloatTy(*mdl::TheContext);
                 } else if ("Int" == typeName) {
                     JHIN_ASSERT_STR("typeName Error! int");
                 } else if ("String" == typeName) {
@@ -191,7 +190,7 @@ namespace ast
             Value *codegen() override
             {
                 // return nullptr;
-                return ConstantInt::get(*CodeGenCollect::TheContext, APInt(32, Val, 10));
+                return ConstantInt::get(*mdl::TheContext, APInt(32, Val, 10));
             }
 
             std::string toString() override { return ""; }
@@ -210,7 +209,7 @@ namespace ast
             Value *codegen() override
             {
                 // return nullptr;
-                return ConstantFP::get(*CodeGenCollect::TheContext, APFloat(Val));
+                return ConstantFP::get(*mdl::TheContext, APFloat(Val));
             }
 
             std::string toString() override { return ""; }
@@ -584,7 +583,7 @@ namespace ast
 
             Value *codegen() override
             {
-                // codegenFunc();
+                codegenFunc();
                 return nullptr;
             }
 
@@ -602,7 +601,7 @@ namespace ast
                 FunctionType *FT = FunctionType::get(RetType->getType(), ArgsType, false);
 
                 // Set into Module
-                Function *F = Function::Create(FT, Function::ExternalLinkage, Name, CodeGenCollect::TheModule.get());
+                Function *F = Function::Create(FT, Function::ExternalLinkage, Name, mdl::TheModule.get());
 
                 // Set names for all arguments.
                 unsigned Idx = 0;
@@ -644,32 +643,32 @@ namespace ast
                     return nullptr;
 
                 // Create a new basic block to start insertion into.
-                BasicBlock *BB = BasicBlock::Create(*CodeGenCollect::TheContext, "entry", TheFunction);
-                CodeGenCollect::Builder->SetInsertPoint(BB);
+                BasicBlock *BB = BasicBlock::Create(*mdl::TheContext, "entry", TheFunction);
+                mdl::Builder->SetInsertPoint(BB);
 
                 // Record the function arguments in the NamedValues map.
-                CodeGenCollect::NamedValues.clear();
+                mdl::NamedValues.clear();
                 for (auto &Arg : TheFunction->args()) {
                     // Create an alloca for this variable.
                     AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getType(), Arg.getName());
 
                     // Store the initial value into the alloca.
-                    CodeGenCollect::Builder->CreateStore(&Arg, Alloca);
+                    mdl::Builder->CreateStore(&Arg, Alloca);
 
                     // Add arguments to variable symbol table.
-                    CodeGenCollect::NamedValues[std::string(Arg.getName())] = Alloca;
+                    mdl::NamedValues[std::string(Arg.getName())] = Alloca;
                 }
 
-                if (Value *RetVal = ConstantFP::get(*CodeGenCollect::TheContext, APFloat(1.5))) {
+                if (Value *RetVal = ConstantFP::get(*mdl::TheContext, APFloat(1.5))) {
                 // if (Value *RetVal = Body->codegen()) { // TODO
                     // Finish off the function.
-                    CodeGenCollect::Builder->CreateRet(RetVal);
+                    mdl::Builder->CreateRet(RetVal);
 
                     // Validate the generated code, checking for consistency.
                     verifyFunction(*TheFunction);
 
                     // Run the optimizer on the function.
-                    CodeGenCollect::TheFPM->run(*TheFunction);
+                    mdl::TheFPM->run(*TheFunction);
 
                     return TheFunction;
                 }

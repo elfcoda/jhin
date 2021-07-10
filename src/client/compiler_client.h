@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <memory>
 #include <stack>
 #include "client.h"
@@ -11,8 +10,6 @@
 #include "../../comm/log.h"
 
 using namespace jhin;
-using namespace std;
-
 
 int compiler()
 {
@@ -21,22 +18,35 @@ int compiler()
 
     /* append $ */
     lexResult.push_back(std::make_pair(SYNTAX_TOKEN_END, SYNTAX_TOKEN_END_MARK));
-    cout << "Lex Completed." << endl;
+    outs() << "Lex Completed.\n";
 
     /* syntaxResult */
     comm::pSyntaxDFA pDFAStart = client::syntaxClient();
-    cout << "Syntax Completed." << endl;
+    outs() << "Syntax Completed.\n";
 
     std::unique_ptr<ast::ASTBase> base = client::astClient(lexResult, pDFAStart);
-    cout << "AST Completed: " << base->getASTName() << ", start to codegen" << endl;
+    outs() << "AST Completed: " << base->getASTName() << ", start to codegen\n";
 
     base->codegen();
+
+    Module *M = mdl::TheModule.get();
+    outs() << "We just constructed this LLVM module:\n\n" << *M;
+
+    auto TSM = llvm::orc::ThreadSafeModule(std::move(mdl::TheModule), std::move(mdl::TheContext));
+    mdl::ExitOnErr(mdl::TheJIT->addModule(std::move(TSM)));
+    mdl::InitializeModuleAndPassManager();
+
+    auto ExprSymbol = mdl::ExitOnErr(mdl::TheJIT->lookup("func"));
+    // Get the symbol's address and cast it to the right type (takes no
+    // arguments, returns a double) so we can call it as a native function.
+    double (*FP)() = (double (*)())(intptr_t)ExprSymbol.getAddress();
+    fprintf(stderr, "Evaluated to %f\n", FP());
 
 
     // TODO: type checker
 
     // client::tsClient(pRoot);
-    // cout << "TS Completed." << endl;
+    // outs() << "TS Completed.\n";
 
     return 0;
 }

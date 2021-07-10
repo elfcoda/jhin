@@ -68,7 +68,9 @@ int main()
     InitializeNativeTargetAsmPrinter();
     InitializeNativeTargetAsmParser();
 
-    CodeGenCollect::TheJIT = CodeGenCollect::ExitOnErr(jit::JhinJIT::Create());
+    LLVMInitializeNativeAsmPrinter();
+
+    mdl::TheJIT = mdl::ExitOnErr(jit::JhinJIT::Create());
     InitializeModuleAndPassManager();
 
     compiler();
