@@ -8,7 +8,7 @@ Long
 String  
 Unit  
 Type  
-main  
+-- main  remove currently  
 lambda  
 let in  
 while () { } do  

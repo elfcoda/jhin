@@ -1,6 +1,8 @@
 set(LLVM_LINK_COMPONENTS
     all
   )
+  
+add_definitions(-DCOMPILER -DJHIN_DEBUG)
 
 set(CMAKE_BUILD_TYPE Debug)
 
