@@ -29,19 +29,6 @@ int compiler()
 
     base->codegen();
 
-    Module *M = mdl::TheModule.get();
-    outs() << "We just constructed this LLVM module:\n\n" << *M;
-
-    auto TSM = llvm::orc::ThreadSafeModule(std::move(mdl::TheModule), std::move(mdl::TheContext));
-    mdl::ExitOnErr(mdl::TheJIT->addModule(std::move(TSM)));
-    mdl::InitializeModuleAndPassManager();
-
-    auto ExprSymbol = mdl::ExitOnErr(mdl::TheJIT->lookup("func"));
-    // Get the symbol's address and cast it to the right type (takes no
-    // arguments, returns a double) so we can call it as a native function.
-    double (*FP)() = (double (*)())(intptr_t)ExprSymbol.getAddress();
-    fprintf(stderr, "Evaluated to %f\n", FP());
-
 
     // TODO: type checker
 
