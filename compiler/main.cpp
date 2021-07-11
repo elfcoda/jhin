@@ -151,5 +151,10 @@ int main()
 
     outs() << "Wrote " << Filename << "\n";
 
+    // use clang to link to executable file
+    std::string linkCmd = std::string("clang ") + Filename + std::string(" -o output");
+    system(linkCmd.c_str());
+
     return 0;
 }
+
