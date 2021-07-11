@@ -10,7 +10,7 @@
 --     }
 -- }
 
-def main(): Float {
+def func(): Float {
     1.2
 }
 
