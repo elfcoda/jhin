@@ -77,7 +77,12 @@ namespace ast
 
             FormalsAST() {}
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                codegenFormals();
+                // TODO
+                return nullptr;
+            }
 
             std::vector<Value*> codegenFormals()
             {
@@ -659,8 +664,7 @@ namespace ast
                     mdl::NamedValues[std::string(Arg.getName())] = Alloca;
                 }
 
-                if (Value *RetVal = ConstantFP::get(*mdl::TheContext, APFloat(1.5))) {
-                // if (Value *RetVal = Body->codegen()) { // TODO
+                if (Value *RetVal = Body->codegen()) {
                     // Finish off the function.
                     mdl::Builder->CreateRet(RetVal);
 
