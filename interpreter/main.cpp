@@ -39,6 +39,36 @@ using namespace jhin::mdl;
 using namespace llvm;
 using namespace llvm::orc;
 
+// only used in interpreter
+static std::unique_ptr<jit::JhinJIT> TheJIT;
+
+static void InitializeModuleAndPassManager()
+{
+    // Open a new module.
+    TheContext = std::make_unique<LLVMContext>();
+    TheModule = std::make_unique<Module>("jhin test", *TheContext);
+    TheModule->setDataLayout(TheJIT->getDataLayout());
+
+    // Create a new builder for the module.
+    Builder = std::make_unique<IRBuilder<>>(*TheContext);
+
+    // Create a new pass manager attached to it.
+    TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
+
+    // Promote allocas to registers.
+    TheFPM->add(createPromoteMemoryToRegisterPass());
+    // Do simple "peephole" optimizations and bit-twiddling optzns.
+    TheFPM->add(createInstructionCombiningPass());
+    // Reassociate expressions.
+    TheFPM->add(createReassociatePass());
+    // Eliminate Common SubExpressions.
+    TheFPM->add(createGVNPass());
+    // Simplify the control flow graph (deleting unreachable blocks, etc).
+    TheFPM->add(createCFGSimplificationPass());
+
+    TheFPM->doInitialization();
+}
+
 
 //===----------------------------------------------------------------------===//
 // "Library" functions that can be "extern'd" from user code.
@@ -70,19 +100,19 @@ int main()
 
     LLVMInitializeNativeAsmPrinter();
 
-    mdl::TheJIT = mdl::ExitOnErr(jit::JhinJIT::Create());
+    TheJIT = ExitOnErr(jit::JhinJIT::Create());
     InitializeModuleAndPassManager();
 
     compiler();
 
-    Module *M = mdl::TheModule.get();
+    Module *M = TheModule.get();
     outs() << "We just constructed this LLVM module:\n\n" << *M;
 
-    auto TSM = llvm::orc::ThreadSafeModule(std::move(mdl::TheModule), std::move(mdl::TheContext));
-    mdl::ExitOnErr(mdl::TheJIT->addModule(std::move(TSM)));
-    mdl::InitializeModuleAndPassManager();
+    auto TSM = llvm::orc::ThreadSafeModule(std::move(TheModule), std::move(TheContext));
+    ExitOnErr(TheJIT->addModule(std::move(TSM)));
+    InitializeModuleAndPassManager();
 
-    auto ExprSymbol = mdl::ExitOnErr(mdl::TheJIT->lookup("func"));
+    auto ExprSymbol = ExitOnErr(TheJIT->lookup("func"));
     // Get the symbol's address and cast it to the right type (takes no
     // arguments, returns a double) so we can call it as a native function.
     double (*FP)() = (double (*)())(intptr_t)ExprSymbol.getAddress();

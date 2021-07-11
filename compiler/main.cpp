@@ -36,18 +36,13 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "../src/jhin_module.h"
 #include "../src/client/compiler_client.h"
 
 using namespace jhin;
+using namespace jhin::mdl;
 using namespace llvm;
 using namespace llvm::orc;
-
-static std::unique_ptr<LLVMContext> TheContext;
-static std::unique_ptr<Module> TheModule;
-static std::unique_ptr<IRBuilder<>> Builder;
-static std::map<std::string, AllocaInst *> NamedValues;
-static std::map<std::string, std::unique_ptr<ast::PrototypeAST>> FunctionProtos;
-static ExitOnError ExitOnErr;
 
 // Data layout should be set once in main function
 static void InitializeModuleAndPassManager()
@@ -95,7 +90,7 @@ int main()
     compiler();
 
     auto TargetTriple = sys::getDefaultTargetTriple();
-    mdl::TheModule->setTargetTriple(TargetTriple);
+    TheModule->setTargetTriple(TargetTriple);
 
     std::string Error;
     auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
@@ -114,7 +109,7 @@ int main()
     TargetOptions opt;
     auto RM = Optional<Reloc::Model>();
     auto TheTargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
-    mdl::TheModule->setDataLayout(TheTargetMachine->createDataLayout());
+    TheModule->setDataLayout(TheTargetMachine->createDataLayout());
 
     auto Filename = "output.o";
     std::error_code EC;
@@ -132,7 +127,7 @@ int main()
         return 1;
     }
 
-    pass.run(*mdl::TheModule);
+    pass.run(*TheModule);
     dest.flush();
 
     outs() << "Wrote " << Filename << "\n";
