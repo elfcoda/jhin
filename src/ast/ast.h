@@ -9,6 +9,7 @@
 #include "pt.h"
 #include "ast_node.h"
 #include "ast_node_semantic.h"
+#include "../st/symbol_table.h"
 #include "../../comm/log.h"
 #include "../../comm/comm.h"
 #include "../../comm/jhin_assert.h"
@@ -130,6 +131,7 @@ class AST
                         // get a class or function definition
                         std::unique_ptr<ProgUnitAST> ProgDeclNode = dynamic_cast_ast<ProgUnitAST>(parseTree2LLVMAST(genProg->getChild(0)));
                         decls->addProgUnit(std::move(ProgDeclNode));
+                        symbolTable::add_symbol();
                         genProg = genProg->getChild(1);
                     } else if (EpsilonStr == genProgStr0) {
                         return decls;

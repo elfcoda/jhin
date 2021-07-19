@@ -37,11 +37,13 @@ namespace ast
             virtual Value *codegen() = 0;
             virtual std::string toString() = 0;
             virtual std::string getASTName() = 0;
+            virtual std::string getName() = 0;
 
             virtual bool IsEmpty() { return false; }
 
             virtual ~ASTBase() = default;
     };
+    using pASTBase = ASTBase *;
 
     /// EmptyAST - for EPSILON and other empty case
     class EmptyAST: public ASTBase
@@ -51,12 +53,14 @@ namespace ast
             bool IsEmpty() override { return true; }
             std::string toString() override { return ""; }
             std::string getASTName() override { return "EmptyAST"; }
+            virtual std::string getName() override { return ""; }
     };
 
     class FormalAST : public ASTBase
     {
         public:
             virtual Value *codegen() override = 0;
+            virtual std::string getName() override = 0;
             std::string toString() override { return ""; }
             std::string getASTName() override { return "FormalAST"; }
     };
@@ -84,6 +88,8 @@ namespace ast
                 return nullptr;
             }
 
+            virtual std::string getName() override { return ""; };
+
             std::vector<Value*> codegenFormals()
             {
                 std::vector<Value*> ans;
@@ -108,6 +114,7 @@ namespace ast
     {
         public:
             virtual Value *codegen() override = 0;
+            virtual std::string getName() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ExprAST"; }
@@ -127,16 +134,17 @@ namespace ast
                 } else if ("Float" == typeName) {
                     tp = Type::getFloatTy(*mdl::TheContext);
                 } else if ("Int" == typeName) {
-                    JHIN_ASSERT_STR("typeName Error! int");
+                    tp = IntegerType::get(*mdl::TheContext, 4 * 8);
                 } else if ("String" == typeName) {
                     JHIN_ASSERT_STR("typeName Error! string");
                 } else if ("Bool" == typeName) {
-                    JHIN_ASSERT_STR("typeName Error! bool");
+                    tp = Type::getInt1Ty(*mdl::TheContext);
                 } else {
                     JHIN_ASSERT_STR("typeName Error!");
                 }
             }
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             Type* getType() { return tp; }
             std::string toString() override { return ""; }
@@ -161,6 +169,8 @@ namespace ast
                 return ans;
             }
 
+            virtual std::string getName() override { return ""; };
+
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ComplitedTypeExprAST"; }
     };
@@ -177,7 +187,12 @@ namespace ast
                 Val = !Val;
             }
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                return ConstantInt::get(*mdl::TheContext, APInt(1, Val, 2));
+            }
+
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "BoolExprAST"; }
@@ -194,9 +209,9 @@ namespace ast
 
             Value *codegen() override
             {
-                // return nullptr;
                 return ConstantInt::get(*mdl::TheContext, APInt(32, Val, 10));
             }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "IntExprAST"; }
@@ -217,6 +232,7 @@ namespace ast
                 return ConstantFP::get(*mdl::TheContext, APFloat(Val));
             }
 
+            virtual std::string getName() override { return ""; }
             std::string toString() override { return ""; }
             std::string getASTName() override { return "FloatExprAST"; }
     };
@@ -232,6 +248,7 @@ namespace ast
 
             Value *codegen() override { return nullptr; }
 
+            virtual std::string getName() override { return ""; }
             std::string toString() override { return ""; }
             std::string getASTName() override { return "StringExprAST"; }
     };
@@ -241,10 +258,27 @@ namespace ast
         private:
             std::string Name;
 
+
         public:
             VariableExprAST(const std::string& Name) : Name(Name) {}
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                // Look this variable up in the function.
+                Value *V = NamedValues[Name];
+                if (!V)
+                {
+                    JHIN_ASSERT_STR("variable does not exist");
+                }
+
+                virtual std::string getName() override
+                {
+                    return Name;
+                }
+                // Load the value of this type.
+                // TODO
+                // return Builder->CreateLoad(Type::getDo(*TheContext), V, Name.c_str());
+            }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "VariableExprAST"; }
@@ -264,6 +298,7 @@ namespace ast
                           : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "BinaryExprAST"; }
@@ -289,6 +324,7 @@ namespace ast
             }
 
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "CallExprAST"; }
@@ -299,6 +335,7 @@ namespace ast
     {
         public:
             virtual Value *codegen() override = 0;
+            virtual std::string getName() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "CommandAST"; }
@@ -327,6 +364,7 @@ namespace ast
             }
 
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "IfCmdAST"; }
@@ -347,6 +385,7 @@ namespace ast
                        Upt(std::move(Upt)), Body(std::move(Body)) {}
 
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ForCmdAST2"; }
@@ -367,6 +406,7 @@ namespace ast
                        Step(std::move(Step)), Body(std::move(Body)) {}
 
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ForCmdAST"; }
@@ -392,6 +432,7 @@ namespace ast
             }
 
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "WhileCmdAST"; }
@@ -410,6 +451,7 @@ namespace ast
                          : name(name), exp(std::move(exp)) {}
 
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "AssignCmdAST"; }
@@ -420,6 +462,7 @@ namespace ast
     {
         public:
             virtual Value *codegen() override = 0;
+            virtual std::string getName() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "DeclAST"; }
@@ -442,6 +485,7 @@ namespace ast
     {
         public:
             virtual Value *codegen() override = 0;
+            virtual std::string getName() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ProgUnitAST"; }
@@ -470,6 +514,8 @@ namespace ast
                 return nullptr;
             }
 
+            virtual std::string getName() override { return ""; }
+
             std::vector<Value*> codegenProgUnits()
             {
                 std::vector<Value*> ans;
@@ -486,6 +532,7 @@ namespace ast
     };
 
     /// ClassAST - class definition AST
+    /// SymbolTable
     class ClassAST final : public ProgUnitAST
     {
         private:
@@ -500,12 +547,17 @@ namespace ast
 
         public:
             Value *codegen() override { return nullptr; }
+            virtual std::string getName() override
+            {
+                return name;
+            }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ClassAST"; }
     };
 
     /// DeclarationAST - single declaration node, regular declaration
+    /// SymbolTable
     class DeclarationAST final : public DeclAST
     {
         private:
@@ -523,7 +575,10 @@ namespace ast
                            std::unique_ptr<ExprAST> value)
                            : name(name), type(std::move(type)), value(std::move(value)) {}
 
-            std::string getName() { return name; }
+            virtual std::string getName() override
+            {
+                return name;
+            }
             Type* getType() { return type->getType(); }
             ExprAST* getValue() {return value.get(); }
 
@@ -556,6 +611,9 @@ namespace ast
             }
 
             Value *codegen() override { return nullptr; }
+
+            virtual std::string getName() override { return ""; }
+
             std::vector<Value*> codegenDecl()
             {
                 std::vector<Value*> ans;
@@ -573,6 +631,7 @@ namespace ast
     /// PrototypeAST - This class represents the "prototype" for a function,
     /// which captures its name, and its argument names (thus implicitly the number
     /// of arguments the function takes).
+    /// SymbolTable
     class PrototypeAST final : public ProgUnitAST
     {
         private:
@@ -590,6 +649,11 @@ namespace ast
             {
                 codegenFunc();
                 return nullptr;
+            }
+
+            virtual std::string getName() override
+            {
+                return Name;
             }
 
             // code gen for function
@@ -623,6 +687,7 @@ namespace ast
     };
 
     /// FunctionAST - This class represents a function definition itself.
+    /// SymbolTable
     class FunctionAST final : public ProgUnitAST {
         private:
             std::unique_ptr<PrototypeAST> Proto;
@@ -637,6 +702,11 @@ namespace ast
             {
                 codegenFunc();
                 return nullptr;
+            }
+
+            virtual std::string getName() override
+            {
+                return Proto->name();
             }
 
             // code gen for function
