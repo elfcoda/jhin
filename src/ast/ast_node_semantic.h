@@ -272,7 +272,7 @@ namespace ast
                 }
 
                 // Load the value of this type.
-                return Builder->CreateLoad(Type::getDo(*TheContext), V, Name.c_str());
+                return Builder->CreateLoad(find_symbol(Name)->getType(), V, Name.c_str());
             }
 
             virtual std::string getName() override
@@ -297,7 +297,11 @@ namespace ast
                                    std::unique_ptr<ExprAST> RHS)
                           : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                return nullptr;
+            }
+            
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }

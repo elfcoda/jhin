@@ -117,6 +117,11 @@ struct symbolItem
         return name;
     }
 
+    Type* getType()
+    {
+        return type;
+    }
+
     ~symbolItem()
     {
         // Todo: delete type
