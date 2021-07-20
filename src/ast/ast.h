@@ -131,7 +131,6 @@ class AST
                         // get a class or function definition
                         std::unique_ptr<ProgUnitAST> ProgDeclNode = dynamic_cast_ast<ProgUnitAST>(parseTree2LLVMAST(genProg->getChild(0)));
                         decls->addProgUnit(std::move(ProgDeclNode));
-                        symbolTable::add_symbol();
                         genProg = genProg->getChild(1);
                     } else if (EpsilonStr == genProgStr0) {
                         return decls;
@@ -151,14 +150,18 @@ class AST
             } else if ("CmdC" == symbolStr) {
                 std::string CmdCStr0 = vSymStr[0];
                 std::unique_ptr<ExprAST> CmdCCond = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
+                symbolTable::add_symbol_tag(ST_THEN_SCOPE);
                 std::unique_ptr<FormalsAST> CmdCThen = dynamic_cast_ast<FormalsAST>(parseTree2LLVMAST(pRoot->getChild(6)));
+                symbolTable::pop_symbol_block();
                 if ("while" == CmdCStr0) {
                     return std::make_unique<WhileCmdAST>(std::move(CmdCCond), std::move(CmdCThen));
                 } else if ("if" == CmdCStr0) {
                     if (8 == clrSize) {
                         return std::make_unique<IfCmdAST>(std::move(CmdCCond), std::move(CmdCThen), nullptr);
                     } else if (12 == clrSize) {
+                        symbolTable::add_symbol_tag(ST_ELSE_SCOPE);
                         std::unique_ptr<FormalsAST> CmdCElse = dynamic_cast_ast<FormalsAST>(parseTree2LLVMAST(pRoot->getChild(10)));
+                        symbolTable::pop_symbol_block();
                         return std::make_unique<IfCmdAST>(std::move(CmdCCond), std::move(CmdCThen), std::move(CmdCElse));
                     } else {
                         JHIN_ASSERT_STR("CmdC Error!");
@@ -171,14 +174,20 @@ class AST
                 std::string CmdUStr6 = vSymStr[6];
                 if ("while" == CmdUStr0) {
                     std::unique_ptr<ExprAST> WhileExpr = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
+                    symbolTable::add_symbol_tag(ST_THEN_SCOPE);
                     std::unique_ptr<FormalAST> WhileFormal = dynamic_cast_ast<FormalAST>(parseTree2LLVMAST(pRoot->getChild(5)));
+                    symbolTable::pop_symbol_block();
                     return std::make_unique<WhileCmdAST>(std::move(WhileExpr), std::move(WhileFormal));
                 } else if ("if" == CmdUStr0) {
                     // get Exp, FormalU
                     std::unique_ptr<ExprAST> IfCond = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
+                    symbolTable::add_symbol_tag(ST_THEN_SCOPE);
                     std::unique_ptr<FormalAST> IfThen = dynamic_cast_ast<FormalAST>(parseTree2LLVMAST(pRoot->getChild(5)));
+                    symbolTable::pop_symbol_block();
                     if ("Newlq" == CmdUStr6) {
+                        symbolTable::add_symbol_tag(ST_ELSE_SCOPE);
                         std::unique_ptr<FormalAST> IfElse = dynamic_cast_ast<FormalAST>(parseTree2LLVMAST(pRoot->getChild(9)));
+                        symbolTable::pop_symbol_block();
                         return std::make_unique<IfCmdAST>(std::move(IfCond), std::move(IfThen), std::move(IfElse));
                     } else if ("'back_n'" == CmdUStr6) {
                         return std::make_unique<IfCmdAST>(std::move(IfCond), std::move(IfThen), nullptr);
@@ -251,10 +260,14 @@ class AST
                     if (pRoot->size() < 3) {
                         JHIN_ASSERT_STR("DeclN Error");
                     } else if (pRoot->size() == 3) {
-                        return std::make_unique<DeclarationAST>(DeclName, std::move(DeclType));
+                        auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType));
+                        symbolTable::add_symbol(ans->getName(), ans->getType(), "", ST_DEFAULT_SYMBOL);
+                        return ans;
                     } else if (pRoot->size() == 5) {
                         std::unique_ptr<ExprAST> DeclVal = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(4)));
-                        return std::make_unique<DeclarationAST>(DeclName, std::move(DeclType), std::move(DeclVal));
+                        auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType), std::move(DeclVal));
+                        symbolTable::add_symbol(ans->getName(), ans->getType(), "", ST_DEFAULT_SYMBOL);
+                        return ans;
                     } else {
                         JHIN_ASSERT_STR("DeclN Error on size");
                     }
@@ -264,7 +277,9 @@ class AST
                     JHIN_ASSERT_STR("DeclN Error!");
                 }
             } else if ("Class" == symbolStr) {
+                symbolTable::add_symbol_tag(ST_CLASS_SCOPE);
                 std::string ClassStr2 = pRoot->getChild(2)->getText();
+                std::string className = pRoot->getChild(1)->getText();
                 if ("Newls" == ClassStr2) {
                     // TODO
                 } else if ("inherits" == ClassStr2) {
@@ -272,7 +287,13 @@ class AST
                 } else {
                     JHIN_ASSERT_STR("Class Error!");
                 }
+
+                TypeTable::addType(className);
+
+                symbolTable::pop_symbol_block();
             } else if ("Proc" == symbolStr) {   // Functions
+                symbolTable::add_symbol_tag(ST_FUNCTION_SCOPE);
+
                 // Function Name
                 std::string FunctionName = pRoot->getChild(1)->getText();
 
@@ -319,6 +340,11 @@ class AST
 
                 /// 2. make Body: Formals
                 std::unique_ptr<FormalsAST> FuncBody = dynamic_cast_ast<FormalsAST>(parseTree2LLVMAST(pRoot->getChild(8)));
+
+                symbolTable::add_symbol(FunctionName, nullptr, "", ST_DEFAULT_SYMBOL);
+
+                // pop symbol scope
+                symbolTable::pop_symbol_block();
 
                 return std::make_unique<FunctionAST>(std::move(FuncProto), std::move(FuncBody));
             } else if ("FnRetTp" == symbolStr) {

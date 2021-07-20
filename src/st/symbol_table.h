@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include "llvm/IR/Type.h"
 #include "../ast/ast_node_semantic.h"
 #include "../../comm/jhin_assert.h"
 #include "../lex/lex_meta.h"
@@ -15,14 +16,67 @@ namespace jhin
 namespace st
 {
 
+struct userDefinedType
+{
+    private:
+        // type name: Class Cat
+        std::string name;
+
+    public:
+        userDefinedType(std::string name)
+        {
+            this->name = name;
+        }
+
+        ~userDefinedType() {}
+
+        std::string getName()
+        {
+            return name;
+        }
+};
+
+struct TypeTable
+{
+    static std::vector<std::shared_ptr<userDefinedType>> table;
+
+    static void addType(std::shared_ptr<userDefinedType> tp)
+    {
+        table.push_back(tp);
+    }
+
+    static void addType(std::string name)
+    {
+        table.push_back(std::make_shared<userDefinedType>(name));
+    }
+
+    /// pop type when necessary
+    static void popType()
+    {
+        // TODO
+    }
+
+    static std::shared_ptr<userDefinedType> findType(std::string typeName)
+    {
+        for (int i = table.size() - 1; i >= 0; i--)
+        {
+            if (table[i]->getName() == typeName)
+            {
+                return table[i];
+            }
+        }
+        JHIN_ASSERT_STR("Type Not Found!");
+        return nullptr;
+    }
+};
+
 enum SymbolTag
 {
     ST_DEFAULT_SYMBOL = 0,
     ST_FUNCTION_SCOPE,
     ST_CLASS_SCOPE,
-    ST_IF_SCOPE,
+    ST_THEN_SCOPE,
     ST_ELSE_SCOPE,
-    ST_WHILE_SCOPE,
     ST_CASE_OF_SCOPE,
 };
 
@@ -35,7 +89,7 @@ struct symbolItem
     std::string         name;
 
     // symbol type: Int
-    std::string         type;
+    Type*               type;
 
     // symbol value: 6
     std::string         value;
@@ -43,7 +97,7 @@ struct symbolItem
     // symbol tag: DefaultSymbol / FunctionScope / ClassScope / IfScope / ElseScope / WhileScope / LambdaScope
     SymbolTag           tag;
 
-    symbolItem(std::string name, std::string type, std::string value, SymbolTag tag)
+    symbolItem(std::string name, Type* type, std::string value, SymbolTag tag)
     {
         this->name = name;
         this->type = type;
@@ -76,7 +130,8 @@ struct symbolTable
     static std::vector<std::shared_ptr<symbolItem>> table;
 
     static void initSymbolTable();
-    static bool add_symbol(std::string name, std::string type, std::string value, SymbolTag tag);
+    static bool add_symbol(std::string name, Type* type, std::string value, SymbolTag tag);
+    static bool add_symbol_tag(SymbolTag tag);
     static bool pop_symbol();
     static unsigned pop_symbol_block();
     static std::shared_ptr<symbolItem> find_symbol(const std::string& symbolName);
@@ -95,10 +150,16 @@ void symbolTable::initSymbolTable()
     table.clear();
 }
 
-bool symbolTable::add_symbol(std::string name, std::string type, std::string value, SymbolTag tag)
+bool symbolTable::add_symbol(std::string name, Type* type, std::string value, SymbolTag tag)
 {
-    JHIN_ASSERT_BOOL(find_symbol_in_scope(node->getSymbolName()) == nullptr);
+    JHIN_ASSERT_BOOL(find_symbol_in_scope(name) == nullptr);
     table.push_back(std::make_shared<symbolItem>(name, type, value, tag));
+    return true;
+}
+
+bool symbolTable::add_symbol_tag(SymbolTag tag)
+{
+    table.push_back(std::make_shared<symbolItem>("", nullptr, "", tag));
     return true;
 }
 
@@ -119,6 +180,10 @@ unsigned symbolTable::pop_symbol_block()
         table.pop_back();
         cnt += 1;
     }
+
+    // pop back symbol tag
+    table.pop_back();
+
 
     return cnt;
 }

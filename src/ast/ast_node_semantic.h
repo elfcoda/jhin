@@ -271,13 +271,13 @@ namespace ast
                     JHIN_ASSERT_STR("variable does not exist");
                 }
 
-                virtual std::string getName() override
-                {
-                    return Name;
-                }
                 // Load the value of this type.
-                // TODO
-                // return Builder->CreateLoad(Type::getDo(*TheContext), V, Name.c_str());
+                return Builder->CreateLoad(Type::getDo(*TheContext), V, Name.c_str());
+            }
+
+            virtual std::string getName() override
+            {
+                return Name;
             }
 
             std::string toString() override { return ""; }
