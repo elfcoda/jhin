@@ -12,11 +12,9 @@ namespace st
 struct symbolGenRtn
 {
     pTypeTree pTT;
-    std::string asmCode;
 
-    symbolGenRtn(pTypeTree pTT, const std::string& asmCode): pTT(pTT), asmCode(asmCode) {}
+    symbolGenRtn(pTypeTree pTT): pTT(pTT) {}
     pTypeTree getTypeTreePtr() { return pTT; }
-    std::string getAsmCode() { return asmCode; }
 };
 
 }   /* namespace st */

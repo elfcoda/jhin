@@ -10,6 +10,7 @@
 #include "../ast/ast_node_semantic.h"
 #include "../../comm/jhin_assert.h"
 #include "../lex/lex_meta.h"
+#include "../../comm/type_tree.h"
 
 namespace jhin
 {
@@ -89,7 +90,7 @@ struct symbolItem
     std::string         name;
 
     // symbol type: Int
-    Type*               type;
+    pTypeTree           pTT;
 
     // symbol value: 6
     std::string         value;
@@ -97,10 +98,10 @@ struct symbolItem
     // symbol tag: DefaultSymbol / FunctionScope / ClassScope / IfScope / ElseScope / WhileScope / LambdaScope
     SymbolTag           tag;
 
-    symbolItem(std::string name, Type* type, std::string value, SymbolTag tag)
+    symbolItem(std::string name, pTypeTree pTT, std::string value, SymbolTag tag)
     {
         this->name = name;
-        this->type = type;
+        this->pTT = pTT;
         this->value = value;
         this->tag = tag;
     }
@@ -117,9 +118,9 @@ struct symbolItem
         return name;
     }
 
-    Type* getType()
+    pTypeTree getType()
     {
-        return type;
+        return pTT;
     }
 
     ~symbolItem()
@@ -135,7 +136,7 @@ struct symbolTable
     static std::vector<std::shared_ptr<symbolItem>> table;
 
     static void initSymbolTable();
-    static bool add_symbol(std::string name, Type* type, std::string value, SymbolTag tag);
+    static bool add_symbol(std::string name, pTypeTree pTT, std::string value, SymbolTag tag);
     static bool add_symbol_tag(SymbolTag tag);
     static bool pop_symbol();
     static unsigned pop_symbol_block();
@@ -155,10 +156,10 @@ void symbolTable::initSymbolTable()
     table.clear();
 }
 
-bool symbolTable::add_symbol(std::string name, Type* type, std::string value, SymbolTag tag)
+bool symbolTable::add_symbol(std::string name, pTypeTree pTT, std::string value, SymbolTag tag)
 {
     JHIN_ASSERT_BOOL(find_symbol_in_scope(name) == nullptr);
-    table.push_back(std::make_shared<symbolItem>(name, type, value, tag));
+    table.push_back(std::make_shared<symbolItem>(name, pTT, value, tag));
     return true;
 }
 
