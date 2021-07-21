@@ -3,6 +3,7 @@
 #pragma once
 
 #include <unordered_set>
+#include "llvm/IR/Type.h"
 #include "container_op.h"
 #include "tree.h"
 #include "jhin_assert.h"
@@ -30,13 +31,7 @@ enum ESymbolType
     SYMBOL_TYPE_NO_TYPE = SYMBOL_TYPE_START_NONE,
 
     /* trivial type */
-    SYMBOL_TYPE_INT = SYMBOL_TYPE_START_TRIVIAL,
-    SYMBOL_TYPE_FLOAT,
-    SYMBOL_TYPE_DOUBLE, // TODO
-    SYMBOL_TYPE_LONG,   // TODO
-    SYMBOL_TYPE_OBJECT,
-    SYMBOL_TYPE_BOOL,
-    SYMBOL_TYPE_STRING,
+    SYMBOL_TYPE_BASIC = SYMBOL_TYPE_START_TRIVIAL,
     SYMBOL_TYPE_UNIT,
 
     SYMBOL_TYPE_TYPE = SYMBOL_TYPE_START_TYPE,       /* type variable */
@@ -55,14 +50,7 @@ enum ESymbolType
 const std::unordered_map<ESymbolType, std::string> ESymbolType2String = {
     {SYMBOL_TYPE_NO_TYPE, "SYMBOL_TYPE_NO_TYPE"},
 
-    {SYMBOL_TYPE_INT, "SYMBOL_TYPE_INT"},
-    {SYMBOL_TYPE_FLOAT, "SYMBOL_TYPE_FLOAT"},
-    {SYMBOL_TYPE_DOUBLE, "SYMBOL_TYPE_DOUBLE"},
-    {SYMBOL_TYPE_LONG, "SYMBOL_TYPE_LONG"},
-    {SYMBOL_TYPE_OBJECT, "SYMBOL_TYPE_OBJECT"},
-    {SYMBOL_TYPE_BOOL, "SYMBOL_TYPE_BOOL"},
-    {SYMBOL_TYPE_STRING, "SYMBOL_TYPE_STRING"},
-    {SYMBOL_TYPE_UNIT, "SYMBOL_TYPE_UNIT"},
+    {SYMBOL_TYPE_BASIC, "SYMBOL_TYPE_BASIC"},
 
     {SYMBOL_TYPE_TYPE, "SYMBOL_TYPE_TYPE"},
 
@@ -84,10 +72,6 @@ using FnType = std::vector<ESymbolType>;
 using JType = std::vector<ESymbolType>;
 
 const std::unordered_set<ESymbolType> calcType = {
-    SYMBOL_TYPE_INT,
-    SYMBOL_TYPE_FLOAT,
-    SYMBOL_TYPE_DOUBLE,
-    SYMBOL_TYPE_LONG
 };
 
 bool isCaclType(ESymbolType est)
@@ -116,14 +100,7 @@ const std::unordered_map<ESymbolType, std::string> type2DefaultValue = {
     {SYMBOL_TYPE_NO_TYPE, ""},
 
     /* trivial types */
-    {SYMBOL_TYPE_INT, "0"},
-    {SYMBOL_TYPE_FLOAT, "0.0"},
-    {SYMBOL_TYPE_DOUBLE, "0.0"},
-    {SYMBOL_TYPE_LONG, "0"},
-    {SYMBOL_TYPE_OBJECT, ""},
-    {SYMBOL_TYPE_BOOL, "False"},
-    {SYMBOL_TYPE_STRING, "\"\""},
-    {SYMBOL_TYPE_UNIT, "unit"},
+    {SYMBOL_TYPE_BASIC, "0"},
     {SYMBOL_TYPE_TYPE, ""},
 
     /* complex type */
@@ -150,8 +127,8 @@ class TypeTree: public comm::tree<TypeTree>
 {
     public:
         /* children: std::vector<pTypeTree>* */
-        TypeTree(ESymbolType tp, const std::string& symbolName, const std::string& value, pChildrenList<TypeTree> pChildren, const std::string& et = ""):
-                 comm::tree<TypeTree>(pChildren), type(tp), symbolName(symbolName), value(value), expandType(et)
+        TypeTree(ESymbolType est, Type* type, const std::string& symbolName, const std::string& value, const std::string& et, pChildrenList<TypeTree> pChildren):
+                 comm::tree<TypeTree>(pChildren), est(est), type(type), symbolName(symbolName), value(value), expandType(et)
         {
         }
 
@@ -165,18 +142,14 @@ class TypeTree: public comm::tree<TypeTree>
 
         ~TypeTree() { free(); }
 
-        // TypeTree(TypeTree&& t)
-        // {
-        //     this->children = t.children;
-        //     t.children = nullptr;
-        // }
-
-        ESymbolType getType() const { return type; }
+        ESymbolType getEST() const { return est; }
+        Type* getType() const { return type; }
         std::string getSymbolName() const { return symbolName; }
         std::string getValue() const { return value; }
         std::string getExpandType() const { return expandType; }
 
-        void setType(ESymbolType st) { type = st; }
+        void setEST(ESymbolType e) { est = e; }
+        void setType(Type* tp) { type = tp; }
         void setSymbolName(const std::string& sm) { symbolName = sm; }
         void setValue(const std::string& val) { value = val; }
         void setExpandType(const std::string& et) { expandType = et; }
@@ -184,7 +157,7 @@ class TypeTree: public comm::tree<TypeTree>
         std::string toString() const
         {
             std::string s = "";
-            s += "{type: " + getESymbolType2String(type) + ", symbolName: " \
+            s += "{est: " + getESymbolType2String(est) + ", symbolName: " \
                  + symbolName + ", value: " + value + ", expandType: " + expandType;
             if (!hasChildren()) {
                 s += ", children: empty}\n";
@@ -199,12 +172,12 @@ class TypeTree: public comm::tree<TypeTree>
             return s;
         }
     private:
-        ESymbolType type;
+        ESymbolType est;
+        Type* type;
 
         /* type don't have tsymbolName field */
         std::string symbolName;
         std::string value;
-        // children
 
         /* class name or function name, null if it's basic types */
         std::string expandType;
@@ -213,39 +186,39 @@ class TypeTree: public comm::tree<TypeTree>
 
 pTypeTree makeFnTree()
 {
-    pTypeTree pTT = new TypeTree(SYMBOL_TYPE_FN, "", "", nullptr, "");
+    pTypeTree pTT = new TypeTree(SYMBOL_TYPE_FN, nullptr, "", "", "", nullptr);
     return pTT;
 }
 
-pTypeTree makeTrivial(ESymbolType type = SYMBOL_TYPE_UNIT, std::string value = "")
+pTypeTree makeTrivial(ESymbolType est = SYMBOL_TYPE_UNIT, std::string value = "")
 {
-    if (value == "") value = getDefaultValueByType(type);
-    pTypeTree pTT = new TypeTree(type, "", value, nullptr);
+    if (value == "") value = getDefaultValueByType(est);
+    pTypeTree pTT = new TypeTree(est, nullptr, "", value, "", nullptr);
     return pTT;
 }
 
-bool setTrivial(pTypeTree pTT, ESymbolType type = SYMBOL_TYPE_UNIT)
+bool setTrivial2Children(pTypeTree pTT, ESymbolType est = SYMBOL_TYPE_UNIT)
 {
     JHIN_ASSERT_BOOL(pTT != nullptr);
     if (pTT->children == nullptr) {
         pTT->children = new std::vector<pTypeTree>();
     }
     pTT->children->resize(1);
-    (*(pTT->children))[0] = makeTrivial(type);
+    (*(pTT->children))[0] = makeTrivial(est);
     return true;
 }
 
-bool appendTrivial(pTypeTree pTT, ESymbolType type = SYMBOL_TYPE_UNIT)
+bool appendTrivial2Children(pTypeTree pTT, ESymbolType est = SYMBOL_TYPE_UNIT)
 {
     JHIN_ASSERT_BOOL(pTT != nullptr);
     if (pTT->children == nullptr) {
         pTT->children = new std::vector<pTypeTree>();
     }
-    pTT->children->push_back(makeTrivial(type));
+    pTT->children->push_back(makeTrivial(est));
     return true;
 }
 
-bool appendTree(pTypeTree pTT, const pConstTypeTree child)
+bool appendTree2Children(pTypeTree pTT, const pConstTypeTree child)
 {
     JHIN_ASSERT_BOOL(pTT != nullptr && child != nullptr);
     if (pTT->children == nullptr) {
@@ -255,7 +228,7 @@ bool appendTree(pTypeTree pTT, const pConstTypeTree child)
     return true;
 }
 
-void mergeTree(pTypeTree p1, const pConstTypeTree& p2)
+void mergeChildren(pTypeTree p1, const pConstTypeTree& p2)
 {
     JHIN_ASSERT_BOOL(p1 != nullptr && p2 != nullptr);
     if (p1->children == nullptr) {

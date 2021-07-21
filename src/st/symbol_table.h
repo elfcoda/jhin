@@ -118,9 +118,14 @@ struct symbolItem
         return name;
     }
 
-    pTypeTree getType()
+    pTypeTree getpTT()
     {
         return pTT;
+    }
+        
+    Type* getType()
+    {
+        return pTT->getType();
     }
 
     ~symbolItem()

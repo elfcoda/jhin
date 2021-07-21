@@ -261,12 +261,12 @@ class AST
                         JHIN_ASSERT_STR("DeclN Error");
                     } else if (pRoot->size() == 3) {
                         auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType));
-                        symbolTable::add_symbol(ans->getName(), ans->getType(), "", ST_DEFAULT_SYMBOL);
+                        symbolTable::add_symbol(ans->getName(), ans->getpTT(), "", ST_DEFAULT_SYMBOL);
                         return ans;
                     } else if (pRoot->size() == 5) {
                         std::unique_ptr<ExprAST> DeclVal = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(4)));
                         auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType), std::move(DeclVal));
-                        symbolTable::add_symbol(ans->getName(), ans->getType(), "", ST_DEFAULT_SYMBOL);
+                        symbolTable::add_symbol(ans->getName(), ans->getpTT(), "", ST_DEFAULT_SYMBOL);
                         return ans;
                     } else {
                         JHIN_ASSERT_STR("DeclN Error on size");

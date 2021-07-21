@@ -10,6 +10,7 @@
 #include "../jhin_module.h"
 #include "../../comm/jhin_assert.h"
 #include "../../comm/log.h"
+#include "../../comm/type_tree.h"
 
 using namespace llvm;
 using namespace jhin;
@@ -124,21 +125,23 @@ namespace ast
     class TypeExprAST final : public ExprAST {
         private:
             std::string typeName;
-            Type* tp;
+            pTypeTree pTT;
         public:
             TypeExprAST(std::string typeName): typeName(typeName)
             {
                 comm::Log::singleton(INFO) >> "typeName: " >> typeName >> comm::newline;
+                pTT = new TypeTree(SYMBOL_TYPE_BASIC, nullptr, "", "", "", nullptr);
+
                 if ("Double" == typeName) {
-                    tp = Type::getDoubleTy(*mdl::TheContext);
+                    pTT->setType(Type::getDoubleTy(*mdl::TheContext));
                 } else if ("Float" == typeName) {
-                    tp = Type::getFloatTy(*mdl::TheContext);
+                    pTT->setType(Type::getFloatTy(*mdl::TheContext));
                 } else if ("Int" == typeName) {
-                    tp = IntegerType::get(*mdl::TheContext, 4 * 8);
+                    pTT->setType(IntegerType::get(*mdl::TheContext, 4 * 8));
                 } else if ("String" == typeName) {
                     JHIN_ASSERT_STR("typeName Error! string");
                 } else if ("Bool" == typeName) {
-                    tp = Type::getInt1Ty(*mdl::TheContext);
+                    pTT->setType(Type::getInt1Ty(*mdl::TheContext));
                 } else {
                     JHIN_ASSERT_STR("typeName Error!");
                 }
@@ -146,7 +149,8 @@ namespace ast
             Value *codegen() override { return nullptr; }
             virtual std::string getName() override { return ""; }
 
-            Type* getType() { return tp; }
+            pTypeTree getpTT() { return pTT; }
+            Type* getType() { return pTT->getType(); }
             std::string toString() override { return ""; }
             std::string getASTName() override { return "TypeExprAST"; }
     };
@@ -583,6 +587,7 @@ namespace ast
             {
                 return name;
             }
+            pTypeTree getpTT() { return type->getpTT(); }
             Type* getType() { return type->getType(); }
             ExprAST* getValue() {return value.get(); }
 
