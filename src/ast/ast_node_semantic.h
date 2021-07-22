@@ -303,6 +303,55 @@ namespace ast
 
             Value *codegen() override
             {
+                Value *L = LHS->codegen();
+                Value *R = RHS->codegen();
+                if (!L || !R)
+                    return nullptr;
+
+                if ("+" == Op)
+                {
+                    return Builder->CreateFAdd(L, R, "addtmp");
+                }
+                else if ("-" == Op)
+                {
+                    //return Builder->CreateFSub(L, R, "subtmp");
+                }
+                else if ("*" == Op)
+                {
+                    //return Builder->CreateFMul(L, R, "multmp");
+                }
+                else if ("/" == Op)
+                {
+
+                }
+                else if ("==" == Op)
+                {
+
+                }
+                else if ("<" == Op)
+                {
+                    //L = Builder->CreateFCmpULT(L, R, "cmptmp");
+                    // Convert bool 0/1 to double 0.0 or 1.0
+                    //return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
+
+                }
+                else if ("<=" == Op)
+                {
+
+                }
+                else if (">" == Op)
+                {
+
+                }
+                else if (">=" == Op)
+                {
+
+                }
+                else
+                {
+                    return nullptr;
+                }
+                
                 return nullptr;
             }
             
