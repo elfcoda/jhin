@@ -116,6 +116,7 @@ namespace ast
         public:
             virtual Value *codegen() override = 0;
             virtual std::string getName() override = 0;
+            virtual pTypeTree typeDecl() = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ExprAST"; }
@@ -147,6 +148,10 @@ namespace ast
                 }
             }
             Value *codegen() override { return nullptr; }
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
+            }
             virtual std::string getName() override { return ""; }
 
             pTypeTree getpTT() { return pTT; }
@@ -172,6 +177,11 @@ namespace ast
                 //
                 return ans;
             }
+                        
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
+            }
 
             virtual std::string getName() override { return ""; };
 
@@ -196,6 +206,11 @@ namespace ast
                 return ConstantInt::get(*mdl::TheContext, APInt(1, Val, 2));
             }
 
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
+            }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -214,6 +229,11 @@ namespace ast
             Value *codegen() override
             {
                 return ConstantInt::get(*mdl::TheContext, APInt(32, Val, 10));
+            }
+
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
             }
             virtual std::string getName() override { return ""; }
 
@@ -235,6 +255,11 @@ namespace ast
                 // return nullptr;
                 return ConstantFP::get(*mdl::TheContext, APFloat(Val));
             }
+            
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
+            }
 
             virtual std::string getName() override { return ""; }
             std::string toString() override { return ""; }
@@ -251,6 +276,11 @@ namespace ast
             StringExprAST(std::string Val) : Val(Val) {}
 
             Value *codegen() override { return nullptr; }
+
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
+            }
 
             virtual std::string getName() override { return ""; }
             std::string toString() override { return ""; }
@@ -277,6 +307,11 @@ namespace ast
 
                 // Load the value of this type.
                 return Builder->CreateLoad(find_symbol(Name)->getType(), V, Name.c_str());
+            }
+
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
             }
 
             virtual std::string getName() override
@@ -354,6 +389,11 @@ namespace ast
                 
                 return nullptr;
             }
+
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
+            }
             
             virtual std::string getName() override { return ""; }
 
@@ -381,6 +421,11 @@ namespace ast
             }
 
             Value *codegen() override { return nullptr; }
+            
+            virtual pTypeTree typeDecl() override
+            {
+                return nullptr;
+            }
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
