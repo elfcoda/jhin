@@ -415,7 +415,7 @@ class AST
                 std::unique_ptr<ExprAST> L = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(0)));
                 std::unique_ptr<ExprAST> R = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
 
-                return std::make_unique<BinaryExprAST>(biOp, std::move(L), std::move(R));
+                return std::make_unique<BinaryExprAST>(getTokenIdByKeyWord(biOp), std::move(L), std::move(R));
             } else if ("Exp3" == symbolStr) {  // Exp3
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("NotExp" == symbolStr) {

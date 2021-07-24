@@ -31,7 +31,13 @@ enum ESymbolType
     SYMBOL_TYPE_NO_TYPE = SYMBOL_TYPE_START_NONE,
 
     /* trivial type */
-    SYMBOL_TYPE_BASIC = SYMBOL_TYPE_START_TRIVIAL,
+    SYMBOL_TYPE_INT = SYMBOL_TYPE_START_TRIVIAL,
+    SYMBOL_TYPE_FLOAT,
+    SYMBOL_TYPE_DOUBLE, // TODO
+    SYMBOL_TYPE_LONG,   // TODO
+    SYMBOL_TYPE_OBJECT,
+    SYMBOL_TYPE_BOOL,
+    SYMBOL_TYPE_STRING,
     SYMBOL_TYPE_UNIT,
 
     SYMBOL_TYPE_TYPE = SYMBOL_TYPE_START_TYPE,       /* type variable */
@@ -50,7 +56,14 @@ enum ESymbolType
 const std::unordered_map<ESymbolType, std::string> ESymbolType2String = {
     {SYMBOL_TYPE_NO_TYPE, "SYMBOL_TYPE_NO_TYPE"},
 
-    {SYMBOL_TYPE_BASIC, "SYMBOL_TYPE_BASIC"},
+    {SYMBOL_TYPE_INT, "SYMBOL_TYPE_INT"},
+    {SYMBOL_TYPE_FLOAT, "SYMBOL_TYPE_FLOAT"},
+    {SYMBOL_TYPE_DOUBLE, "SYMBOL_TYPE_DOUBLE"},
+    {SYMBOL_TYPE_LONG, "SYMBOL_TYPE_LONG"},
+    {SYMBOL_TYPE_OBJECT, "SYMBOL_TYPE_OBJECT"},
+    {SYMBOL_TYPE_BOOL, "SYMBOL_TYPE_BOOL"},
+    {SYMBOL_TYPE_STRING, "SYMBOL_TYPE_STRING"},
+    {SYMBOL_TYPE_UNIT, "SYMBOL_TYPE_UNIT"},
 
     {SYMBOL_TYPE_TYPE, "SYMBOL_TYPE_TYPE"},
 
@@ -72,6 +85,10 @@ using FnType = std::vector<ESymbolType>;
 using JType = std::vector<ESymbolType>;
 
 const std::unordered_set<ESymbolType> calcType = {
+    SYMBOL_TYPE_INT,
+    SYMBOL_TYPE_FLOAT,
+    SYMBOL_TYPE_DOUBLE,
+    SYMBOL_TYPE_LONG
 };
 
 bool isCaclType(ESymbolType est)
@@ -100,7 +117,14 @@ const std::unordered_map<ESymbolType, std::string> type2DefaultValue = {
     {SYMBOL_TYPE_NO_TYPE, ""},
 
     /* trivial types */
-    {SYMBOL_TYPE_BASIC, "0"},
+    {SYMBOL_TYPE_INT, "0"},
+    {SYMBOL_TYPE_FLOAT, "0.0"},
+    {SYMBOL_TYPE_DOUBLE, "0.0"},
+    {SYMBOL_TYPE_LONG, "0"},
+    {SYMBOL_TYPE_OBJECT, ""},
+    {SYMBOL_TYPE_BOOL, "False"},
+    {SYMBOL_TYPE_STRING, "\"\""},
+    {SYMBOL_TYPE_UNIT, "unit"},
     {SYMBOL_TYPE_TYPE, ""},
 
     /* complex type */
@@ -141,6 +165,11 @@ class TypeTree: public comm::tree<TypeTree>
         }
 
         ~TypeTree() { free(); }
+
+        bool isFP()
+        {
+            return est == SYMBOL_TYPE_FLOAT || est == SYMBOL_TYPE_DOUBLE;
+        }
 
         ESymbolType getEST() const { return est; }
         Type* getType() const { return type; }

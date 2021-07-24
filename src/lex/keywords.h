@@ -6,6 +6,7 @@
 #include <climits>
 #include <unordered_map>
 #include <unordered_set>
+#include "../../comm/jhin_assert.h"
 
 namespace jhin
 {
@@ -181,6 +182,7 @@ using TOKEN = unsigned int;
 // };
 
 /* any change must synchronized to EKeyWords */
+// raw text
 const std::vector<std::string> VKeyWords = {
     "class", "inherits", "this", "Object", "Bool", "Int", "Float", "Double", "Long", "String", "Unit", "Type", /* "main", */
     "lambda", "let", "in", "while", "do", "if", "elif", "else", "case", "of", "otherwise", "new",
@@ -202,6 +204,8 @@ const std::vector<std::string> VKeyWords = {
 /* get Token String By Id */
 std::unordered_map<unsigned, std::string> tokenId2String = {};
 std::unordered_map<std::string, unsigned> string2TokenId = {};
+std::unordered_map<unsigned, std::string> tokenId2KeyWord = {};
+std::unordered_map<std::string, unsigned> keyWord2TokenId = {};
 std::unordered_set<unsigned> tokenSet = {};
 
 /* start from TERMINATOR+1 */
@@ -229,10 +233,15 @@ static const std::vector<std::string> v3 = {
 void setTokenId2String()
 {
     unsigned idx = TERMINATOR + 1;
-    for (std::string s: v1) {
+    for (unsigned i = 0; i < v1.size(); i++) {
+        std::string s = v1[i];
+        std::string s2 = VKeyWords[i];
+
         string2TokenId[s] = idx;
+        keyWord2TokenId[s2] = idx;
         tokenSet.insert(idx);
-        tokenId2String[idx++] = s;
+        tokenId2String[idx] = s;
+        tokenId2KeyWord[idx++] = s2;
     }
     idx = TERMINATOR_RE + 2;
     for (std::string s: v2) {
@@ -252,6 +261,16 @@ std::string getStringByTokenId(unsigned id)
 {
     if (tokenId2String.find(id) == tokenId2String.end()) return TOKEN_NOT_FOUND;
     return tokenId2String[id];
+}
+
+unsigned getTokenIdByKeyWord(std::string keyWord)
+{
+    if (keyWord2TokenId.find(keyWord) == keyWord2TokenId.end())
+    {
+        JHIN_ASSERT_STR("keyWord Error!");
+    }
+
+    return keyWord2TokenId[keyWord];
 }
 
 

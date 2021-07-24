@@ -8,6 +8,7 @@
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "../jhin_module.h"
+#include "../lex/keywords.h"
 #include "../../comm/jhin_assert.h"
 #include "../../comm/log.h"
 #include "../../comm/type_tree.h"
@@ -177,7 +178,7 @@ namespace ast
                 //
                 return ans;
             }
-                        
+
             virtual pTypeTree typeDecl() override
             {
                 return nullptr;
@@ -255,7 +256,7 @@ namespace ast
                 // return nullptr;
                 return ConstantFP::get(*mdl::TheContext, APFloat(Val));
             }
-            
+
             virtual pTypeTree typeDecl() override
             {
                 return nullptr;
@@ -327,12 +328,12 @@ namespace ast
     class BinaryExprAST final : public ExprAST {
         private:
             // Op: == < <= > >= + - * /
-            std::string Op;
+            EKeyWords Op;
 
             std::unique_ptr<ExprAST> LHS, RHS;
 
         public:
-            BinaryExprAST(std::string Op, std::unique_ptr<ExprAST> LHS,
+            BinaryExprAST(EKeyWords Op, std::unique_ptr<ExprAST> LHS,
                                    std::unique_ptr<ExprAST> RHS)
                           : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
@@ -340,61 +341,191 @@ namespace ast
             {
                 Value *L = LHS->codegen();
                 Value *R = RHS->codegen();
+
                 if (!L || !R)
                     return nullptr;
 
-                if ("+" == Op)
-                {
-                    return Builder->CreateFAdd(L, R, "addtmp");
-                }
-                else if ("-" == Op)
-                {
-                    //return Builder->CreateFSub(L, R, "subtmp");
-                }
-                else if ("*" == Op)
-                {
-                    //return Builder->CreateFMul(L, R, "multmp");
-                }
-                else if ("/" == Op)
-                {
+                pTypeTree pTTRet = typeDecl();
 
-                }
-                else if ("==" == Op)
+                switch (Op)
                 {
+                    case PLUS:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFAdd(L, R, "fadd");
+                            }
 
-                }
-                else if ("<" == Op)
-                {
-                    //L = Builder->CreateFCmpULT(L, R, "cmptmp");
-                    // Convert bool 0/1 to double 0.0 or 1.0
-                    //return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
+                            return Builder->CreateAdd(L, R, "add");
+                        }
+                    case MINUS:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFSub(L, R, "fsub");
+                            }
 
-                }
-                else if ("<=" == Op)
-                {
+                            return Builder->CreateSub(L, R, "sub");
+                        }
+                    case STAR:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFMul(L, R, "fmul");
+                            }
 
-                }
-                else if (">" == Op)
-                {
+                            return Builder->CreateMul(L, R, "mul");
+                        }
+                    case SLASH:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFDiv(L, R, "fdiv");
+                            }
 
-                }
-                else if (">=" == Op)
-                {
+                            if (pTTRet->isSigned())
+                            {
+                                return Builder->CreateSDiv(L, R, "sdiv");
+                            }
 
+                            return Builder->CreateUDiv(L, R, "udiv");
+                        }
+                    case EQ:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFCmpOEQ(L, R, "feq");
+                            }
+
+                            return Builder->CreateICmpEQ(L, R, "eq");
+                        }
+                    case LT:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFCmpOLT(L, R, "flt");
+                            }
+
+                            if (pTTRet->isSigned())
+                            {
+                                return Builder->CreateICmpSLT(L, R, "slt");
+                            }
+
+                            return Builder->CreateICmpULT(L, R, "ult");
+                        }
+                    case LE:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFCmpOLE(L, R, "fle");
+                            }
+
+                            if (pTTRet->isSigned())
+                            {
+                                return Builder->CreateICmpSLE(L, R, "sle");
+                            }
+
+                            return Builder->CreateICmpULE(L, R, "ule");
+                        }
+                    case GT:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFCmpOGT(L, R, "fgt");
+                            }
+
+                            if (pTTRet->isSigned())
+                            {
+                                return Builder->CreateICmpSGT(L, R, "sgt");
+                            }
+
+                            return Builder->CreateICmpUGT(L, R, "ugt");
+                        }
+                    case GE:
+                        {
+                            if (pTTRet->isFP())
+                            {
+                                return Builder->CreateFCmpOGE(L, R, "fge");
+                            }
+
+                            if (pTTRet->isSigned())
+                            {
+                                return Builder->CreateICmpSGE(L, R, "sge");
+                            }
+
+                            return Builder->CreateICmpUGE(L, R, "uge");
+                        }
+                    default:
+                        {
+                            JHIN_ASSERT_STR("Unknown Operation");
+                        }
                 }
-                else
-                {
-                    return nullptr;
-                }
-                
+
                 return nullptr;
             }
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                pTypeTree pTT1 = LHS->typeDecl();
+                pTypeTree pTT2 = RHS->typeDecl();
+                pTypeTree pTTRet = nullptr;
+
+                switch (Op)
+                {
+                    case PLUS:
+                    {
+                        pTTRet = checkPlus(pTT1, pTT2);
+                        break;
+                    }
+                    case MINUS:
+                    {
+                        pTTRet = checkMinus(pTT1, pTT2);
+                        break;
+                    }
+                    case STAR:
+                    {
+                        pTTRet = checkStar(pTT1, pTT2);
+                        break;
+                    }
+                    case SLASH:
+                    {
+                        pTTRet = checkSlash(pTT1, pTT2);
+                        break;
+                    }
+                    case EQ:
+                    {
+                        pTTRet = checkEquality(pTT1, pTT2);
+                        break;
+                    }
+                    case LT:
+                    {
+                        pTTRet = checkOrder(pTT1, pTT2);
+                        break;
+                    }
+                    case LE:
+                    {
+                        pTTRet = checkOrder(pTT1, pTT2);
+                        break;
+                    }
+                    case GT:
+                    {
+                        pTTRet = checkOrder(pTT1, pTT2);
+                        break;
+                    }
+                    case GE:
+                    {
+                        pTTRet = checkOrder(pTT1, pTT2);
+                        break;
+                    }
+                    default:
+                    {
+                        JHIN_ASSERT_STR("Unknown Operation");
+                    }
+                }
+
+                return pTTRet;
             }
-            
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -420,8 +551,26 @@ namespace ast
                 Args.push_back(std::move(Arg));
             }
 
-            Value *codegen() override { return nullptr; }
-            
+            Value *codegen() override
+            {
+                Function *CalleeF = getFunction(Callee);
+                if (!CalleeF)
+                {
+                    JHIN_ASSERT_STR("function undefined");
+                }
+
+                // If argument mismatch error.
+                if (CalleeF->arg_size() != Args.size())
+                {
+                    JHIN_ASSERT_STR("Incorrect # arguments passed");
+                }
+
+                std::vector<Value *> ArgsV;
+
+
+                return nullptr;
+            }
+
             virtual pTypeTree typeDecl() override
             {
                 return nullptr;

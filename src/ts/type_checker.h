@@ -24,12 +24,13 @@ namespace ts
             std::shared_ptr<st::symbolItem> si = st::symbolTable::find_symbol(pTree->getValue());
             JHIN_ASSERT_BOOL(si != nullptr);
             pTT = new TypeTree(SYMBOL_TYPE_CLASS,
+                               nullptr,
                                "",
+                               pTree->getValue(),
                                "",
-                               si->type->getChildrenList(),
-                               pTree->getValue());
+                               si->type->getChildrenList());
         } else if (getSymbolType(pTree) == E_ID_TYPE_TYPE_LITERAL) {
-            pTT = new TypeTree(SYMBOL_TYPE_TYPE, "", "", nullptr);
+            pTT = new TypeTree(SYMBOL_TYPE_TYPE, nullptr, "", "", "", nullptr);
         } else {
             JHIN_ASSERT_STR("symbol should be a type");
         }
@@ -63,7 +64,7 @@ namespace ts
         JHIN_ASSERT_BOOL((isCaclType(t1->getType()) || t1->getType() == SYMBOL_TYPE_STRING) &&
                          (isCaclType(t2->getType()) || t2->getType() == SYMBOL_TYPE_STRING));
         JHIN_ASSERT_BOOL(t1->getType() == t2->getType());
-        pTypeTree pTT = new TypeTree(t1->getType(), "", "", nullptr);
+        pTypeTree pTT = new TypeTree(t1->getEST(), nullptr, "", "", "", nullptr);
 
         return pTT;
     }
@@ -75,7 +76,7 @@ namespace ts
                          getSymbolType(t2) == E_ID_TYPE_TRIVIAL_VALUE);
         JHIN_ASSERT_BOOL(isCaclType(t1->getType()) && isCaclType(t2->getType()));
         JHIN_ASSERT_BOOL(t1->getType() == t2->getType());
-        pTypeTree pTT = new TypeTree(t1->getType(), "", "", nullptr);
+        pTypeTree pTT = new TypeTree(t1->getEST(), nullptr, "", "", "", nullptr);
 
         return pTT;
     }
@@ -105,7 +106,7 @@ namespace ts
         } else {
             JHIN_ASSERT_BOOL(false);
         }
-        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, "", "", nullptr);
+        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, nullptr, "", "", "", nullptr);
 
         return pTT;
     }
@@ -126,7 +127,7 @@ namespace ts
     pTypeTree checkOrder(pTypeTree t1, pTypeTree t2)
     {
         checkOrderHelper(t1, t2);
-        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, "", "", nullptr);
+        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, nullptr, "", "", "", nullptr);
         return pTT;
     }
 
@@ -149,7 +150,7 @@ namespace ts
     pTypeTree checkNot(pTypeTree t)
     {
         JHIN_ASSERT_BOOL(t->getType() == SYMBOL_TYPE_BOOL);
-        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, "", "", nullptr);
+        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, nullptr, "", "", "", nullptr);
         return pTT;
     }
 
@@ -157,7 +158,7 @@ namespace ts
     pTypeTree checkIsVoid(pTypeTree t)
     {
         JHIN_ASSERT_BOOL(getSymbolType(t) == E_ID_TYPE_EXPAND_VALUE);
-        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, "", "", nullptr);
+        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, nullptr, "", "", "", nullptr);
         return pTT;
     }
 
@@ -166,7 +167,7 @@ namespace ts
     {
         JHIN_ASSERT_BOOL(getSymbolType(t) == E_ID_TYPE_EXPAND_TYPE);
         auto ptr = st::symbolTable::find_symbol(t->getValue())->type->children;
-        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_CLASS, "", "", ptr, t->getValue());
+        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_CLASS, nullptr, "", t->getValue(), "", ptr);
         return pTT;
     }
 
@@ -175,9 +176,9 @@ namespace ts
     {
         pTypeTree pTT = nullptr;
         if (getSymbolType(t) == E_ID_TYPE_TRIVIAL_VALUE) {
-            pTT = new TypeTree(t->getType(), "", "", nullptr);
+            pTT = new TypeTree(t->getEST(), nullptr, "", "", "", nullptr);
         } else if (getSymbolType(t) == E_ID_TYPE_EXPAND_VALUE) {
-            pTT = new TypeTree(t->getType(), "", "", t->children, t->getExpandType());
+            pTT = new TypeTree(t->getEST(), nullptr, "", "", t->getExpandType(), t->children);
         } else {
             JHIN_ASSERT_BOOL(false);
         }
