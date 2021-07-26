@@ -566,9 +566,14 @@ namespace ast
                 }
 
                 std::vector<Value *> ArgsV;
+                for (auto arg: Args)
+                {
+                    Value *val = arg->codegen();
+                    JHIN_ASSERT_BOOL(val != nullptr);
+                    ArgsV.push_back(val);
+                }
 
-
-                return nullptr;
+                return Builder->CreateCall(CalleeF, ArgsV, "fncall");
             }
 
             virtual pTypeTree typeDecl() override
@@ -614,7 +619,49 @@ namespace ast
                 Else = std::make_unique<FormalsAST>(std::move(FormalElse));
             }
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                Value *CondV = Cond->codegen();
+                JHIN_ASSERT_BOOL(CondV != nullptr);
+
+                Function *TheFunction = Builder->GetInsertBlock()->getParent();
+
+                BasicBlock *ThenBB = BasicBlock::Create(*mdl::TheContext, "then", TheFunction);
+                BasicBlock *ElseBB = BasicBlock::Create(*mdl::TheContext, "else");
+                BasicBlock *MergeBB = BasicBlock::Create(*mdl::TheContext, "merge");
+
+                mdl::Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+
+                mdl::Builder->SetInsertPoint(ThenBB);
+
+                Value *ThenV = Then->codegen();
+                JHIN_ASSERT_BOOL(ThenV != nullptr);
+                mdl::Builder->CreateBr(MergeBB);
+
+                // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
+                ThenBB = mdl::Builder->GetInsertBlock();
+
+                TheFunction->getBasicBlockList().push_back(ElseBB);
+                mdl::Builder->SetInsertPoint(ElseBB);
+                Value *ElseV = Else->codegen();
+                JHIN_ASSERT_BOOL(ElseV != nullptr);
+
+                mdl::Builder->CreateBr(MergeBB);
+
+                // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
+                ElseBB = mdl::Builder->GetInsertBlock();
+
+                TheFunction->getBasicBlockList().push_back(MergeBB);
+                mdl::Builder->SetInsertPoint(MergeBB);
+
+                PHINode *PN = mdl::Builder->CreatePHI(Type::getDoubl(*TheContext), 2, "if");
+
+                PN->addIncoming(ThenV, ThenBB);
+                PN->addIncoming(ElseV, ElseBB);
+                
+                return PN;
+            }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
