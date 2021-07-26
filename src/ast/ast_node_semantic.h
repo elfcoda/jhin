@@ -654,11 +654,12 @@ namespace ast
                 TheFunction->getBasicBlockList().push_back(MergeBB);
                 mdl::Builder->SetInsertPoint(MergeBB);
 
+// TODO assignment handle
                 PHINode *PN = mdl::Builder->CreatePHI(Type::getDoubl(*TheContext), 2, "if");
 
                 PN->addIncoming(ThenV, ThenBB);
                 PN->addIncoming(ElseV, ElseBB);
-                
+
                 return PN;
             }
 
