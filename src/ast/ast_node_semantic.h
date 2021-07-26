@@ -654,7 +654,7 @@ namespace ast
                 TheFunction->getBasicBlockList().push_back(MergeBB);
                 mdl::Builder->SetInsertPoint(MergeBB);
 
-// TODO assignment handle
+// TODO assignment handle， create N PHI nodes
                 PHINode *PN = mdl::Builder->CreatePHI(Type::getDoubl(*TheContext), 2, "if");
 
                 PN->addIncoming(ThenV, ThenBB);
@@ -743,6 +743,8 @@ namespace ast
         private:
             std::string name;
             std::unique_ptr<ExprAST> exp;
+
+            Value *expV;
 
         public:
             AssignCmdAST(std::string name,
