@@ -597,6 +597,21 @@ namespace ast
             std::string getASTName() override { return "CommandAST"; }
     };
 
+    // prepare data for SSA
+    struct AssignmentData
+    {
+        pTypeTree pTT;
+        Value *val;
+
+        AssignmentData(pTypeTree pTT, Value *val)
+        {
+            this->pTT = pTT;
+            this->val = val;
+        }
+    };
+    using pAssignmentData = AssignmentData *;
+    std::unordered_map<std::string, pAssignmentData> PNAssignment = {};
+
     /// IfCmdAST - Command class for if/then/else.
     class IfCmdAST final : public CommandAST
     {
@@ -634,7 +649,10 @@ namespace ast
 
                 mdl::Builder->SetInsertPoint(ThenBB);
 
+                PNAssignment.clear();
+                std::unordered_map<std::string, pAssignmentData> PNAssignmentThen = {};
                 Value *ThenV = Then->codegen();
+                std::swap(PNAssignment, PNAssignmentThen);
                 JHIN_ASSERT_BOOL(ThenV != nullptr);
                 mdl::Builder->CreateBr(MergeBB);
 
@@ -643,7 +661,11 @@ namespace ast
 
                 TheFunction->getBasicBlockList().push_back(ElseBB);
                 mdl::Builder->SetInsertPoint(ElseBB);
+
+                PNAssignment.clear();
+                std::unordered_map<std::string, pAssignmentData> PNAssignmentElse = {};
                 Value *ElseV = Else->codegen();
+                std::swap(PNAssignment, PNAssignmentElse);
                 JHIN_ASSERT_BOOL(ElseV != nullptr);
 
                 mdl::Builder->CreateBr(MergeBB);
@@ -654,13 +676,19 @@ namespace ast
                 TheFunction->getBasicBlockList().push_back(MergeBB);
                 mdl::Builder->SetInsertPoint(MergeBB);
 
-// TODO assignment handle， create N PHI nodes
-                PHINode *PN = mdl::Builder->CreatePHI(Type::getDoubl(*TheContext), 2, "if");
+                // assignment, create N PHI nodes
+                for (const auto& it: PNAssignmentThen)
+                {
+                    std::string thenVarName = it.first;
+                    if (PNAssignmentElse.find(thenVarName) != PNAssignmentElse.end())
+                    {
+                        PHINode *PN = mdl::Builder->CreatePHI(PNAssignmentElse[thenVarName]->pTT->getType(), 2, "if");
+                        PN->addIncoming(PNAssignmentThen[thenVarName]->val, ThenBB);
+                        PN->addIncoming(PNAssignmentElse[thenVarName]->val, ElseBB);
+                    }
+                }
 
-                PN->addIncoming(ThenV, ThenBB);
-                PN->addIncoming(ElseV, ElseBB);
-
-                return PN;
+                return nullptr;
             }
 
             virtual std::string getName() override { return ""; }
@@ -704,7 +732,109 @@ namespace ast
                        : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
                        Step(std::move(Step)), Body(std::move(Body)) {}
 
-            Value *codegen() override { return nullptr; }
+
+            // Output for-loop as:
+            //   var = alloca double
+            //   ...
+            //   start = startexpr
+            //   store start -> var
+            //   goto loop
+            // loop:
+            //   ...
+            //   bodyexpr
+            //   ...
+            // loopend:
+            //   step = stepexpr
+            //   endcond = endexpr
+            //
+            //   curvar = load var
+            //   nextvar = curvar + step
+            //   store nextvar -> var
+            //   br endcond, loop, endloop
+            // outloop:
+            Value *codegen() override
+            {
+                Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
+
+                // Create an alloca for the variable in the entry block.
+                AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+
+                // Emit the start code first, without 'variable' in scope.
+                Value *StartVal = Start->codegen();
+                if (!StartVal)
+                    return nullptr;
+
+                // Store the value into the alloca.
+                mdl::Builder->CreateStore(StartVal, Alloca);
+
+                // Make the new basic block for the loop header, inserting after current
+                // block.
+                BasicBlock *LoopBB = BasicBlock::Create(*mdl::TheContext, "loop", TheFunction);
+
+                // Insert an explicit fall through from the current block to the LoopBB.
+                mdl::Builder->CreateBr(LoopBB);
+
+                // Start insertion in LoopBB.
+                mdl::Builder->SetInsertPoint(LoopBB);
+
+// TODO
+                // Within the loop, the variable is defined equal to the PHI node.  If it
+                // shadows an existing variable, we have to restore it, so save it now.
+                AllocaInst *OldVal = NamedValues[VarName];
+                NamedValues[VarName] = Alloca;
+
+                // Emit the body of the loop.  This, like any other expr, can change the
+                // current BB.  Note that we ignore the value computed by the body, but don't
+                // allow an error.
+                if (!Body->codegen())
+                    return nullptr;
+
+                // Emit the step value.
+                Value *StepVal = nullptr;
+                if (Step) {
+                    StepVal = Step->codegen();
+                    if (!StepVal)
+                    return nullptr;
+                } else {
+                    // If not specified, use 1.0.
+                    StepVal = ConstantFP::get(*TheContext, APFloat(1.0));
+                }
+
+                // Compute the end condition.
+                Value *EndCond = End->codegen();
+                if (!EndCond)
+                    return nullptr;
+
+                // Reload, increment, and restore the alloca.  This handles the case where
+                // the body of the loop mutates the variable.
+                Value *CurVar = Builder->CreateLoad(Type::getDoubleTy(*TheContext), Alloca,
+                                                    VarName.c_str());
+                Value *NextVar = Builder->CreateFAdd(CurVar, StepVal, "nextvar");
+                Builder->CreateStore(NextVar, Alloca);
+
+                // Convert condition to a bool by comparing non-equal to 0.0.
+                EndCond = Builder->CreateFCmpONE(
+                    EndCond, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
+
+                // Create the "after loop" block and insert it.
+                BasicBlock *AfterBB =
+                    BasicBlock::Create(*TheContext, "afterloop", TheFunction);
+
+                // Insert the conditional branch into the end of LoopEndBB.
+                Builder->CreateCondBr(EndCond, LoopBB, AfterBB);
+
+                // Any new code will be inserted in AfterBB.
+                Builder->SetInsertPoint(AfterBB);
+
+                // Restore the unshadowed variable.
+                if (OldVal)
+                    NamedValues[VarName] = OldVal;
+                else
+                    NamedValues.erase(VarName);
+
+                // for expr always returns 0.0.
+                return Constant::getNullValue(Type::getDoubleTy(*TheContext));
+            }
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -730,7 +860,11 @@ namespace ast
                 Body = std::make_unique<FormalsAST>(std::move(FormalBody));
             }
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+
+                return nullptr;
+            }
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -744,14 +878,24 @@ namespace ast
             std::string name;
             std::unique_ptr<ExprAST> exp;
 
-            Value *expV;
-
         public:
             AssignCmdAST(std::string name,
                          std::unique_ptr<ExprAST> exp)
-                         : name(name), exp(std::move(exp)) {}
+                         : name(name), exp(std::move(exp), expV(nullptr)) {}
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                std::shared_ptr<symbolItem> item = symbolTable::find_symbol(name);
+                pTypeTree pTT = item->getpTT();
+
+                Value *expV = exp->codegen();
+                JHIN_ASSERT_BOOL(expV != nullptr);
+                // Assign value
+
+                PNAssignment[name] = new AssignmentData(pTT, expV);
+                return nullptr;
+            }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
