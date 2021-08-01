@@ -93,12 +93,12 @@ struct symbolItem
     pTypeTree           pTT;
 
     // symbol value: 6
-    std::string         value;
+    AllocaInst *        value;
 
     // symbol tag: DefaultSymbol / FunctionScope / ClassScope / IfScope / ElseScope / WhileScope / LambdaScope
     SymbolTag           tag;
 
-    symbolItem(std::string name, pTypeTree pTT, std::string value, SymbolTag tag)
+    symbolItem(std::string name, pTypeTree pTT, AllocaInst *value, SymbolTag tag)
     {
         this->name = name;
         this->pTT = pTT;
@@ -126,6 +126,11 @@ struct symbolItem
     Type* getType()
     {
         return pTT->getType();
+    }
+
+    AllocaInst *getValue()
+    {
+        return value;
     }
 
     ~symbolItem()
@@ -161,7 +166,7 @@ void symbolTable::initSymbolTable()
     table.clear();
 }
 
-bool symbolTable::add_symbol(std::string name, pTypeTree pTT, std::string value, SymbolTag tag)
+bool symbolTable::add_symbol(std::string name, pTypeTree pTT, AllocaInst * value, SymbolTag tag)
 {
     JHIN_ASSERT_BOOL(find_symbol_in_scope(name) == nullptr);
     table.push_back(std::make_shared<symbolItem>(name, pTT, value, tag));
@@ -170,7 +175,7 @@ bool symbolTable::add_symbol(std::string name, pTypeTree pTT, std::string value,
 
 bool symbolTable::add_symbol_tag(SymbolTag tag)
 {
-    table.push_back(std::make_shared<symbolItem>("", nullptr, "", tag));
+    table.push_back(std::make_shared<symbolItem>("", nullptr, nullptr, tag));
     return true;
 }
 

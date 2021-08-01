@@ -26,7 +26,6 @@ using namespace llvm::orc;
 static std::unique_ptr<LLVMContext> TheContext;
 static std::unique_ptr<Module> TheModule;
 static std::unique_ptr<IRBuilder<>> Builder;
-static std::map<std::string, AllocaInst *> NamedValues;
 static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
 static std::map<std::string, std::unique_ptr<ast::PrototypeAST>> FunctionProtos;
 static ExitOnError ExitOnErr;

@@ -85,9 +85,12 @@ namespace ast
 
             Value *codegen() override
             {
-                codegenFormals();
-                // TODO
-                return nullptr;
+                std::vector<Value*> values = codegenFormals();
+                if (values.empty())
+                {
+                    return nullptr;
+                }
+                return values.back();
             }
 
             virtual std::string getName() override { return ""; };
@@ -95,7 +98,7 @@ namespace ast
             std::vector<Value*> codegenFormals()
             {
                 std::vector<Value*> ans;
-                for (const  auto& p: Formals)
+                for (const auto& p: Formals)
                 {
                     ans.push_back(p->codegen());
                 }
@@ -148,11 +151,15 @@ namespace ast
                     JHIN_ASSERT_STR("typeName Error!");
                 }
             }
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                return nullptr;
+            }
             virtual pTypeTree typeDecl() override
             {
                 return nullptr;
             }
+
             virtual std::string getName() override { return ""; }
 
             pTypeTree getpTT() { return pTT; }
@@ -197,8 +204,11 @@ namespace ast
             bool Val;
 
         public:
-            BoolExprAST(bool Val) : Val(Val) {}
-            void inverse() {
+            BoolExprAST(bool Val) : Val(Val)
+            {
+            }
+            void inverse()
+            {
                 Val = !Val;
             }
 
@@ -225,7 +235,9 @@ namespace ast
             std::string Val;
 
         public:
-            IntExprAST(std::string Val) : Val(Val) {}
+            IntExprAST(std::string Val) : Val(Val)
+            {
+            }
 
             Value *codegen() override
             {
@@ -249,11 +261,12 @@ namespace ast
             float Val;
 
         public:
-            FloatExprAST(float Val) : Val(Val) {}
+            FloatExprAST(float Val) : Val(Val)
+            {
+            }
 
             Value *codegen() override
             {
-                // return nullptr;
                 return ConstantFP::get(*mdl::TheContext, APFloat(Val));
             }
 
@@ -274,7 +287,9 @@ namespace ast
             std::string Val;
 
         public:
-            StringExprAST(std::string Val) : Val(Val) {}
+            StringExprAST(std::string Val) : Val(Val)
+            {
+            }
 
             Value *codegen() override { return nullptr; }
 
@@ -293,21 +308,21 @@ namespace ast
         private:
             std::string Name;
 
-
         public:
             VariableExprAST(const std::string& Name) : Name(Name) {}
 
             Value *codegen() override
             {
                 // Look this variable up in the function.
-                Value *V = NamedValues[Name];
-                if (!V)
+                std::shared_ptr<symbolItem> item = symbolTable::find_symbol(Name);
+                if (item == nullptr)
                 {
                     JHIN_ASSERT_STR("variable does not exist");
                 }
+                Value *V = item->getValue();
 
                 // Load the value of this type.
-                return Builder->CreateLoad(find_symbol(Name)->getType(), V, Name.c_str());
+                return Builder->CreateLoad(symbolTable::find_symbol(Name)->getType(), V, Name.c_str());
             }
 
             virtual pTypeTree typeDecl() override
@@ -329,7 +344,6 @@ namespace ast
         private:
             // Op: == < <= > >= + - * /
             EKeyWords Op;
-
             std::unique_ptr<ExprAST> LHS, RHS;
 
         public:
@@ -734,107 +748,94 @@ namespace ast
 
 
             // Output for-loop as:
-            //   var = alloca double
+            //   var = alloca variable
             //   ...
             //   start = startexpr
             //   store start -> var
-            //   goto loop
+            // cond:
+            //   endcond = endexpr
+            //   br endcond, loop, afterloop
             // loop:
             //   ...
             //   bodyexpr
             //   ...
             // loopend:
             //   step = stepexpr
-            //   endcond = endexpr
             //
             //   curvar = load var
             //   nextvar = curvar + step
             //   store nextvar -> var
-            //   br endcond, loop, endloop
-            // outloop:
+            //   br cond
+            //
+            // afterloop:
             Value *codegen() override
             {
                 Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
 
-                // Create an alloca for the variable in the entry block.
-                AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+                std::shared_ptr<symbolItem> item = symbolTable::find_symbol(VarName);
+                JHIN_ASSERT_BOOL(item != nullptr);
+                AllocaInst *Alloca = item->getValue();
 
                 // Emit the start code first, without 'variable' in scope.
                 Value *StartVal = Start->codegen();
-                if (!StartVal)
-                    return nullptr;
+                JHIN_ASSERT_BOOL(StartVal != nullptr);
 
                 // Store the value into the alloca.
                 mdl::Builder->CreateStore(StartVal, Alloca);
 
+                BasicBlock *condBB = BasicBlock::Create(*mdl::TheContext, "cond", TheFunction);
+                // Compute the end condition. Bool
+                Value *EndCond = End->codegen();
+                JHIN_ASSERT_BOOL(EndCond != nullptr);
+
                 // Make the new basic block for the loop header, inserting after current
                 // block.
                 BasicBlock *LoopBB = BasicBlock::Create(*mdl::TheContext, "loop", TheFunction);
+                BasicBlock *LoopEndBB = BasicBlock::Create(*mdl::TheContext, "loopend", TheFunction);
+                // Create the "after loop" block and insert it.
+                BasicBlock *AfterBB = BasicBlock::Create(*mdl::TheContext, "afterloop", TheFunction);
 
-                // Insert an explicit fall through from the current block to the LoopBB.
-                mdl::Builder->CreateBr(LoopBB);
+                // Insert the conditional branch into the end of LoopEndBB.
+                mdl::Builder->CreateCondBr(EndCond, LoopBB, AfterBB);
 
                 // Start insertion in LoopBB.
                 mdl::Builder->SetInsertPoint(LoopBB);
 
-// TODO
-                // Within the loop, the variable is defined equal to the PHI node.  If it
-                // shadows an existing variable, we have to restore it, so save it now.
-                AllocaInst *OldVal = NamedValues[VarName];
-                NamedValues[VarName] = Alloca;
-
                 // Emit the body of the loop.  This, like any other expr, can change the
                 // current BB.  Note that we ignore the value computed by the body, but don't
                 // allow an error.
-                if (!Body->codegen())
-                    return nullptr;
+                Value *BodyV = Body->codegen();
+                JHIN_ASSERT_BOOL(BodyV != nullptr);
+
+                // Start insertion in LoopBB.
+                mdl::Builder->SetInsertPoint(LoopEndBB);
 
                 // Emit the step value.
                 Value *StepVal = nullptr;
                 if (Step) {
                     StepVal = Step->codegen();
-                    if (!StepVal)
-                    return nullptr;
+                    JHIN_ASSERT_BOOL(StepVal != nullptr);
                 } else {
                     // If not specified, use 1.0.
-                    StepVal = ConstantFP::get(*TheContext, APFloat(1.0));
+                    StepVal = ConstantFP::get(*TheContext, APFloat(0.0));
                 }
-
-                // Compute the end condition.
-                Value *EndCond = End->codegen();
-                if (!EndCond)
-                    return nullptr;
 
                 // Reload, increment, and restore the alloca.  This handles the case where
                 // the body of the loop mutates the variable.
-                Value *CurVar = Builder->CreateLoad(Type::getDoubleTy(*TheContext), Alloca,
-                                                    VarName.c_str());
-                Value *NextVar = Builder->CreateFAdd(CurVar, StepVal, "nextvar");
-                Builder->CreateStore(NextVar, Alloca);
+                Value *CurVar = mdl::Builder->CreateLoad(Type::getDoubleTy(*mdl::TheContext), Alloca, // TODO
+                                                         VarName.c_str());
+                Value *NextVar = mdl::Builder->CreateFAdd(CurVar, StepVal, "nextvar");
+                mdl::Builder->CreateStore(NextVar, Alloca);
 
-                // Convert condition to a bool by comparing non-equal to 0.0.
-                EndCond = Builder->CreateFCmpONE(
-                    EndCond, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
-
-                // Create the "after loop" block and insert it.
-                BasicBlock *AfterBB =
-                    BasicBlock::Create(*TheContext, "afterloop", TheFunction);
-
-                // Insert the conditional branch into the end of LoopEndBB.
-                Builder->CreateCondBr(EndCond, LoopBB, AfterBB);
+                // Insert an explicit fall through from the current block to the LoopBB.
+                mdl::Builder->CreateBr(condBB);
 
                 // Any new code will be inserted in AfterBB.
-                Builder->SetInsertPoint(AfterBB);
+                mdl::Builder->SetInsertPoint(AfterBB);
 
-                // Restore the unshadowed variable.
-                if (OldVal)
-                    NamedValues[VarName] = OldVal;
-                else
-                    NamedValues.erase(VarName);
-
-                // for expr always returns 0.0.
-                return Constant::getNullValue(Type::getDoubleTy(*TheContext));
+                return BodyV;
             }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -860,10 +861,41 @@ namespace ast
                 Body = std::make_unique<FormalsAST>(std::move(FormalBody));
             }
 
+            // Output while-loop as:
+            // cond:
+            //   whilecond = condexpr
+            //   br whilecond, loop, afterloop
+            // loop:
+            //   ...
+            //   body
+            //   ...
+            //   br cond
+            //
+            // afterloop:
             Value *codegen() override
             {
+                Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
 
-                return nullptr;
+                BasicBlock *condBB = BasicBlock::Create(*mdl::TheContext, "cond", TheFunction);
+                BasicBlock *LoopBB = BasicBlock::Create(*mdl::TheContext, "loop", TheFunction);
+                BasicBlock *AfterBB = BasicBlock::Create(*mdl::TheContext, "afterloop", TheFunction);
+
+                // Start insertion in condBB.
+                mdl::Builder->SetInsertPoint(condBB);
+                Value *condV = Cond->codegen();
+                JHIN_ASSERT_BOOL(condV != nullptr);
+
+                // Insert the conditional branch into the end of LoopEndBB.
+                mdl::Builder->CreateCondBr(condV, LoopBB, AfterBB);
+
+                mdl::Builder->SetInsertPoint(LoopBB);
+                Value *BodyV = Body->codegen();
+                mdl::Builder->CreateBr(condBB);
+
+                // Any new code will be inserted in AfterBB.
+                mdl::Builder->SetInsertPoint(AfterBB);
+
+                return BodyV;
             }
             virtual std::string getName() override { return ""; }
 
@@ -886,13 +918,17 @@ namespace ast
             Value *codegen() override
             {
                 std::shared_ptr<symbolItem> item = symbolTable::find_symbol(name);
+                JHIN_ASSERT_BOOL(item != nullptr);
                 pTypeTree pTT = item->getpTT();
 
                 Value *expV = exp->codegen();
                 JHIN_ASSERT_BOOL(expV != nullptr);
-                // Assign value
 
                 PNAssignment[name] = new AssignmentData(pTT, expV);
+
+                AllocaInst *Alloca = item->getValue();
+
+                mdl::Builder->CreateStore(expV, Alloca);
                 return nullptr;
             }
 
@@ -955,8 +991,12 @@ namespace ast
 
             Value *codegen() override
             {
-                codegenProgUnits();
-                return nullptr;
+                std::vector<Value*> ans = codegenProgUnits();
+                if (ans.empty())
+                {
+                    return nullptr;
+                }
+                return ans.back();
             }
 
             virtual std::string getName() override { return ""; }
@@ -991,7 +1031,12 @@ namespace ast
             std::vector<ClassMemberItem> decls;
 
         public:
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                // add_symbol
+                JHIN_ASSERT_STR("not implemented yet");
+                return nullptr;
+            }
             virtual std::string getName() override
             {
                 return name;
@@ -1013,7 +1058,7 @@ namespace ast
         public:
             DeclarationAST(std::string name,
                            std::unique_ptr<TypeExprAST> type)
-                           : name(name), type(std::move(type)) {}
+                           : name(name), type(std::move(type), value(nullptr)) {}
 
             DeclarationAST(std::string name,
                            std::unique_ptr<TypeExprAST> type,
@@ -1028,7 +1073,20 @@ namespace ast
             Type* getType() { return type->getType(); }
             ExprAST* getValue() {return value.get(); }
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
+                // Create an alloca for the variable in the entry block.
+                AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, getType(), name);
+                if (value != nullptr)
+                {
+                    Value *V = value->codegen();
+                    JHIN_ASSERT_BOOL(V != nullptr);
+                    mdl::Builder->CreateStore(V, Alloca);
+                }
+
+                return nullptr;
+            }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "DeclarationAST"; }
@@ -1121,7 +1179,9 @@ namespace ast
                 // Set names for all arguments.
                 unsigned Idx = 0;
                 for (auto &Arg : F->args())
+                {
                     Arg.setName(Args[Idx++]->getName());
+                }
 
                 return F;
             }
@@ -1134,7 +1194,8 @@ namespace ast
 
     /// FunctionAST - This class represents a function definition itself.
     /// SymbolTable
-    class FunctionAST final : public ProgUnitAST {
+    class FunctionAST final : public ProgUnitAST
+    {
         private:
             std::unique_ptr<PrototypeAST> Proto;
             std::unique_ptr<FormalsAST> Body;
@@ -1167,20 +1228,17 @@ namespace ast
                 BasicBlock *BB = BasicBlock::Create(*mdl::TheContext, "entry", TheFunction);
                 mdl::Builder->SetInsertPoint(BB);
 
-                // Record the function arguments in the NamedValues map.
-                mdl::NamedValues.clear();
-                for (auto &Arg : TheFunction->args()) {
+                for (auto &Arg : TheFunction->args())
+                {
                     // Create an alloca for this variable.
                     AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getType(), Arg.getName());
 
                     // Store the initial value into the alloca.
                     mdl::Builder->CreateStore(&Arg, Alloca);
-
-                    // Add arguments to variable symbol table.
-                    mdl::NamedValues[std::string(Arg.getName())] = Alloca;
                 }
 
-                if (Value *RetVal = Body->codegen()) {
+                if (Value *RetVal = Body->codegen())
+                {
                     // Finish off the function.
                     mdl::Builder->CreateRet(RetVal);
 
