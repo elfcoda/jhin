@@ -35,11 +35,18 @@ namespace ast
 
     class ASTBase
     {
+        private:
+            pTypeTree pTT;
+
         public:
             virtual Value *codegen() = 0;
             virtual std::string toString() = 0;
             virtual std::string getASTName() = 0;
             virtual std::string getName() = 0;
+            virtual pTypeTree getpTT()
+            {
+                return pTT;
+            }
 
             virtual bool IsEmpty() { return false; }
 
@@ -130,7 +137,7 @@ namespace ast
     class TypeExprAST final : public ExprAST {
         private:
             std::string typeName;
-            pTypeTree pTT;
+
         public:
             TypeExprAST(std::string typeName): typeName(typeName)
             {
@@ -162,7 +169,7 @@ namespace ast
 
             virtual std::string getName() override { return ""; }
 
-            pTypeTree getpTT() { return pTT; }
+            virtual pTypeTree getpTT() override { return pTT; }
             Type* getType() { return pTT->getType(); }
             std::string toString() override { return ""; }
             std::string getASTName() override { return "TypeExprAST"; }
