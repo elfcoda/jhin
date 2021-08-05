@@ -43,6 +43,7 @@ namespace ast
             virtual std::string toString() = 0;
             virtual std::string getASTName() = 0;
             virtual std::string getName() = 0;
+            virtual pTypeTree typeDecl() = 0;
             virtual pTypeTree getpTT()
             {
                 return pTT;
@@ -70,6 +71,7 @@ namespace ast
         public:
             virtual Value *codegen() override = 0;
             virtual std::string getName() override = 0;
+            virtual pTypeTree typeDecl() override = 0;
             std::string toString() override { return ""; }
             std::string getASTName() override { return "FormalAST"; }
     };
@@ -127,7 +129,7 @@ namespace ast
         public:
             virtual Value *codegen() override = 0;
             virtual std::string getName() override = 0;
-            virtual pTypeTree typeDecl() = 0;
+            virtual pTypeTree typeDecl() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ExprAST"; }
@@ -164,6 +166,7 @@ namespace ast
             }
             virtual pTypeTree typeDecl() override
             {
+                pTT = makeTrivial();
                 return nullptr;
             }
 
@@ -613,6 +616,7 @@ namespace ast
         public:
             virtual Value *codegen() override = 0;
             virtual std::string getName() override = 0;
+            virtual pTypeTree typeDecl() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "CommandAST"; }
@@ -951,6 +955,7 @@ namespace ast
         public:
             virtual Value *codegen() override = 0;
             virtual std::string getName() override = 0;
+            virtual pTypeTree typeDecl() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "DeclAST"; }
