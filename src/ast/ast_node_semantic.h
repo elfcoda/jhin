@@ -155,19 +155,36 @@ namespace ast
             TypeExprAST(std::string typeName): typeName(typeName)
             {
                 comm::Log::singleton(INFO) >> "typeName: " >> typeName >> comm::newline;
-                pTT = makeTrivial(SYMBOL_TYPE_TYPE);
 
-                if ("Double" == typeName) {
+                pTT->setSecondOrder();
+                
+                if ("Double" == typeName)
+                {
+                    pTT = makeTrivial(SYMBOL_TYPE_DOUBLE);
                     pTT->setType(Type::getDoubleTy(*mdl::TheContext));
-                } else if ("Float" == typeName) {
+                }
+                else if ("Float" == typeName)
+                {
+                    pTT = makeTrivial(SYMBOL_TYPE_FLOAT);
                     pTT->setType(Type::getFloatTy(*mdl::TheContext));
-                } else if ("Int" == typeName) {
+                }
+                else if ("Int" == typeName)
+                {
+                    pTT = makeTrivial(SYMBOL_TYPE_INT);
                     pTT->setType(IntegerType::get(*mdl::TheContext, 4 * 8));
-                } else if ("String" == typeName) {
+                }
+                else if ("String" == typeName)
+                {
+                    pTT = makeTrivial(SYMBOL_TYPE_STRING);
                     JHIN_ASSERT_STR("typeName Error! string");
-                } else if ("Bool" == typeName) {
+                }
+                else if ("Bool" == typeName)
+                {
+                    pTT = makeTrivial(SYMBOL_TYPE_BOOL);
                     pTT->setType(Type::getInt1Ty(*mdl::TheContext));
-                } else {
+                }
+                else
+                {
                     JHIN_ASSERT_STR("typeName Error!");
                 }
             }
