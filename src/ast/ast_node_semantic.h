@@ -104,6 +104,17 @@ namespace ast
 
             virtual std::string getName() override { return ""; };
 
+            virtual pTypeTree typeDecl() override
+            {
+                pTT = nullptr;
+                for (const auto& formal: Formals)
+                {
+                    pTT = formal->typeDecl();
+                }
+
+                return pTT;
+            }
+
             std::vector<Value*> codegenFormals()
             {
                 std::vector<Value*> ans;
@@ -144,7 +155,7 @@ namespace ast
             TypeExprAST(std::string typeName): typeName(typeName)
             {
                 comm::Log::singleton(INFO) >> "typeName: " >> typeName >> comm::newline;
-                pTT = new TypeTree(SYMBOL_TYPE_BASIC, nullptr, "", "", "", nullptr);
+                pTT = makeTrivial(SYMBOL_TYPE_TYPE);
 
                 if ("Double" == typeName) {
                     pTT->setType(Type::getDoubleTy(*mdl::TheContext));
@@ -164,10 +175,10 @@ namespace ast
             {
                 return nullptr;
             }
+
             virtual pTypeTree typeDecl() override
             {
-                pTT = makeTrivial();
-                return nullptr;
+                return pTT;
             }
 
             virtual std::string getName() override { return ""; }
@@ -198,7 +209,8 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                pTT = nullptr;
+                return pTT;
             }
 
             virtual std::string getName() override { return ""; };
@@ -229,7 +241,8 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                pTT = makeTrivial(SYMBOL_TYPE_BOOL);
+                return pTT;
             }
 
             virtual std::string getName() override { return ""; }
@@ -256,8 +269,10 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                pTT = makeTrivial(SYMBOL_TYPE_INT);
+                return pTT;
             }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -282,7 +297,8 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                pTT = makeTrivial(SYMBOL_TYPE_FLOAT);
+                return pTT;
             }
 
             virtual std::string getName() override { return ""; }
@@ -305,7 +321,8 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                pTT = makeTrivial(SYMBOL_TYPE_STRING);
+                return pTT;
             }
 
             virtual std::string getName() override { return ""; }
@@ -337,7 +354,9 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                std::shared_ptr<symbolItem> item = symbolTable::find_symbol(Name);
+                pTT = item->getpTT();
+                return pTT;
             }
 
             virtual std::string getName() override
@@ -547,7 +566,8 @@ namespace ast
                     }
                 }
 
-                return pTTRet;
+                pTT = pTTRet;
+                return pTT;
             }
 
             virtual std::string getName() override { return ""; }
