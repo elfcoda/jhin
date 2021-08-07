@@ -157,7 +157,7 @@ namespace ast
                 comm::Log::singleton(INFO) >> "typeName: " >> typeName >> comm::newline;
 
                 pTT->setSecondOrder();
-                
+
                 if ("Double" == typeName)
                 {
                     pTT = makeTrivial(SYMBOL_TYPE_DOUBLE);
@@ -639,8 +639,39 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                return nullptr;
+                std::shared_ptr<symbolItem> item = symbolTable::find_symbol(Callee);
+                pTypeTree pTTFn = item->getpTT();
+                if (pTTFn->getEST() != SYMBOL_TYPE_FN)
+                {
+                    JHIN_ASSERT_STR("symbol should be function type.");
+                }
+
+                std::vector<pTypeTree> ArgsType;
+                for (const auto& arg: Args)
+                {
+                    pTypeTree argType = arg->getpTT();
+                    ArgsType.push_back(argType);
+                }
+
+                unsigned argsNum = ArgsType.size();
+                unsigned argsFnNum = pTTFn->size();
+                if (argsNum != argsFnNum - 1)
+                {
+                    JHIN_ASSERT_STR("Number of args invalid.");
+                }
+
+                for (unsigned i = 0; i < argsNum; i ++)
+                {
+                    if (!isTypeEqual(ArgsType[i], pTTFn->getChild(i)))
+                    {
+                        JHIN_ASSERT_STR("Arg type invalid.");
+                    }
+                } 
+
+                pTT = pTTFn->getChild(argsFnNum - 1);
+                return pTT;
             }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -694,6 +725,24 @@ namespace ast
             {
                 Then = std::make_unique<FormalsAST>(std::move(FormalThen));
                 Else = std::make_unique<FormalsAST>(std::move(FormalElse));
+            }
+
+            virtual pTypeTree typeDecl() override
+            {
+                pTypeTree pTTCond = Cond->getpTT();
+
+                if (pTTCond == nullptr)
+                {
+                    JHIN_ASSERT_STR("Cond should not be nullptr");
+                }
+
+                if (pTTCond->getEST() != SYMBOL_TYPE_BOOL)
+                {
+                    JHIN_ASSERT_STR("Cond should be bool type");
+                }
+
+                pTT = nullptr;
+                return pTT;
             }
 
             Value *codegen() override
@@ -775,7 +824,12 @@ namespace ast
 
             Value *codegen() override { return nullptr; }
             virtual std::string getName() override { return ""; }
-
+            virtual pTypeTree typeDecl() override
+            {
+                JHIN_ASSERT_STR("should be implemented first");
+                pTT = nullptr;
+                return pTT;
+            }
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ForCmdAST2"; }
     };
@@ -783,6 +837,12 @@ namespace ast
     /// ForCmdAST - Command class for for/in.
     class ForCmdAST final : public CommandAST
     {
+        /*
+         * for (i: Int in 0, 3, 2)
+         * {
+         *      body
+         *  }
+         */
         private:
             std::string VarName;
             std::unique_ptr<ExprAST> Start, End, Step, Body;
@@ -794,6 +854,64 @@ namespace ast
                        : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
                        Step(std::move(Step)), Body(std::move(Body)) {}
 
+            virtual pTypeTree typeDecl() override
+            {
+                // Symbol VarName
+                std::shared_ptr<symbolItem> item = symbolTable::find_symbol(VarName);
+                if (nullptr == item)
+                {
+                    JHIN_ASSERT_STR("symbol not found.");
+                }
+
+                if (item->getpTT() == nullptr)
+                {
+                    JHIN_ASSERT_STR("symbol should be assigned as a type.");
+                }
+
+                if (item->getpTT()->getEST() != SYMBOL_TYPE_INT)
+                {
+                    JHIN_ASSERT_STR("symbol should be INTEGER.");
+                }
+
+                // Start
+                pTypeTree pTTStart = Start->getpTT();
+                if (pTTStart == nullptr)
+                {
+                    JHIN_ASSERT_STR("Start should not be nullptr.");
+                }
+
+                if (pTTStart->getEST() != SYMBOL_TYPE_INT)
+                {
+                    JHIN_ASSERT_STR("Start should be INTEGER");
+                }
+
+                // End
+                pTypeTree pTTEnd = End->getpTT();
+                if (pTTEnd == nullptr)
+                {
+                    JHIN_ASSERT_STR("End should not be nullptr");
+                }
+
+                if (pTTEnd->getEST() != SYMBOL_TYPE_INT)
+                {
+                    JHIN_ASSERT_STR("End should be INTEGER");
+                }
+
+                // Step
+                pTypeTree pTTStep = Step->getpTT();
+                if (pTTStep == nullptr)
+                {
+                    JHIN_ASSERT_STR("Step should not be nullptr");
+                }
+
+                if (pTTStep->getEST() != SYMBOL_TYPE_INT)
+                {
+                    JHIN_ASSERT_STR("Step should be INTEGER");
+                }
+
+                pTT = nullptr;
+                return pTT;
+            }
 
             // Output for-loop as:
             //   var = alloca variable
@@ -909,6 +1027,23 @@ namespace ast
                 Body = std::make_unique<FormalsAST>(std::move(FormalBody));
             }
 
+            virtual pTypeTree typeDecl() override
+            {
+                pTypeTree pTTCond = Cond->getpTT();
+                if (pTTCond == nullptr)
+                {
+                    JHIN_ASSERT_STR("Cond should not be nullptr");
+                }
+
+                if (pTTCond->getEST() != SYMBOL_TYPE_BOOL)
+                {
+                    JHIN_ASSERT_STR("Cond should be bool type");
+                }
+
+                pTT = nullptr;
+                return pTT;
+            }
+
             // Output while-loop as:
             // cond:
             //   whilecond = condexpr
@@ -980,6 +1115,30 @@ namespace ast
                 return nullptr;
             }
 
+            virtual pTypeTree typeDecl() override
+            {
+                std::shared_ptr<symbolItem> item = symbolTable::find_symbol(name);
+                if (item == nullptr)
+                {
+                    JHIN_ASSERT_STR("symbol not found");
+                }
+
+                pTypeTree pTTAssign = item->getpTT();
+                if (pTTAssign == nullptr)
+                {
+                    JHIN_ASSERT_STR("symbol should be assigned as a type");
+                }
+
+                pTypeTree pTTExp = exp->getpTT();
+                if (!isTypeEqual(pTTAssign, pTTExp))
+                {
+                    JHIN_ASSERT_STR("Assignment type doesn't match");
+                }
+
+                pTT = nullptr;
+                return pTT;
+            }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -1016,6 +1175,7 @@ namespace ast
         public:
             virtual Value *codegen() override = 0;
             virtual std::string getName() override = 0;
+            virtual pTypeTree typeDecl() override = 0;
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ProgUnitAST"; }
@@ -1036,6 +1196,17 @@ namespace ast
             void addProgUnit(std::unique_ptr<ProgUnitAST> progUnit)
             {
                 ProgUnits.push_back(std::move(progUnit));
+            }
+
+            virtual pTypeTree typeDecl() override
+            {
+                pTT = nullptr;
+                for (const auto& item: ProgUnits)
+                {
+                    pTT = item->typeDecl();
+                }
+
+                return pTT;
             }
 
             Value *codegen() override
@@ -1091,6 +1262,13 @@ namespace ast
                 return name;
             }
 
+            virtual pTypeTree typeDecl() override
+            {
+                JHIN_ASSERT_STR("should be implemented first");
+                pTT = nullptr;
+                return pTT;
+            }
+
             std::string toString() override { return ""; }
             std::string getASTName() override { return "ClassAST"; }
     };
@@ -1121,6 +1299,24 @@ namespace ast
             pTypeTree getpTT() { return type->getpTT(); }
             Type* getType() { return type->getType(); }
             ExprAST* getValue() {return value.get(); }
+
+            virtual pTypeTree typeDecl() override
+            {
+                pTypeTree pTTDecl = type->getpTT();
+                JHIN_ASSERT_BOOL(pTTDecl->isSecondOrder());
+
+                pTypeTree pTTVal = value->getpTT();
+                JHIN_ASSERT_BOOL(!pTTVal->isSecondOrder());
+
+                // ignore second order or not
+                if (!isTypeEqual(pTTDecl, pTTVal))
+                {
+                    JHIN_ASSERT_STR("Type doesn't match when declaring");
+                }
+
+                pTT = nullptr;
+                return pTT;
+            }
 
             Value *codegen() override
             {
@@ -1159,8 +1355,14 @@ namespace ast
             {
             }
 
-            void addDecl(std::unique_ptr<DeclarationAST> declAST) {
+            void addDecl(std::unique_ptr<DeclarationAST> declAST)
+            {
                 Decls.push_back(std::move(declAST));
+            }
+
+            virtual pTypeTree typeDecl() override
+            {
+                
             }
 
             Value *codegen() override { return nullptr; }
