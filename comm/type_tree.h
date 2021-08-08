@@ -40,7 +40,7 @@ enum ESymbolType
     SYMBOL_TYPE_STRING,
     SYMBOL_TYPE_UNIT,
 
-    // SYMBOL_TYPE_TYPE = SYMBOL_TYPE_START_TYPE,       /* deprecated */
+    SYMBOL_TYPE_TYPE = SYMBOL_TYPE_START_TYPE,       /* deprecated */
 
     /* complex recursive type */
     /* function type */
@@ -334,33 +334,6 @@ enum EIDType
     E_ID_TYPE_FN_TYPE,
     E_ID_TYPE_TYPE_LITERAL,
 };
-EIDType getSymbolType(const pTypeTree& pTT)
-{
-    if (pTT == nullptr) return E_ID_TYPE_ERROR;
-    ESymbolType tp = pTT->getType();
-    if (isTrivialType(tp)) return E_ID_TYPE_TRIVIAL_VALUE;
-    else if (tp == SYMBOL_TYPE_CLASS && pTT->getExpandType() != "") return E_ID_TYPE_EXPAND_VALUE;
-    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) != trivialTypes.end()) return E_ID_TYPE_TRIVIAL_TYPE;
-    else if (tp == SYMBOL_TYPE_TYPE && trivialTypes.find(pTT->getValue()) == trivialTypes.end()) return E_ID_TYPE_EXPAND_TYPE;
-    else if (tp == SYMBOL_TYPE_FN) return E_ID_TYPE_FN_TYPE;
-    else if (tp == SYMBOL_TYPE_TYPE && pTT->getValue() == "Type") return E_ID_TYPE_TYPE_LITERAL;
-
-    JHIN_ASSERT_BOOL(false);
-    return E_ID_TYPE_ERROR;
-}
-
-unsigned fnArgsNumber(pTypeTree pTT)
-{
-    JHIN_ASSERT_BOOL(pTT != nullptr);
-    JHIN_ASSERT_BOOL(getSymbolType(pTT) == E_ID_TYPE_FN_TYPE);
-    unsigned n = pTT->size();
-    JHIN_ASSERT_BOOL(n >= 2);
-    if (pTT->getChild(0)->getType() == SYMBOL_TYPE_UNIT) {
-        return 0;
-    }
-    return n - 1;
-}
-
 
 }   /* namespace comm */
 }   /* namespace jhin */

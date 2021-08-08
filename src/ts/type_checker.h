@@ -15,56 +15,24 @@ namespace ts
     /* type checker would not calculate the result */
     pTypeTree checkDecl(pTypeTree pTree)
     {
-        pTypeTree pTT = nullptr;
-        // type check
-        if (getSymbolType(pTree) == E_ID_TYPE_TRIVIAL_TYPE) {
-            JHIN_ASSERT_BOOL(trivialTypes.find(pTree->getValue()) != trivialTypes.end());
-            pTT = new TypeTree(trivialTypes.at(pTree->getValue()), "", "", nullptr);
-        } else if (getSymbolType(pTree) == E_ID_TYPE_EXPAND_TYPE) {
-            std::shared_ptr<st::symbolItem> si = st::symbolTable::find_symbol(pTree->getValue());
-            JHIN_ASSERT_BOOL(si != nullptr);
-            pTT = new TypeTree(SYMBOL_TYPE_CLASS,
-                               nullptr,
-                               "",
-                               pTree->getValue(),
-                               "",
-                               si->type->getChildrenList());
-        } else if (getSymbolType(pTree) == E_ID_TYPE_TYPE_LITERAL) {
-            pTT = new TypeTree(SYMBOL_TYPE_TYPE, nullptr, "", "", "", nullptr);
-        } else {
-            JHIN_ASSERT_STR("symbol should be a type");
-        }
-
-        return pTT;
+        JHIN_ASSERT_STR("should be implemented first");
+        return nullptr;
     }
 
     /* @pArgsTree: fn inputs */
     pTypeTree checkFn(pTypeTree pArgsTree, pTypeTree fnType)
     {
-        int argSize = fnType->size();
-        JHIN_ASSERT_BOOL(argSize >= 2);
-        pTypeTree pLastType = fnType->getChild(argSize - 1);
-        /* return value type */
-        appendTree(pArgsTree, pLastType);
-        int inputSize = pArgsTree->size();
-        /* TODO: default argument, curry */
-        JHIN_ASSERT_BOOL(inputSize == argSize);
-
-        bool fnTypeEqual = isTypeEqual(pArgsTree, fnType);
-        JHIN_ASSERT_BOOL(fnTypeEqual);
-
-        return pLastType;
+        JHIN_ASSERT_STR("should be implemented first");
+        return nullptr;
     }
 
     /* plus: + */
     pTypeTree checkPlus(pTypeTree t1, pTypeTree t2)
     {
-        JHIN_ASSERT_BOOL(getSymbolType(t1) == E_ID_TYPE_TRIVIAL_VALUE &&
-                         getSymbolType(t2) == E_ID_TYPE_TRIVIAL_VALUE);
-        JHIN_ASSERT_BOOL((isCaclType(t1->getType()) || t1->getType() == SYMBOL_TYPE_STRING) &&
-                         (isCaclType(t2->getType()) || t2->getType() == SYMBOL_TYPE_STRING));
-        JHIN_ASSERT_BOOL(t1->getType() == t2->getType());
-        pTypeTree pTT = new TypeTree(t1->getEST(), nullptr, "", "", "", nullptr);
+        auto e1 = t1->getEST(), e2 = t2->getEST();
+        JHIN_ASSERT_BOOL(isCaclType(e1) && isCaclType(e2));
+        JHIN_ASSERT_BOOL(e1 == e2);
+        pTypeTree pTT = new TypeTree(e1, nullptr, "", "", "", nullptr);
 
         return pTT;
     }
@@ -72,11 +40,10 @@ namespace ts
     /* minus: - */
     pTypeTree checkMinus(pTypeTree t1, pTypeTree t2)
     {
-        JHIN_ASSERT_BOOL(getSymbolType(t1) == E_ID_TYPE_TRIVIAL_VALUE &&
-                         getSymbolType(t2) == E_ID_TYPE_TRIVIAL_VALUE);
-        JHIN_ASSERT_BOOL(isCaclType(t1->getType()) && isCaclType(t2->getType()));
-        JHIN_ASSERT_BOOL(t1->getType() == t2->getType());
-        pTypeTree pTT = new TypeTree(t1->getEST(), nullptr, "", "", "", nullptr);
+        auto e1 = t1->getEST(), e2 = t2->getEST();
+        JHIN_ASSERT_BOOL(isCaclType(e1) && isCaclType(e2));
+        JHIN_ASSERT_BOOL(e1 == e2);
+        pTypeTree pTT = new TypeTree(e1, nullptr, "", "", "", nullptr);
 
         return pTT;
     }
@@ -98,14 +65,7 @@ namespace ts
     /* equality: ==, != */
     pTypeTree checkEquality(pTypeTree t1, pTypeTree t2)
     {
-        JHIN_ASSERT_BOOL(getSymbolType(t1) == getSymbolType(t2));
-        if (getSymbolType(t1) == E_ID_TYPE_TRIVIAL_VALUE) {
-            JHIN_ASSERT_BOOL(t1->getType() == t2->getType());
-        } else if (getSymbolType(t1) == E_ID_TYPE_EXPAND_VALUE) {
-            JHIN_ASSERT_BOOL(t1->getType() == SYMBOL_TYPE_CLASS && t1->getExpandType() == t2->getExpandType());
-        } else {
-            JHIN_ASSERT_BOOL(false);
-        }
+        JHIN_ASSERT_BOOL(isTypeEqual(t1, t2));
         pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, nullptr, "", "", "", nullptr);
 
         return pTT;
@@ -113,12 +73,9 @@ namespace ts
 
     void checkOrderHelper(pTypeTree t1, pTypeTree t2)
     {
-        JHIN_ASSERT_BOOL(getSymbolType(t1) == getSymbolType(t2));
-        if (getSymbolType(t1) == E_ID_TYPE_TRIVIAL_VALUE) {
-            JHIN_ASSERT_BOOL(t1->getType() == t2->getType());
-        } else {
-            JHIN_ASSERT_BOOL(false);
-        }
+        auto e1 = t1->getEST(), e2 = t2->getEST();
+        JHIN_ASSERT_BOOL(isCaclType(e1) && isCaclType(e2));
+        JHIN_ASSERT_BOOL(e1 == e2);
     }
 
     /* order:
@@ -133,23 +90,14 @@ namespace ts
 
     pTypeTree checkAssign(pTypeTree t1, pTypeTree t2)
     {
-        EIDType e1 = getSymbolType(t1), e2 = getSymbolType(t2);
-        JHIN_ASSERT_BOOL(t1->getSymbolName() != "");
-        JHIN_ASSERT_BOOL(e1 == e2);
-        if (e1 == E_ID_TYPE_TRIVIAL_VALUE) {
-            JHIN_ASSERT_BOOL(t1->getType() == t2->getType());
-        } else if (e1 == E_ID_TYPE_EXPAND_VALUE) {
-            JHIN_ASSERT_BOOL(t1->getExpandType() == t2->getExpandType());
-        } else {
-            JHIN_ASSERT_STR("type error.");
-        }
+        JHIN_ASSERT_STR("should be implemented first");
         return nullptr;
     }
 
     /* not: ! */
     pTypeTree checkNot(pTypeTree t)
     {
-        JHIN_ASSERT_BOOL(t->getType() == SYMBOL_TYPE_BOOL);
+        JHIN_ASSERT_BOOL(t->getEST() == SYMBOL_TYPE_BOOL);
         pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, nullptr, "", "", "", nullptr);
         return pTT;
     }
@@ -157,7 +105,8 @@ namespace ts
     /* isVoid for expand type */
     pTypeTree checkIsVoid(pTypeTree t)
     {
-        JHIN_ASSERT_BOOL(getSymbolType(t) == E_ID_TYPE_EXPAND_VALUE);
+        JHIN_ASSERT_STR("should be implemented first");
+
         pTypeTree pTT = new TypeTree(SYMBOL_TYPE_BOOL, nullptr, "", "", "", nullptr);
         return pTT;
     }
@@ -165,25 +114,15 @@ namespace ts
     /* cat: Cat <- new Cat */
     pTypeTree checkNew(pTypeTree t)
     {
-        JHIN_ASSERT_BOOL(getSymbolType(t) == E_ID_TYPE_EXPAND_TYPE);
-        auto ptr = st::symbolTable::find_symbol(t->getValue())->type->children;
-        pTypeTree pTT = new TypeTree(SYMBOL_TYPE_CLASS, nullptr, "", t->getValue(), "", ptr);
-        return pTT;
+        JHIN_ASSERT_STR("should be implemented first");
+        return nullptr;
     }
 
     /* return */
     pTypeTree checkReturn(pTypeTree t)
     {
-        pTypeTree pTT = nullptr;
-        if (getSymbolType(t) == E_ID_TYPE_TRIVIAL_VALUE) {
-            pTT = new TypeTree(t->getEST(), nullptr, "", "", "", nullptr);
-        } else if (getSymbolType(t) == E_ID_TYPE_EXPAND_VALUE) {
-            pTT = new TypeTree(t->getEST(), nullptr, "", "", t->getExpandType(), t->children);
-        } else {
-            JHIN_ASSERT_BOOL(false);
-        }
-
-        return pTT;
+        JHIN_ASSERT_STR("should be implemented first");
+        return nullptr;
     }
 
 }   /* namespace ts */
