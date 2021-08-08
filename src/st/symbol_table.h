@@ -78,6 +78,7 @@ enum SymbolTag
     ST_CLASS_SCOPE,
     ST_THEN_SCOPE,
     ST_ELSE_SCOPE,
+    ST_WHILE_SCOPE,
     ST_CASE_OF_SCOPE,
 };
 

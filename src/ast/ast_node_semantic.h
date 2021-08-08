@@ -771,7 +771,11 @@ namespace ast
 
                 PNAssignment.clear();
                 std::unordered_map<std::string, pAssignmentData> PNAssignmentThen = {};
+
+                symbolTable::add_symbol_tag(ST_THEN_SCOPE);
                 Value *ThenV = Then->codegen();
+                symbolTable::pop_symbol_block();
+
                 std::swap(PNAssignment, PNAssignmentThen);
                 JHIN_ASSERT_BOOL(ThenV != nullptr);
                 mdl::Builder->CreateBr(MergeBB);
@@ -784,7 +788,11 @@ namespace ast
 
                 PNAssignment.clear();
                 std::unordered_map<std::string, pAssignmentData> PNAssignmentElse = {};
+
+                symbolTable::add_symbol_tag(ST_ELSE_SCOPE);
                 Value *ElseV = Else->codegen();
+                symbolTable::pop_symbol_block();
+
                 std::swap(PNAssignment, PNAssignmentElse);
                 JHIN_ASSERT_BOOL(ElseV != nullptr);
 
@@ -1081,7 +1089,11 @@ namespace ast
                 mdl::Builder->CreateCondBr(condV, LoopBB, AfterBB);
 
                 mdl::Builder->SetInsertPoint(LoopBB);
+
+                symbolTable::add_symbol_tag(ST_WHILE_SCOPE);
                 Value *BodyV = Body->codegen();
+                symbolTable::pop_symbol_block();
+
                 mdl::Builder->CreateBr(condBB);
 
                 // Any new code will be inserted in AfterBB.
@@ -1262,10 +1274,13 @@ namespace ast
         public:
             Value *codegen() override
             {
-                // add_symbol
                 JHIN_ASSERT_STR("not implemented yet");
+                symbolTable::add_symbol_tag(ST_CLASS_SCOPE);
+                symbolTable::pop_symbol_block();
+
                 return nullptr;
             }
+
             virtual std::string getName() override
             {
                 return name;
@@ -1339,8 +1354,6 @@ namespace ast
                 Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
                 // Create an alloca for the variable in the entry block.
                 AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, getType(), name);
-                
-                symbolTable::add_symbol(ans->getName(), ans->getpTT(), nullptr, ST_DEFAULT_SYMBOL);
 
                 if (value != nullptr)
                 {
@@ -1348,6 +1361,8 @@ namespace ast
                     JHIN_ASSERT_BOOL(V != nullptr);
                     mdl::Builder->CreateStore(V, Alloca);
                 }
+
+                symbolTable::add_symbol(name, getDeclpTT(), Alloca, ST_DEFAULT_SYMBOL);
 
                 return nullptr;
             }
@@ -1538,10 +1553,15 @@ namespace ast
             // code gen for function
             Function *codegenFunc()
             {
+                symbolTable::add_symbol_tag(ST_FUNCTION_SCOPE);
+
                 comm::Log::singleton(INFO) >> "testing codegenFunc" >> comm::newline;
                 Function *TheFunction = Proto->codegenFunc();
                 if (!TheFunction)
+                {
+                    symbolTable::pop_symbol_block();
                     return nullptr;
+                }
 
                 // Create a new basic block to start insertion into.
                 BasicBlock *BB = BasicBlock::Create(*mdl::TheContext, "entry", TheFunction);
@@ -1567,12 +1587,15 @@ namespace ast
                     // Run the optimizer on the function.
                     mdl::TheFPM->run(*TheFunction);
 
+                    symbolTable::pop_symbol_block();
+
                     return TheFunction;
                 }
 
                 // Error reading body, remove function.
                 TheFunction->eraseFromParent();
 
+                symbolTable::pop_symbol_block();
                 return nullptr;
             }
 
