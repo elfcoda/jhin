@@ -79,6 +79,7 @@ namespace ast
     class FormalsAST : public ASTBase
     {
         private:
+            // added in reverse order, but parse in order
             std::vector<std::unique_ptr<FormalAST>> Formals;
 
         public:
@@ -106,10 +107,13 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                pTT = nullptr;
-                for (const auto& formal: Formals)
+                if (Formals.empty())
                 {
-                    pTT = formal->typeDecl();
+                    pTT = nullptr;
+                }
+                else
+                {
+                    pTT = Formals[0]->getpTT();
                 }
 
                 return pTT;
@@ -127,6 +131,10 @@ namespace ast
 
             void addFormal(std::unique_ptr<FormalAST> FormalNode)
             {
+                if (Formals.empty())
+                {
+                    pTT = FormalNode->getpTT();
+                }
                 Formals.push_back(std::move(FormalNode));
             }
 
@@ -155,8 +163,6 @@ namespace ast
             TypeExprAST(std::string typeName): typeName(typeName)
             {
                 comm::Log::singleton(INFO) >> "typeName: " >> typeName >> comm::newline;
-
-                pTT->setSecondOrder();
 
                 if ("Double" == typeName)
                 {
@@ -187,7 +193,10 @@ namespace ast
                 {
                     JHIN_ASSERT_STR("typeName Error!");
                 }
+
+                pTT->setSecondOrder();
             }
+
             Value *codegen() override
             {
                 return nullptr;
@@ -1203,7 +1212,7 @@ namespace ast
                 pTT = nullptr;
                 for (const auto& item: ProgUnits)
                 {
-                    pTT = item->typeDecl();
+                    pTT = item->getpTT();
                 }
 
                 return pTT;
@@ -1296,7 +1305,14 @@ namespace ast
             {
                 return name;
             }
-            pTypeTree getpTT() { return type->getpTT(); }
+
+            pTypeTree getDeclpTT()
+            {
+                pTypeTree pTTDecl = type->getpTT();
+                pTTDecl->setSecondOrder(false);
+                return pTTDecl;
+            }
+
             Type* getType() { return type->getType(); }
             ExprAST* getValue() {return value.get(); }
 
@@ -1323,6 +1339,9 @@ namespace ast
                 Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
                 // Create an alloca for the variable in the entry block.
                 AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, getType(), name);
+                
+                symbolTable::add_symbol(ans->getName(), ans->getpTT(), nullptr, ST_DEFAULT_SYMBOL);
+
                 if (value != nullptr)
                 {
                     Value *V = value->codegen();
@@ -1341,6 +1360,7 @@ namespace ast
     class DeclarationsAST: public DeclAST
     {
         private:
+            // added in reverse order, but parse in order
             std::vector<std::unique_ptr<DeclarationAST>> Decls;
 
         public:
@@ -1357,12 +1377,26 @@ namespace ast
 
             void addDecl(std::unique_ptr<DeclarationAST> declAST)
             {
+                if (Decls.empty())
+                {
+                    pTT = declAST->getpTT();
+                }
+
                 Decls.push_back(std::move(declAST));
             }
 
             virtual pTypeTree typeDecl() override
             {
-                
+                if (Decls.empty())
+                {
+                    pTT = nullptr;
+                }
+                else
+                {
+                    pTT = Decls[0]->getpTT();
+                }
+
+                return pTT;
             }
 
             Value *codegen() override { return nullptr; }
@@ -1411,6 +1445,21 @@ namespace ast
                 return Name;
             }
 
+            virtual pTypeTree typeDecl() override
+            {
+                pTypeTree pTTFn = makepTTFn();
+                for (const auto& item: Args)
+                {
+                    appendTree2Children(pTTFn, item->getDeclpTT());
+                }
+                pTypeTree pTTRet = RetType->getpTT();
+                pTTRet->setSecondOrder(false);
+                appendTree2Children(pTTFn, pTTRet);
+
+                pTT = pTTFn;
+                return pTT;
+            }
+
             // code gen for function
             Function *codegenFunc()
             {
@@ -1426,6 +1475,8 @@ namespace ast
 
                 // Set into Module
                 Function *F = Function::Create(FT, Function::ExternalLinkage, Name, mdl::TheModule.get());
+                
+                symbolTable::add_symbol(Name, nullptr, nullptr, ST_DEFAULT_SYMBOL);
 
                 // Set names for all arguments.
                 unsigned Idx = 0;
@@ -1465,6 +1516,23 @@ namespace ast
             virtual std::string getName() override
             {
                 return Proto->name();
+            }
+
+            virtual pTypeTree typeDecl() override
+            {
+                // TODO: return
+
+                pTypeTree pTTFn = Proto->getpTT();
+                pTypeTree pTTRet = Body->getpTT();
+
+                unsigned FnChildrenSize = pTTFn->size();
+                if (!isTypeEqual(pTTRet, pTTFn->getChild(FnChildrenSize - 1)))
+                {
+                    JHIN_ASSERT_STR("Return type doesn't match");
+                }
+
+                pTT = nullptr;
+                return pTT;
             }
 
             // code gen for function

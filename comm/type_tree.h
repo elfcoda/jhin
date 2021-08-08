@@ -33,14 +33,14 @@ enum ESymbolType
     /* trivial type */
     SYMBOL_TYPE_INT = SYMBOL_TYPE_START_TRIVIAL,
     SYMBOL_TYPE_FLOAT,
-    SYMBOL_TYPE_DOUBLE, // TODO
-    SYMBOL_TYPE_LONG,   // TODO
+    SYMBOL_TYPE_DOUBLE,
+    SYMBOL_TYPE_LONG,
     SYMBOL_TYPE_OBJECT,
     SYMBOL_TYPE_BOOL,
     SYMBOL_TYPE_STRING,
     SYMBOL_TYPE_UNIT,
 
-    SYMBOL_TYPE_TYPE = SYMBOL_TYPE_START_TYPE,       /* type variable */
+    // SYMBOL_TYPE_TYPE = SYMBOL_TYPE_START_TYPE,       /* deprecated */
 
     /* complex recursive type */
     /* function type */
@@ -152,7 +152,7 @@ class TypeTree: public comm::tree<TypeTree>
     public:
         /* children: std::vector<pTypeTree>* */
         TypeTree(ESymbolType est, Type* type, const std::string& symbolName, const std::string& value, const std::string& et, pChildrenList<TypeTree> pChildren):
-                 comm::tree<TypeTree>(pChildren), est(est), type(type), symbolName(symbolName), value(value), expandType(et)
+                 comm::tree<TypeTree>(pChildren), est(est), type(type), symbolName(symbolName), value(value), expandType(et), secondOrder(false)
         {
         }
 
@@ -200,6 +200,17 @@ class TypeTree: public comm::tree<TypeTree>
 
             return s;
         }
+
+        bool isSecondOrder()
+        {
+            return secondOrder;
+        }
+
+        void setSecondOrder(bool sndOrd = true)
+        {
+            secondOrder = sndOrd;
+        }
+
     private:
         ESymbolType est;
         Type* type;
@@ -209,11 +220,32 @@ class TypeTree: public comm::tree<TypeTree>
         std::string value;
 
         /* class name or function name, null if it's basic types */
+        // Type alias, like Cat, Dog, functionA
         std::string expandType;
+
+        bool secondOrder;
 };
 
 
-pTypeTree makeFnTree()
+bool isTypeEqual(pTypeTree t1, pTypeTree t2)
+{
+    // TODO expandType is eq?
+    ESymbolType e1 = t1->getEST(), e2 = t2->getEST();
+    if (e1 != e2) return false;
+    unsigned s1 = t1->size(), s2 = t2->size();
+    if (s1 != s2) return false;
+    for (unsigned i = 0; i < s1; i++)
+    {
+        if (!isTypeEqual(t1->getChild(i), t2->getChild(i)))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+pTypeTree makepTTFn()
 {
     pTypeTree pTT = new TypeTree(SYMBOL_TYPE_FN, nullptr, "", "", "", nullptr);
     return pTT;
@@ -315,46 +347,6 @@ EIDType getSymbolType(const pTypeTree& pTT)
 
     JHIN_ASSERT_BOOL(false);
     return E_ID_TYPE_ERROR;
-}
-
-bool isTypeEqual(pTypeTree t1, pTypeTree t2)
-{
-    EIDType e1 = getSymbolType(t1), e2 = getSymbolType(t2);
-    if (t1->getType() != t2->getType()) return false;
-    if (e1 == E_ID_TYPE_TRIVIAL_VALUE) {
-        return true;
-    } else if (e1 == E_ID_TYPE_EXPAND_VALUE) {
-        if ((t1->getExpandType() != "") && (t1->getExpandType() == t2->getExpandType())) return true;
-        else JHIN_ASSERT_STR("expand type error.");
-    } else if (e1 == E_ID_TYPE_TRIVIAL_TYPE) {
-        /* for literal "Type" is stored as | Type | None | Type| nullptr | in symbol table.
-         * so we should make sure that t2's value field is not Type if we want to make
-         * type checker happy.
-         * we should just make their type field is all SYMBOL_TYPE_TYPE
-         * */
-        if (e2 == E_ID_TYPE_TYPE_LITERAL) JHIN_ASSERT_STR("type error, can not be Type literal.");
-        else return true;
-    } else if (e1 == E_ID_TYPE_EXPAND_TYPE) {
-        /* same as above */
-        if (e2 == E_ID_TYPE_TYPE_LITERAL) JHIN_ASSERT_STR("type error, can not be Type literal.");
-        else return true;
-    } else if (e1 == E_ID_TYPE_FN_TYPE) {
-        /* fn type */
-        if (!t1->hasChildren() || !t2->hasChildren()) JHIN_ASSERT_STR("fn type should hsas children.");
-        pChildrenList<TypeTree> c1 = t1->children, c2 = t2->children;
-        /* both have children list */
-        unsigned n1 = c1->size(), n2 = c2->size();
-        if (n1 != n2) JHIN_ASSERT_STR("fn types error.");
-        for (unsigned idx = 0; idx < n1; idx++) {
-            if (!isTypeEqual((*c1)[idx], (*c2)[idx])) JHIN_ASSERT_STR("fn type error.");
-        }
-        return true;
-    } else {
-        /* not type, assert */
-        JHIN_ASSERT_STR("type error.");
-    }
-
-    return false;
 }
 
 unsigned fnArgsNumber(pTypeTree pTT)

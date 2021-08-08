@@ -102,6 +102,21 @@ class AST
             return nullptr;
         }
 
+        template <typename AST, typename DataType>
+        std::unique_ptr<AST> makeASTAndDeclType(const DataType& data)
+        {
+            std::unique_ptr<AST> uniqAST = std::make_unique<AST>(data);
+            uniqAST->typeDecl();
+            return uniqAST;
+        }
+
+        template <typename AST, typename... Ds>
+        std::unique_ptr<AST> makeASTAndDeclTypeArgs(Ds... ds)
+        {
+            std::unique_ptr<AST> uniqAST = std::make_unique<AST>(ds...);
+            uniqAST->typeDecl();
+            return uniqAST;
+        }
 
         /// Index All From "jhin/src/syntax/non_terminal.h"
         std::unique_ptr<ASTBase> parseTree2LLVMAST(pASTNode pRoot)
@@ -133,6 +148,7 @@ class AST
                         decls->addProgUnit(std::move(ProgDeclNode));
                         genProg = genProg->getChild(1);
                     } else if (EpsilonStr == genProgStr0) {
+                        decls->typeDecl();
                         return decls;
                     } else {
                         JHIN_ASSERT_STR("Prog Error!");
@@ -146,7 +162,9 @@ class AST
                 std::string name = pRoot->getChild(0)->getText();
                 std::unique_ptr<ExprAST> CmdNExp = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
 
-                return std::make_unique<AssignCmdAST>(name, std::move(CmdNExp));
+                auto uniqAST = std::make_unique<AssignCmdAST>(name, std::move(CmdNExp));
+                uniqAST->typeDecl();
+                return uniqAST;
             } else if ("CmdC" == symbolStr) {
                 std::string CmdCStr0 = vSymStr[0];
                 std::unique_ptr<ExprAST> CmdCCond = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
@@ -154,15 +172,21 @@ class AST
                 std::unique_ptr<FormalsAST> CmdCThen = dynamic_cast_ast<FormalsAST>(parseTree2LLVMAST(pRoot->getChild(6)));
                 symbolTable::pop_symbol_block();
                 if ("while" == CmdCStr0) {
-                    return std::make_unique<WhileCmdAST>(std::move(CmdCCond), std::move(CmdCThen));
+                    auto uniqAST = std::make_unique<WhileCmdAST>(std::move(CmdCCond), std::move(CmdCThen));
+                    uniqAST->typeDecl();
+                    return uniqAST;
                 } else if ("if" == CmdCStr0) {
                     if (8 == clrSize) {
-                        return std::make_unique<IfCmdAST>(std::move(CmdCCond), std::move(CmdCThen), nullptr);
+                        auto uniqAST = std::make_unique<IfCmdAST>(std::move(CmdCCond), std::move(CmdCThen), nullptr);
+                        uniqAST->typeDecl();
+                        return uniqAST;
                     } else if (12 == clrSize) {
                         symbolTable::add_symbol_tag(ST_ELSE_SCOPE);
                         std::unique_ptr<FormalsAST> CmdCElse = dynamic_cast_ast<FormalsAST>(parseTree2LLVMAST(pRoot->getChild(10)));
                         symbolTable::pop_symbol_block();
-                        return std::make_unique<IfCmdAST>(std::move(CmdCCond), std::move(CmdCThen), std::move(CmdCElse));
+                        auto uniqAST = std::make_unique<IfCmdAST>(std::move(CmdCCond), std::move(CmdCThen), std::move(CmdCElse));
+                        uniqAST->typeDecl();
+                        return uniqAST;
                     } else {
                         JHIN_ASSERT_STR("CmdC Error!");
                     }
@@ -177,7 +201,9 @@ class AST
                     symbolTable::add_symbol_tag(ST_THEN_SCOPE);
                     std::unique_ptr<FormalAST> WhileFormal = dynamic_cast_ast<FormalAST>(parseTree2LLVMAST(pRoot->getChild(5)));
                     symbolTable::pop_symbol_block();
-                    return std::make_unique<WhileCmdAST>(std::move(WhileExpr), std::move(WhileFormal));
+                    auto uniqAST = std::make_unique<WhileCmdAST>(std::move(WhileExpr), std::move(WhileFormal));
+                    uniqAST->typeDecl();
+                    return uniqAST;
                 } else if ("if" == CmdUStr0) {
                     // get Exp, FormalU
                     std::unique_ptr<ExprAST> IfCond = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
@@ -188,9 +214,13 @@ class AST
                         symbolTable::add_symbol_tag(ST_ELSE_SCOPE);
                         std::unique_ptr<FormalAST> IfElse = dynamic_cast_ast<FormalAST>(parseTree2LLVMAST(pRoot->getChild(9)));
                         symbolTable::pop_symbol_block();
-                        return std::make_unique<IfCmdAST>(std::move(IfCond), std::move(IfThen), std::move(IfElse));
+                        auto uniqAST = std::make_unique<IfCmdAST>(std::move(IfCond), std::move(IfThen), std::move(IfElse));
+                        uniqAST->typeDecl();
+                        return uniqAST;
                     } else if ("'back_n'" == CmdUStr6) {
-                        return std::make_unique<IfCmdAST>(std::move(IfCond), std::move(IfThen), nullptr);
+                        auto uniqAST = std::make_unique<IfCmdAST>(std::move(IfCond), std::move(IfThen), nullptr);
+                        uniqAST->typeDecl();
+                        return uniqAST;
                     } else {
                         JHIN_ASSERT_STR("CmdU Error!");
                     }
@@ -210,12 +240,16 @@ class AST
                         Formals->addFormal(std::move(FormalNode));
                         return Formals;
                     } else if (EpsilonStr == genFormalStr0) {
-                        return std::make_unique<FormalsAST>(std::move(FormalNode));
+                        auto uniqAST = std::make_unique<FormalsAST>(std::move(FormalNode));
+                        uniqAST->typeDecl();
+                        return uniqAST;
                     } else {
                         JHIN_ASSERT_STR("Formalt Error!");
                     }
                 } else if (EpsilonStr == FormaltStr0) {
-                    return std::make_unique<FormalsAST>();
+                    auto uniqAST = std::make_unique<FormalsAST>();
+                    uniqAST->typeDecl();
+                    return uniqAST;
                 } else {
                     JHIN_ASSERT_STR("Formalt Error!");
                 }
@@ -225,8 +259,11 @@ class AST
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("Newlp" == symbolStr ||
                        "Newls" == symbolStr ||
-                       "Newlq" == symbolStr) {
-                return std::make_unique<EmptyAST>();
+                       "Newlq" == symbolStr)
+            {
+                auto uniqAST = std::make_unique<EmptyAST>();
+                uniqAST->typeDecl();
+                return uniqAST;
             } else if ("Decls" == symbolStr) {
                 return parseTree2LLVMAST(pRoot->getChild(1));
             } else if ("Declt" == symbolStr) {
@@ -237,16 +274,21 @@ class AST
 
                     std::string genStr0 = genNode->getChild(0)->getText();
                     if ("Newlp" == genStr0) {
+                        // Declt   ::= Decl NOTE_QUES(Newlp Declt)
                         std::unique_ptr<DeclarationsAST> DecltAST = dynamic_cast_ast<DeclarationsAST>(parseTree2LLVMAST(genNode->getChild(1)));   // Declt
                         DecltAST->addDecl(std::move(DeclAST));
                         return DecltAST;
                     } else if (EpsilonStr == genStr0) {
-                        return std::make_unique<DeclarationsAST>(std::move(DeclAST));
+                        auto uniqAST = std::make_unique<DeclarationsAST>(std::move(DeclAST));
+                        uniqAST->typeDecl();
+                        return uniqAST;
                     } else {
                         JHIN_ASSERT_STR("Declt Error!");
                     }
                 } else if (EpsilonStr == DecltStr0) {
-                    return std::make_unique<DeclarationsAST>();
+                    auto uniqAST = std::make_unique<DeclarationsAST>();
+                    uniqAST->typeDecl();
+                    return uniqAST;
                 } else {
                     JHIN_ASSERT_STR("Declt Error!");
                 }
@@ -261,11 +303,13 @@ class AST
                         JHIN_ASSERT_STR("DeclN Error");
                     } else if (pRoot->size() == 3) {
                         auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType));
+                        ans->typeDecl();
                         symbolTable::add_symbol(ans->getName(), ans->getpTT(), nullptr, ST_DEFAULT_SYMBOL);
                         return ans;
                     } else if (pRoot->size() == 5) {
                         std::unique_ptr<ExprAST> DeclVal = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(4)));
                         auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType), std::move(DeclVal));
+                        ans->typeDecl();
                         symbolTable::add_symbol(ans->getName(), ans->getpTT(), nullptr, ST_DEFAULT_SYMBOL);
                         return ans;
                     } else {
@@ -307,7 +351,9 @@ class AST
                 } else if ("Proc_ar" == procArgs0) {
                     std::string ArgName = node->getChild(0)->getText();
                     std::unique_ptr<TypeExprAST> ArgType = dynamic_cast_ast<TypeExprAST>(parseTree2LLVMAST(node->getChild(2)));
-                    Args.push_back(std::make_unique<DeclarationAST>(ArgName, std::move(ArgType)));
+                    auto uniqAST0 = std::make_unique<DeclarationAST>(ArgName, std::move(ArgType));
+                    uniqAST0->typeDecl();
+                    Args.push_back(std::move(uniqAST0));
                     pASTNode genNode = node->getChild(3);
 
                     while (genNode != nullptr) {
@@ -319,7 +365,9 @@ class AST
                             // RE_ID
                             std::string ArgNameGen = genNode->getChild(1)->getText();
                             std::unique_ptr<TypeExprAST> ArgTypeGen = dynamic_cast_ast<TypeExprAST>(parseTree2LLVMAST(genNode->getChild(3)));
-                            Args.push_back(std::make_unique<DeclarationAST>(ArgNameGen, std::move(ArgTypeGen)));
+                            auto uniqAST = std::make_unique<DeclarationAST>(ArgNameGen, std::move(ArgTypeGen));
+                            uniqAST->typeDecl();
+                            Args.push_back(std::move(uniqAST));
 
                             // GEN_TERMINAL_x recursively
                             genNode = genNode->getChild(4);
@@ -337,6 +385,7 @@ class AST
 
                 /// 1. make PrototypeAST
                 std::unique_ptr<PrototypeAST> FuncProto = std::make_unique<PrototypeAST>(FunctionName, std::move(Args), std::move(RetTypeNode));
+                FuncProto->typeDecl();
 
                 symbolTable::add_symbol(FunctionName, nullptr, nullptr, ST_DEFAULT_SYMBOL);
 
@@ -346,13 +395,17 @@ class AST
                 // pop symbol scope
                 symbolTable::pop_symbol_block();
 
-                return std::make_unique<FunctionAST>(std::move(FuncProto), std::move(FuncBody));
+                auto uniqAST = std::make_unique<FunctionAST>(std::move(FuncProto), std::move(FuncBody));
+                uniqAST->typeDecl();
+                return uniqAST;
             } else if ("FnRetTp" == symbolStr) {
                 std::string FnRetTpStr0 = ast::getSymbolString(pRoot->getChild(0)->getChild(0));
                 comm::Log::singleton(INFO) >> "FnRetTpStr0: " >> FnRetTpStr0 >> comm::newline;
 
                 if (EpsilonStr == FnRetTpStr0) {
-                    return std::make_unique<EmptyAST>();
+                    auto uniqAST = std::make_unique<EmptyAST>();
+                    uniqAST->typeDecl();
+                    return uniqAST;
                 } else if (":" == FnRetTpStr0) {
                     return parseTree2LLVMAST(pRoot->getChild(0)->getChild(1));
                 } else {
@@ -415,7 +468,9 @@ class AST
                 std::unique_ptr<ExprAST> L = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(0)));
                 std::unique_ptr<ExprAST> R = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
 
-                return std::make_unique<BinaryExprAST>(getTokenIdByKeyWord(biOp), std::move(L), std::move(R));
+                auto uniqAST = std::make_unique<BinaryExprAST>(getTokenIdByKeyWord(biOp), std::move(L), std::move(R));
+                uniqAST->typeDecl();
+                return uniqAST;
             } else if ("Exp3" == symbolStr) {  // Exp3
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("NotExp" == symbolStr) {
@@ -432,40 +487,40 @@ class AST
             } else if ("ExpN" == symbolStr) {    // ExpN
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("ReInt" == symbolStr) {
-                return std::make_unique<IntExprAST>(pRoot->getChild(0)->getText());
+                return makeASTAndDeclType<IntExprAST, std::string>(pRoot->getChild(0)->getText());
             } else if ("ReDeci" == symbolStr) {
-                return std::make_unique<FloatExprAST>(std::stof(pRoot->getChild(0)->getText()));
+                return makeASTAndDeclType<FloatExprAST, std::string>(std::stof(pRoot->getChild(0)->getText()));
             } else if ("ReStr" == symbolStr) {
-                return std::make_unique<StringExprAST>(pRoot->getChild(0)->getText());
+                return makeASTAndDeclType<StringExprAST, std::string>(pRoot->getChild(0)->getText());
             } else if ("ReId" == symbolStr) {
-                return std::make_unique<VariableExprAST>(pRoot->getChild(0)->getText());
+                return makeASTAndDeclType<VariableExprAST, std::string>(pRoot->getChild(0)->getText());
             } else if ("TRUE" == symbolStr) {
-                return std::make_unique<BoolExprAST>(true);
+                return makeASTAndDeclType<BoolExprAST, bool>(true);
             } else if ("FALSE" == symbolStr) {
-                return std::make_unique<BoolExprAST>(false);
+                return makeASTAndDeclType<BoolExprAST, bool>(false);
             } else if ("NewExp" == symbolStr) {
                 return parseTree2LLVMAST(pRoot->getChild(1));
             } else if ("ReValue" == symbolStr) {
                 JHIN_ASSERT_STR("Should be implemented first!");
             } else if ("OBJECT" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("BOOL" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("INT" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("FLOAT" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("DOUBLE" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("LONG" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("STRING" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("UNIT" == symbolStr) {
-                return std::make_unique<TypeExprAST>(pRoot->getText());
+                return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("FnCall" == symbolStr) {
                 std::string fnName = pRoot->getChild(0)->getText();
-                std::unique_ptr<CallExprAST> FnCall = std::make_unique<CallExprAST>(fnName);
+                std::unique_ptr<CallExprAST> FnCall = makeASTAndDeclType<CallExprAST, std::string>(fnName);
 
                 pASTNode genArgs = pRoot->getChild(2)->getChild(0);
 
