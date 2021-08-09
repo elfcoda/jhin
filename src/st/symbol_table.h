@@ -41,35 +41,42 @@ struct TypeTable
 {
     static std::vector<std::shared_ptr<userDefinedType>> table;
 
-    static void addType(std::shared_ptr<userDefinedType> tp)
-    {
-        table.push_back(tp);
-    }
-
-    static void addType(std::string name)
-    {
-        table.push_back(std::make_shared<userDefinedType>(name));
-    }
-
+    static void addType(std::shared_ptr<userDefinedType> tp);
+    static void addType(std::string name);
     /// pop type when necessary
-    static void popType()
-    {
-        // TODO
-    }
-
-    static std::shared_ptr<userDefinedType> findType(std::string typeName)
-    {
-        for (int i = table.size() - 1; i >= 0; i--)
-        {
-            if (table[i]->getName() == typeName)
-            {
-                return table[i];
-            }
-        }
-        JHIN_ASSERT_STR("Type Not Found!");
-        return nullptr;
-    }
+    static void popType();
+    static std::shared_ptr<userDefinedType> findType(std::string typeName);
 };
+std::vector<std::shared_ptr<userDefinedType>> TypeTable::table;
+
+void TypeTable::addType(std::shared_ptr<userDefinedType> tp)
+{
+    table.push_back(tp);
+}
+
+void TypeTable::addType(std::string name)
+{
+    table.push_back(std::make_shared<userDefinedType>(name));
+}
+
+void TypeTable::popType()
+{
+    // TODO
+}
+
+std::shared_ptr<userDefinedType> TypeTable::findType(std::string typeName)
+{
+    for (int i = table.size() - 1; i >= 0; i--)
+    {
+        if (table[i]->getName() == typeName)
+        {
+            return table[i];
+        }
+    }
+    JHIN_ASSERT_STR("Type Not Found!");
+    return nullptr;
+}
+
 
 enum SymbolTag
 {
