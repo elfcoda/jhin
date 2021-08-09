@@ -468,7 +468,7 @@ class AST
                 std::unique_ptr<ExprAST> L = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(0)));
                 std::unique_ptr<ExprAST> R = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
 
-                auto uniqAST = std::make_unique<BinaryExprAST>(getTokenIdByKeyWord(biOp), std::move(L), std::move(R));
+                auto uniqAST = std::make_unique<BinaryExprAST>(static_cast<EKeyWords>(getTokenIdByKeyWord(biOp)), std::move(L), std::move(R));
                 uniqAST->typeDecl();
                 return uniqAST;
             } else if ("Exp3" == symbolStr) {  // Exp3
@@ -489,7 +489,7 @@ class AST
             } else if ("ReInt" == symbolStr) {
                 return makeASTAndDeclType<IntExprAST, std::string>(pRoot->getChild(0)->getText());
             } else if ("ReDeci" == symbolStr) {
-                return makeASTAndDeclType<FloatExprAST, std::string>(std::stof(pRoot->getChild(0)->getText()));
+                return makeASTAndDeclType<FloatExprAST, float>(std::stof(pRoot->getChild(0)->getText()));
             } else if ("ReStr" == symbolStr) {
                 return makeASTAndDeclType<StringExprAST, std::string>(pRoot->getChild(0)->getText());
             } else if ("ReId" == symbolStr) {

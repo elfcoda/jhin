@@ -11,9 +11,7 @@ namespace client
 
 comm::pTypeTree tsClient(ast::pASTNode pRoot)
 {
-    std::shared_ptr<st::SymbolGen> SG = std::make_shared<st::SymbolGen>();
-    comm::pTypeTree pTT = SG->genSymbolTable(pRoot)->getTypeTreePtr();
-    return pTT;
+    return nullptr;
 }
 
 }   /* namespace client */

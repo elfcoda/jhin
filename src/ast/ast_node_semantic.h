@@ -5,6 +5,7 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
+#include "llvm/IR/Module.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "../jhin_module.h"
@@ -12,9 +13,13 @@
 #include "../../comm/jhin_assert.h"
 #include "../../comm/log.h"
 #include "../../comm/type_tree.h"
+#include "../st/symbol_table.h"
+#include "../ts/type_checker.h"
 
 using namespace llvm;
 using namespace jhin;
+using namespace st;
+using namespace ts;
 
 namespace jhin
 {
@@ -35,7 +40,7 @@ namespace ast
 
     class ASTBase
     {
-        private:
+        public:
             pTypeTree pTT;
 
         public:
@@ -64,6 +69,7 @@ namespace ast
             std::string toString() override { return ""; }
             std::string getASTName() override { return "EmptyAST"; }
             virtual std::string getName() override { return ""; }
+            virtual pTypeTree typeDecl() override { return nullptr; }
     };
 
     class FormalAST : public ASTBase
@@ -375,7 +381,7 @@ namespace ast
                 Value *V = item->getValue();
 
                 // Load the value of this type.
-                return Builder->CreateLoad(symbolTable::find_symbol(Name)->getType(), V, Name.c_str());
+                return mdl::Builder->CreateLoad(symbolTable::find_symbol(Name)->getType(), V, Name.c_str());
             }
 
             virtual pTypeTree typeDecl() override
@@ -403,8 +409,8 @@ namespace ast
 
         public:
             BinaryExprAST(EKeyWords Op, std::unique_ptr<ExprAST> LHS,
-                                   std::unique_ptr<ExprAST> RHS)
-                          : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+                                        std::unique_ptr<ExprAST> RHS)
+                        : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
             Value *codegen() override
             {
@@ -422,107 +428,107 @@ namespace ast
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFAdd(L, R, "fadd");
+                                return mdl::Builder->CreateFAdd(L, R, "fadd");
                             }
 
-                            return Builder->CreateAdd(L, R, "add");
+                            return mdl::Builder->CreateAdd(L, R, "add");
                         }
                     case MINUS:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFSub(L, R, "fsub");
+                                return mdl::Builder->CreateFSub(L, R, "fsub");
                             }
 
-                            return Builder->CreateSub(L, R, "sub");
+                            return mdl::Builder->CreateSub(L, R, "sub");
                         }
                     case STAR:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFMul(L, R, "fmul");
+                                return mdl::Builder->CreateFMul(L, R, "fmul");
                             }
 
-                            return Builder->CreateMul(L, R, "mul");
+                            return mdl::Builder->CreateMul(L, R, "mul");
                         }
                     case SLASH:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFDiv(L, R, "fdiv");
+                                return mdl::Builder->CreateFDiv(L, R, "fdiv");
                             }
 
                             if (pTTRet->isSigned())
                             {
-                                return Builder->CreateSDiv(L, R, "sdiv");
+                                return mdl::Builder->CreateSDiv(L, R, "sdiv");
                             }
 
-                            return Builder->CreateUDiv(L, R, "udiv");
+                            return mdl::Builder->CreateUDiv(L, R, "udiv");
                         }
                     case EQ:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFCmpOEQ(L, R, "feq");
+                                return mdl::Builder->CreateFCmpOEQ(L, R, "feq");
                             }
 
-                            return Builder->CreateICmpEQ(L, R, "eq");
+                            return mdl::Builder->CreateICmpEQ(L, R, "eq");
                         }
                     case LT:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFCmpOLT(L, R, "flt");
+                                return mdl::Builder->CreateFCmpOLT(L, R, "flt");
                             }
 
                             if (pTTRet->isSigned())
                             {
-                                return Builder->CreateICmpSLT(L, R, "slt");
+                                return mdl::Builder->CreateICmpSLT(L, R, "slt");
                             }
 
-                            return Builder->CreateICmpULT(L, R, "ult");
+                            return mdl::Builder->CreateICmpULT(L, R, "ult");
                         }
                     case LE:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFCmpOLE(L, R, "fle");
+                                return mdl::Builder->CreateFCmpOLE(L, R, "fle");
                             }
 
                             if (pTTRet->isSigned())
                             {
-                                return Builder->CreateICmpSLE(L, R, "sle");
+                                return mdl::Builder->CreateICmpSLE(L, R, "sle");
                             }
 
-                            return Builder->CreateICmpULE(L, R, "ule");
+                            return mdl::Builder->CreateICmpULE(L, R, "ule");
                         }
                     case GT:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFCmpOGT(L, R, "fgt");
+                                return mdl::Builder->CreateFCmpOGT(L, R, "fgt");
                             }
 
                             if (pTTRet->isSigned())
                             {
-                                return Builder->CreateICmpSGT(L, R, "sgt");
+                                return mdl::Builder->CreateICmpSGT(L, R, "sgt");
                             }
 
-                            return Builder->CreateICmpUGT(L, R, "ugt");
+                            return mdl::Builder->CreateICmpUGT(L, R, "ugt");
                         }
                     case GE:
                         {
                             if (pTTRet->isFP())
                             {
-                                return Builder->CreateFCmpOGE(L, R, "fge");
+                                return mdl::Builder->CreateFCmpOGE(L, R, "fge");
                             }
 
                             if (pTTRet->isSigned())
                             {
-                                return Builder->CreateICmpSGE(L, R, "sge");
+                                return mdl::Builder->CreateICmpSGE(L, R, "sge");
                             }
 
-                            return Builder->CreateICmpUGE(L, R, "uge");
+                            return mdl::Builder->CreateICmpUGE(L, R, "uge");
                         }
                     default:
                         {
@@ -602,6 +608,19 @@ namespace ast
             std::string getASTName() override { return "BinaryExprAST"; }
     };
 
+    Function *getFunction(std::string Name)
+    {
+        // First, see if the function has already been added to the current module.
+        if (auto *F = mdl::TheModule->getFunction(Name))
+        {
+            return F;
+        }
+
+        // If no existing prototype exists, return null.
+        JHIN_ASSERT_STR("Function should be declared first");
+        return nullptr;
+    }
+
     /// CallExprAST - Expression class for function calls.
     class CallExprAST final : public ExprAST {
         private:
@@ -636,14 +655,14 @@ namespace ast
                 }
 
                 std::vector<Value *> ArgsV;
-                for (auto arg: Args)
+                for (const auto& arg: Args)
                 {
                     Value *val = arg->codegen();
                     JHIN_ASSERT_BOOL(val != nullptr);
                     ArgsV.push_back(val);
                 }
 
-                return Builder->CreateCall(CalleeF, ArgsV, "fncall");
+                return mdl::Builder->CreateCall(CalleeF, ArgsV, "fncall");
             }
 
             virtual pTypeTree typeDecl() override
@@ -675,7 +694,7 @@ namespace ast
                     {
                         JHIN_ASSERT_STR("Arg type invalid.");
                     }
-                } 
+                }
 
                 pTT = pTTFn->getChild(argsFnNum - 1);
                 return pTT;
@@ -759,7 +778,7 @@ namespace ast
                 Value *CondV = Cond->codegen();
                 JHIN_ASSERT_BOOL(CondV != nullptr);
 
-                Function *TheFunction = Builder->GetInsertBlock()->getParent();
+                Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
 
                 BasicBlock *ThenBB = BasicBlock::Create(*mdl::TheContext, "then", TheFunction);
                 BasicBlock *ElseBB = BasicBlock::Create(*mdl::TheContext, "else");
@@ -1000,7 +1019,7 @@ namespace ast
                     JHIN_ASSERT_BOOL(StepVal != nullptr);
                 } else {
                     // If not specified, use 1.0.
-                    StepVal = ConstantFP::get(*TheContext, APFloat(0.0));
+                    StepVal = ConstantFP::get(*mdl::TheContext, APFloat(0.0));
                 }
 
                 // Reload, increment, and restore the alloca.  This handles the case where
@@ -1117,7 +1136,7 @@ namespace ast
         public:
             AssignCmdAST(std::string name,
                          std::unique_ptr<ExprAST> exp)
-                         : name(name), exp(std::move(exp), expV(nullptr)) {}
+                         : name(name), exp(std::move(exp)) {}
 
             Value *codegen() override
             {
@@ -1309,7 +1328,7 @@ namespace ast
         public:
             DeclarationAST(std::string name,
                            std::unique_ptr<TypeExprAST> type)
-                           : name(name), type(std::move(type), value(nullptr)) {}
+                           : name(name), type(std::move(type)), value(nullptr) {}
 
             DeclarationAST(std::string name,
                            std::unique_ptr<TypeExprAST> type,
@@ -1490,7 +1509,7 @@ namespace ast
 
                 // Set into Module
                 Function *F = Function::Create(FT, Function::ExternalLinkage, Name, mdl::TheModule.get());
-                
+
                 symbolTable::add_symbol(Name, nullptr, nullptr, ST_DEFAULT_SYMBOL);
 
                 // Set names for all arguments.
@@ -1502,8 +1521,6 @@ namespace ast
 
                 return F;
             }
-
-            const std::string &getName() const { return Name; }
 
             std::string toString() override { return ""; }
             std::string getASTName() override { return "PrototypeAST"; }
@@ -1530,7 +1547,7 @@ namespace ast
 
             virtual std::string getName() override
             {
-                return Proto->name();
+                return Proto->getName();
             }
 
             virtual pTypeTree typeDecl() override

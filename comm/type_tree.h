@@ -151,7 +151,7 @@ class TypeTree: public comm::tree<TypeTree>
 {
     public:
         /* children: std::vector<pTypeTree>* */
-        TypeTree(ESymbolType est, Type* type, const std::string& symbolName, const std::string& value, const std::string& et, pChildrenList<TypeTree> pChildren):
+        TypeTree(ESymbolType est, llvm::Type* type, const std::string& symbolName, const std::string& value, const std::string& et, pChildrenList<TypeTree> pChildren):
                  comm::tree<TypeTree>(pChildren), est(est), type(type), symbolName(symbolName), value(value), expandType(et), secondOrder(false)
         {
         }
@@ -171,14 +171,19 @@ class TypeTree: public comm::tree<TypeTree>
             return est == SYMBOL_TYPE_FLOAT || est == SYMBOL_TYPE_DOUBLE;
         }
 
+        bool isSigned()
+        {
+            return true;
+        }
+
         ESymbolType getEST() const { return est; }
-        Type* getType() const { return type; }
+        llvm::Type* getType() const { return type; }
         std::string getSymbolName() const { return symbolName; }
         std::string getValue() const { return value; }
         std::string getExpandType() const { return expandType; }
 
         void setEST(ESymbolType e) { est = e; }
-        void setType(Type* tp) { type = tp; }
+        void setType(llvm::Type* tp) { type = tp; }
         void setSymbolName(const std::string& sm) { symbolName = sm; }
         void setValue(const std::string& val) { value = val; }
         void setExpandType(const std::string& et) { expandType = et; }
@@ -213,7 +218,7 @@ class TypeTree: public comm::tree<TypeTree>
 
     private:
         ESymbolType est;
-        Type* type;
+        llvm::Type* type;
 
         /* type don't have tsymbolName field */
         std::string symbolName;

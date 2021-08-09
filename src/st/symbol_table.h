@@ -94,12 +94,12 @@ struct symbolItem
     pTypeTree           pTT;
 
     // symbol value: 6
-    AllocaInst *        value;
+    llvm::AllocaInst*         value;
 
     // symbol tag: DefaultSymbol / FunctionScope / ClassScope / IfScope / ElseScope / WhileScope / LambdaScope
     SymbolTag           tag;
 
-    symbolItem(std::string name, pTypeTree pTT, AllocaInst *value, SymbolTag tag)
+    symbolItem(std::string name, pTypeTree pTT, llvm::AllocaInst *value, SymbolTag tag)
     {
         this->name = name;
         this->pTT = pTT;
@@ -107,12 +107,13 @@ struct symbolItem
         this->tag = tag;
     }
 
-    bool isFnAST() { return ST_FUNCTION_SCOPE == tag; }
-    bool isClassAST() { return ST_CLASS_SCOPE == tag; }
-    bool isIfAST() { return ST_IF_SCOPE == tag; }
-    bool isElseAST() { return ST_ELSE_SCOPE == tag; }
-    bool isWhileAST() { return ST_WHILE_SCOPE == tag; }
-    bool isCaseOfAST() { return ST_CASE_OF_SCOPE == tag; }
+    bool isSymbol() { return ST_DEFAULT_SYMBOL == tag; }
+    bool isFnTag() { return ST_FUNCTION_SCOPE == tag; }
+    bool isClassTag() { return ST_CLASS_SCOPE == tag; }
+    bool isThenTag() { return ST_THEN_SCOPE == tag; }
+    bool isElseTag() { return ST_ELSE_SCOPE == tag; }
+    bool isWhileTag() { return ST_WHILE_SCOPE == tag; }
+    bool isCaseOfTag() { return ST_CASE_OF_SCOPE == tag; }
 
     std::string getSymbolName()
     {
@@ -124,12 +125,12 @@ struct symbolItem
         return pTT;
     }
         
-    Type* getType()
+    llvm::Type* getType()
     {
         return pTT->getType();
     }
 
-    AllocaInst *getValue()
+    llvm::AllocaInst *getValue()
     {
         return value;
     }
@@ -147,7 +148,7 @@ struct symbolTable
     static std::vector<std::shared_ptr<symbolItem>> table;
 
     static void initSymbolTable();
-    static bool add_symbol(std::string name, pTypeTree pTT, std::string value, SymbolTag tag);
+    static bool add_symbol(std::string name, pTypeTree pTT, llvm::AllocaInst * value, SymbolTag tag);
     static bool add_symbol_tag(SymbolTag tag);
     static bool pop_symbol();
     static unsigned pop_symbol_block();
@@ -167,7 +168,7 @@ void symbolTable::initSymbolTable()
     table.clear();
 }
 
-bool symbolTable::add_symbol(std::string name, pTypeTree pTT, AllocaInst * value, SymbolTag tag)
+bool symbolTable::add_symbol(std::string name, pTypeTree pTT, llvm::AllocaInst * value, SymbolTag tag)
 {
     JHIN_ASSERT_BOOL(find_symbol_in_scope(name) == nullptr);
     table.push_back(std::make_shared<symbolItem>(name, pTT, value, tag));
@@ -193,7 +194,7 @@ unsigned symbolTable::pop_symbol_block()
     unsigned cnt = 0;
     JHIN_ASSERT_BOOL(!table.empty());
 
-    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolAST(); idx--) {
+    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbol(); idx--) {
         table.pop_back();
         cnt += 1;
     }
@@ -217,7 +218,7 @@ std::shared_ptr<symbolItem> symbolTable::find_symbol(const std::string& symbolNa
 
 std::shared_ptr<symbolItem> symbolTable::find_symbol_in_scope(const std::string& symbolName)
 {
-    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolAST() ; idx--) {
+    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbol() ; idx--) {
         if (table[idx]->getSymbolName() == symbolName) {
             return table[idx];
         }
@@ -227,7 +228,7 @@ std::shared_ptr<symbolItem> symbolTable::find_symbol_in_scope(const std::string&
 
 std::shared_ptr<symbolItem> symbolTable::find_symbol_in_fn(const std::string& symbolName)
 {
-    for (int idx = table.size() - 1; idx >= 0 && !table[idx]->isFnAST() ; idx--) {
+    for (int idx = table.size() - 1; idx >= 0 && !table[idx]->isFnTag() ; idx--) {
         if (table[idx]->getSymbolName() == symbolName) {
             return table[idx];
         }
@@ -238,7 +239,7 @@ std::shared_ptr<symbolItem> symbolTable::find_symbol_in_fn(const std::string& sy
 std::vector<std::shared_ptr<symbolItem>> symbolTable::get_symbols_in_scope()
 {
     std::vector<std::shared_ptr<symbolItem>> ans;
-    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbolAST() ; idx--) {
+    for (int idx = table.size() - 1; idx >= 0 && table[idx]->isSymbol() ; idx--) {
         ans.push_back(table[idx]);
     }
     std::reverse(ans.begin(), ans.end());
@@ -249,7 +250,7 @@ std::shared_ptr<symbolItem> symbolTable::get_last_symbol()
 {
     JHIN_ASSERT_BOOL(!table.empty());
     int idx = table.size() - 1;
-    JHIN_ASSERT_BOOL(table[idx]->isSymbolAST());
+    JHIN_ASSERT_BOOL(table[idx]->isSymbol());
     return table[idx];
 }
 
@@ -268,7 +269,7 @@ void symbolTable::unionSingleItem2Tree(pTypeTree pTT, const std::shared_ptr<symb
 std::shared_ptr<symbolItem> getRecentFn()
 {
     int idx = 0;
-    for (idx = symbolTable::table.size() - 1; idx >= 0 && !symbolTable::table[idx]->isFnAST() ; idx--) {}
+    for (idx = symbolTable::table.size() - 1; idx >= 0 && !symbolTable::table[idx]->isFnTag() ; idx--) {}
     if (idx < 0) return nullptr;
     JHIN_ASSERT_BOOL(idx >= 1);
     return symbolTable::table[idx - 1];
