@@ -24,13 +24,16 @@ int compiler()
     comm::pSyntaxDFA pDFAStart = client::syntaxClient();
     outs() << "Syntax Completed.\n";
 
+    symbolTable::initSymbolTable();
+
     std::unique_ptr<ast::ASTBase> base = client::astClient(lexResult, pDFAStart);
     outs() << "AST Completed: " << base->getASTName() << ", start to codegen\n";
 
+    // clear symbol table to be reused in codegen module
+    symbolTable::initSymbolTable();
+
+    // codegen
     base->codegen();
-
-
-    // TODO: type checker
 
     // client::tsClient(pRoot);
     // outs() << "TS Completed.\n";
