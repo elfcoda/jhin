@@ -3,7 +3,7 @@ using namespace std;
 
 extern "C"
 {
-    double func();
+    float func();
 }
 
 int main()

@@ -10,7 +10,12 @@
 --     }
 -- }
 
-def main(): Float {
-    1.2
+-- def main(): Float {
+--     1.2
+-- }
+
+def func(): Float {
+    2 + 1
+    34.557
 }
 
