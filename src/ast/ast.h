@@ -296,14 +296,18 @@ class AST
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("DeclN" == symbolStr) {
                 std::string DeclNStr0 = pRoot->getChild(0)->getText();
-                if ("RE_ID" == DeclNStr0) {
+                unsigned DeclNSymbolId0 = pRoot->getChild(0)->getSymbolId();
+                outs() << "DeclN: " << DeclNSymbolId0 << " " << RE_ID << "\n";
+                if (static_cast<unsigned>(RE_ID) == DeclNSymbolId0) { // ("RE_ID" == DeclNStr0)
                     std::string DeclName = pRoot->getChild(0)->getText();
                     std::unique_ptr<TypeExprAST> DeclType = dynamic_cast_ast<TypeExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
                     if (pRoot->size() < 3) {
                         JHIN_ASSERT_STR("DeclN Error");
                     } else if (pRoot->size() == 3) {
                         auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType));
+                        outs() << "Declggx "<< "\n";
                         ans->typeDecl();
+                        outs() << "Declxxx "<< "\n";
                         symbolTable::add_symbol(ans->getName(), ans->getpTT(), nullptr, ST_DEFAULT_SYMBOL);
                         return ans;
                     } else if (pRoot->size() == 5) {
@@ -415,6 +419,7 @@ class AST
                 return parseTree2LLVMAST(pRoot->getChild(0));
             } else if ("Exp" == symbolStr) {
                 std::string ExpSymbolStr0 = ast::getSymbolString(pRoot->getChild(0));
+                unsigned ExpSymbolId0 = pRoot->getChild(0)->getSymbolId();
                 if ("return" == ExpSymbolStr0) {
                     // TODO
                     JHIN_ASSERT_STR("Should be implemented first!");
@@ -424,7 +429,7 @@ class AST
                     JHIN_ASSERT_STR("Should be implemented first!");
                 } else if ("let" == ExpSymbolStr0) {
                     JHIN_ASSERT_STR("Should be implemented first!");
-                } else if ("RE_ID" == ExpSymbolStr0) {
+                } else if (static_cast<unsigned>(RE_ID) == ExpSymbolId0) { // ("RE_ID" == ExpSymbolStr0)
                     // updateFnCallArgs
                     std::string CallSymbolStr1 = ast::getSymbolString(pRoot->getChild(1));
                     if ("." == CallSymbolStr1) {

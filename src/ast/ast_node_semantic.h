@@ -1355,16 +1355,19 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                pTypeTree pTTDecl = type->getpTT();
-                JHIN_ASSERT_BOOL(pTTDecl->isSecondOrder());
-
-                pTypeTree pTTVal = value->getpTT();
-                JHIN_ASSERT_BOOL(!pTTVal->isSecondOrder());
-
-                // ignore second order or not
-                if (!isTypeEqual(pTTDecl, pTTVal))
+                if (nullptr != value)
                 {
-                    JHIN_ASSERT_STR("Type doesn't match when declaring");
+                    pTypeTree pTTDecl = type->getpTT();
+                    JHIN_ASSERT_BOOL(pTTDecl->isSecondOrder());
+
+                    pTypeTree pTTVal = value->getpTT();
+                    JHIN_ASSERT_BOOL(!pTTVal->isSecondOrder());
+
+                    // ignore second order or not
+                    if (!isTypeEqual(pTTDecl, pTTVal))
+                    {
+                        JHIN_ASSERT_STR("Type doesn't match when declaring");
+                    }
                 }
 
                 pTT = nullptr;

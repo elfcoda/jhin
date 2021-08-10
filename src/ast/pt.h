@@ -5,6 +5,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <queue>
+#include "llvm/Support/raw_ostream.h"
 #include "ast_node.h"
 #include "../../comm/log.h"
 #include "../../comm/dfa.h"
@@ -114,6 +115,7 @@ class ParseTree
                     /* shift:
                      * Prog'  should shift $ to nullptr
                      * */
+                    // llvm::outs() << "item: " << item.first << " " << item.second << "\n";
                     st.push(std::make_tuple(item.first,
                                             std::get<1>(st.top())->mEdges[item.first],
                                             new ASTNode(ASTNodeData(item.first, item.second), nullptr)));
