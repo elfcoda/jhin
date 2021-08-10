@@ -35,6 +35,8 @@ int compiler()
     // codegen
     base->codegen();
 
+    outs() << "We just constructed this LLVM module:\n" << *(mdl::TheModule.get());
+
     // client::tsClient(pRoot);
     // outs() << "TS Completed.\n";
 

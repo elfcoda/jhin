@@ -8,6 +8,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
+#include "llvm/Support/raw_ostream.h"
 #include "../jhin_module.h"
 #include "../lex/keywords.h"
 #include "../../comm/jhin_assert.h"
@@ -106,6 +107,7 @@ namespace ast
                 {
                     return nullptr;
                 }
+                
                 return values.back();
             }
 
@@ -128,9 +130,10 @@ namespace ast
             std::vector<Value*> codegenFormals()
             {
                 std::vector<Value*> ans;
-                for (const auto& p: Formals)
+                int n = static_cast<int>(Formals.size());
+                for (int i = n - 1; i >= 0; i --)
                 {
-                    ans.push_back(p->codegen());
+                    ans.push_back(Formals[i]->codegen());
                 }
                 return ans;
             }
@@ -1440,9 +1443,10 @@ namespace ast
             std::vector<Value*> codegenDecl()
             {
                 std::vector<Value*> ans;
-                for (const auto& p: Decls)
+                int n = static_cast<int>(Decls.size());
+                for (int i = n - 1; i >= 0; i --)
                 {
-                    ans.push_back(p->codegen());
+                    ans.push_back(Decls[i]->codegen());
                 }
                 return ans;
             }
@@ -1552,6 +1556,7 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
+                outs() << "typeDecl in Function\n";
                 // TODO: return
 
                 pTypeTree pTTFn = Proto->getpTT();

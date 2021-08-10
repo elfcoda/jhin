@@ -1,5 +1,4 @@
-#ifndef __LEX_CLIENT_H__
-#define __LEX_CLIENT_H__
+#pragma once
 
 #include "llvm/Support/raw_ostream.h"
 #include <fstream>
@@ -61,7 +60,4 @@ std::vector<std::pair<unsigned, std::string>> lexClient()
 
 }   /* namespace client */
 }   /* namespace jhin */
-
-
-#endif
 
