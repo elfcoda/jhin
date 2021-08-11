@@ -164,6 +164,11 @@ class TypeTree: public comm::tree<TypeTree>
             }
         }
 
+        void print()
+        {
+            llvm::outs() << getESymbolType2String(est) << "\n";
+        }
+
         ~TypeTree() { free(); }
 
         bool isFP()
@@ -235,6 +240,7 @@ class TypeTree: public comm::tree<TypeTree>
 bool isTypeEqual(pTypeTree t1, pTypeTree t2)
 {
     // TODO expandType is eq?
+    // llvm::outs() << "Is type equal: " << t1->toString() << "\n" << t2->toString() << "\n";
     ESymbolType e1 = t1->getEST(), e2 = t2->getEST();
     if (e1 != e2) return false;
     unsigned s1 = t1->size(), s2 = t2->size();

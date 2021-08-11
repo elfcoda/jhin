@@ -89,6 +89,23 @@ enum SymbolTag
     ST_CASE_OF_SCOPE,
 };
 
+std::map<SymbolTag, std::string> SymbolTag2String =
+{
+    {ST_DEFAULT_SYMBOL, "ST_DEFAULT_SYMBOL"},
+    {ST_FUNCTION_SCOPE, "ST_FUNCTION_SCOPE"},
+    {ST_CLASS_SCOPE, "ST_CLASS_SCOPE"},
+    {ST_THEN_SCOPE, "ST_THEN_SCOPE"},
+    {ST_ELSE_SCOPE, "ST_ELSE_SCOPE"},
+    {ST_WHILE_SCOPE, "ST_WHILE_SCOPE"},
+    {ST_CASE_OF_SCOPE, "ST_CASE_OF_SCOPE"}
+};
+
+std::string getStrForSymbolTag(SymbolTag tag)
+{
+    JHIN_ASSERT_BOOL(SymbolTag2String.find(tag) != SymbolTag2String.end());
+    return SymbolTag2String.at(tag);
+}
+
 const std::string TS_SYMBOL_ERROR = "UNKNOWN ERROR";
 struct symbolItem
 {
@@ -131,7 +148,7 @@ struct symbolItem
     {
         return pTT;
     }
-        
+
     llvm::Type* getType()
     {
         return pTT->getType();
@@ -140,6 +157,11 @@ struct symbolItem
     llvm::AllocaInst *getValue()
     {
         return value;
+    }
+
+    SymbolTag getTag()
+    {
+        return tag;
     }
 
     ~symbolItem()
@@ -154,6 +176,7 @@ struct symbolTable
 {
     static std::vector<std::shared_ptr<symbolItem>> table;
 
+    static void print();
     static void initSymbolTable();
     static bool add_symbol(std::string name, pTypeTree pTT, llvm::AllocaInst * value, SymbolTag tag);
     static bool add_symbol_tag(SymbolTag tag);
@@ -169,6 +192,16 @@ struct symbolTable
 };
 using pSymbolTable = symbolTable*;
 std::vector<std::shared_ptr<symbolItem>> symbolTable::table;
+
+void symbolTable::print()
+{
+    comm::Log::singleton(INFO) >> "##########PRINT SYMBOL TABL START##########" >> comm::newline;
+    for (const auto& item: table)
+    {
+        comm::Log::singleton(INFO) >> item->getSymbolName() >> ", " >> getStrForSymbolTag(item->getTag()) >> comm::newline;
+    }
+    comm::Log::singleton(INFO) >> "##########PRINT SYMBOL TABL END##########" >> comm::newline;
+}
 
 void symbolTable::initSymbolTable()
 {

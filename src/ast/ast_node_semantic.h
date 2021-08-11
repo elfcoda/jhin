@@ -144,6 +144,7 @@ namespace ast
                 {
                     pTT = FormalNode->getpTT();
                 }
+
                 Formals.push_back(std::move(FormalNode));
             }
 
@@ -1493,9 +1494,23 @@ namespace ast
                 {
                     appendTree2Children(pTTFn, item->getDeclpTT());
                 }
+
+                if (pTTFn->size() == 0)
+                {
+                    appendTree2Children(pTTFn, makeTrivial(SYMBOL_TYPE_UNIT));
+                }
+
                 pTypeTree pTTRet = RetType->getpTT();
-                pTTRet->setSecondOrder(false);
-                appendTree2Children(pTTFn, pTTRet);
+                
+                if (pTTRet != nullptr)
+                {
+                    pTTRet->setSecondOrder(false);
+                    appendTree2Children(pTTFn, pTTRet);
+                }
+                else
+                {
+                    appendTree2Children(pTTFn, makeTrivial(SYMBOL_TYPE_UNIT));
+                }
 
                 pTT = pTTFn;
                 return pTT;
@@ -1564,13 +1579,16 @@ namespace ast
 
                 pTypeTree pTTFn = Proto->getpTT();
                 pTypeTree pTTRet = Body->getpTT();
+                JHIN_ASSERT_BOOL(pTTRet != nullptr);
 
                 unsigned FnChildrenSize = pTTFn->size();
+                outs() << "size: " << FnChildrenSize << "\n" << pTTFn->toString() << "\n";
+                JHIN_ASSERT_BOOL(FnChildrenSize >= 2);
                 if (!isTypeEqual(pTTRet, pTTFn->getChild(FnChildrenSize - 1)))
                 {
                     JHIN_ASSERT_STR("Return type doesn't match");
                 }
-
+                
                 pTT = nullptr;
                 return pTT;
             }

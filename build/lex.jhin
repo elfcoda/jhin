@@ -15,7 +15,7 @@
 -- }
 
 def func(): Float {
-    x: Int
-    34.557
+    y: Float <- 1.2 + 5.9
+    y + 34.5
 }
 
