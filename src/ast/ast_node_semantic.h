@@ -424,7 +424,7 @@ namespace ast
                 if (!L || !R)
                     return nullptr;
 
-                pTypeTree pTTRet = typeDecl();
+                pTypeTree pTTRet = getpTT();
 
                 switch (Op)
                 {
@@ -545,8 +545,8 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                pTypeTree pTT1 = LHS->typeDecl();
-                pTypeTree pTT2 = RHS->typeDecl();
+                pTypeTree pTT1 = LHS->getpTT();
+                pTypeTree pTT2 = RHS->getpTT();
                 pTypeTree pTTRet = nullptr;
 
                 switch (Op)
@@ -672,7 +672,17 @@ namespace ast
             virtual pTypeTree typeDecl() override
             {
                 std::shared_ptr<symbolItem> item = symbolTable::find_symbol(Callee);
+                if (nullptr == item)
+                {
+                    JHIN_ASSERT_STR("Function not found.");
+                }
+                
                 pTypeTree pTTFn = item->getpTT();
+                if (nullptr == pTTFn)
+                {
+                    JHIN_ASSERT_STR("Function Type Error");
+                }
+
                 if (pTTFn->getEST() != SYMBOL_TYPE_FN)
                 {
                     JHIN_ASSERT_STR("symbol should be function type.");
@@ -683,6 +693,11 @@ namespace ast
                 {
                     pTypeTree argType = arg->getpTT();
                     ArgsType.push_back(argType);
+                }
+
+                if (ArgsType.empty())
+                {
+                    ArgsType.push_back(makeTrivial(SYMBOL_TYPE_UNIT));
                 }
 
                 unsigned argsNum = ArgsType.size();
@@ -1574,7 +1589,6 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
-                outs() << "typeDecl in Function\n";
                 // TODO: return
 
                 pTypeTree pTTFn = Proto->getpTT();
@@ -1582,7 +1596,7 @@ namespace ast
                 JHIN_ASSERT_BOOL(pTTRet != nullptr);
 
                 unsigned FnChildrenSize = pTTFn->size();
-                outs() << "size: " << FnChildrenSize << "\n" << pTTFn->toString() << "\n";
+                // outs() << "size: " << FnChildrenSize << "\n" << pTTFn->toString() << "\n";
                 JHIN_ASSERT_BOOL(FnChildrenSize >= 2);
                 if (!isTypeEqual(pTTRet, pTTFn->getChild(FnChildrenSize - 1)))
                 {

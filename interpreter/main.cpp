@@ -94,6 +94,8 @@ extern "C" DLLEXPORT double printd(double X) {
 
 int main()
 {
+    srand((unsigned)time(NULL));
+
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
     InitializeNativeTargetAsmParser();

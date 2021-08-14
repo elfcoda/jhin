@@ -47,6 +47,8 @@ using namespace llvm::orc;
 // Data layout should be set once in main function
 static void InitializeModuleAndPassManager()
 {
+    srand((unsigned)time(NULL));
+    
     // Open a new module.
     TheContext = std::make_unique<LLVMContext>();
     TheModule = std::make_unique<Module>("jhin test", *TheContext);
@@ -84,14 +86,14 @@ static void InitializeModuleAndPassManager()
 #define DLLEXPORT
 #endif
 
-/// putchard - putchar that takes a double and returns 0.
-extern "C" DLLEXPORT double putchard(double X) {
+/// putchard - putchar that takes a float and returns 0.
+extern "C" DLLEXPORT float putchard(float X) {
   fputc((char)X, stderr);
   return 0;
 }
 
-/// printd - printf that takes a double prints it as "%f\n", returning 0.
-extern "C" DLLEXPORT double printd(double X) {
+/// printd - printf that takes a float prints it as "%f\n", returning 0.
+extern "C" DLLEXPORT float printd(float X) {
   fprintf(stderr, "%f\n", X);
   return 0;
 }

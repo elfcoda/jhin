@@ -297,7 +297,6 @@ class AST
             } else if ("DeclN" == symbolStr) {
                 std::string DeclNStr0 = pRoot->getChild(0)->getText();
                 unsigned DeclNSymbolId0 = pRoot->getChild(0)->getSymbolId();
-                outs() << "DeclN: " << DeclNSymbolId0 << " " << RE_ID << "\n";
                 if (static_cast<unsigned>(RE_ID) == DeclNSymbolId0) { // ("RE_ID" == DeclNStr0)
                     std::string DeclName = pRoot->getChild(0)->getText();
                     std::unique_ptr<TypeExprAST> DeclType = dynamic_cast_ast<TypeExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
@@ -311,10 +310,9 @@ class AST
                     } else if (pRoot->size() == 5) {
                         std::unique_ptr<ExprAST> DeclVal = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(4)));
                         auto ans = std::make_unique<DeclarationAST>(DeclName, std::move(DeclType), std::move(DeclVal));
-                        outs() << "Declggx "<< "\n";
                         ans->typeDecl();
                         symbolTable::add_symbol(ans->getName(), ans->getDeclpTT(), nullptr, ST_DEFAULT_SYMBOL);
-                        symbolTable::print();
+                        // symbolTable::print();
                         return ans;
                     } else {
                         JHIN_ASSERT_STR("DeclN Error on size");
@@ -389,18 +387,22 @@ class AST
 
                 /// 1. make PrototypeAST
                 std::unique_ptr<PrototypeAST> FuncProto = std::make_unique<PrototypeAST>(FunctionName, std::move(Args), std::move(RetTypeNode));
-                FuncProto->typeDecl();
+                pTypeTree pTTProto = FuncProto->typeDecl();
 
-                symbolTable::add_symbol(FunctionName, nullptr, nullptr, ST_DEFAULT_SYMBOL);
+                symbolTable::add_symbol(FunctionName, pTTProto, nullptr, ST_DEFAULT_SYMBOL);
 
                 /// 2. make Body: Formals
                 std::unique_ptr<FormalsAST> FuncBody = dynamic_cast_ast<FormalsAST>(parseTree2LLVMAST(pRoot->getChild(8)));
 
+                auto uniqAST = std::make_unique<FunctionAST>(std::move(FuncProto), std::move(FuncBody));
+                uniqAST->typeDecl();
+
                 // pop symbol scope
                 symbolTable::pop_symbol_block();
 
-                auto uniqAST = std::make_unique<FunctionAST>(std::move(FuncProto), std::move(FuncBody));
-                uniqAST->typeDecl();
+                // Add this function symbol back to symbolTable
+                symbolTable::add_symbol(FunctionName, pTTProto, nullptr, ST_DEFAULT_SYMBOL);
+
                 return uniqAST;
             } else if ("FnRetTp" == symbolStr) {
                 std::string FnRetTpStr0 = ast::getSymbolString(pRoot->getChild(0)->getChild(0));
@@ -525,10 +527,9 @@ class AST
                 return makeASTAndDeclType<TypeExprAST, std::string>(pRoot->getText());
             } else if ("FnCall" == symbolStr) {
                 std::string fnName = pRoot->getChild(0)->getText();
+
                 std::unique_ptr<CallExprAST> FnCall = makeASTAndDeclType<CallExprAST, std::string>(fnName);
-
                 pASTNode genArgs = pRoot->getChild(2)->getChild(0);
-
                 FnCall = updateFnCallArgs(std::move(FnCall), genArgs);
                 return FnCall;
             } else {

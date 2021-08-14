@@ -6,6 +6,8 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <cstdlib>
+#include <ctime>
 #include "llvm/IR/Type.h"
 #include "../ast/ast_node_semantic.h"
 #include "../../comm/jhin_assert.h"
@@ -118,10 +120,13 @@ struct symbolItem
     pTypeTree           pTT;
 
     // symbol value: 6
-    llvm::AllocaInst*         value;
+    llvm::AllocaInst*   value;
 
     // symbol tag: DefaultSymbol / FunctionScope / ClassScope / IfScope / ElseScope / WhileScope / LambdaScope
     SymbolTag           tag;
+
+    // random track value
+    unsigned            ran;
 
     symbolItem(std::string name, pTypeTree pTT, llvm::AllocaInst *value, SymbolTag tag)
     {
@@ -129,6 +134,7 @@ struct symbolItem
         this->pTT = pTT;
         this->value = value;
         this->tag = tag;
+        this->ran = rand();
     }
 
     bool isSymbol() { return ST_DEFAULT_SYMBOL == tag; }
@@ -162,6 +168,11 @@ struct symbolItem
     SymbolTag getTag()
     {
         return tag;
+    }
+
+    unsigned getRan()
+    {
+        return ran;
     }
 
     ~symbolItem()
@@ -198,7 +209,7 @@ void symbolTable::print()
     comm::Log::singleton(INFO) >> "##########PRINT SYMBOL TABL START##########" >> comm::newline;
     for (const auto& item: table)
     {
-        comm::Log::singleton(INFO) >> item->getSymbolName() >> ", " >> getStrForSymbolTag(item->getTag()) >> comm::newline;
+        comm::Log::singleton(INFO) >> item->getSymbolName() >> ", " >> getStrForSymbolTag(item->getTag()) >> ", " >> item->getRan() >> comm::newline;
     }
     comm::Log::singleton(INFO) >> "##########PRINT SYMBOL TABL END##########" >> comm::newline;
 }
