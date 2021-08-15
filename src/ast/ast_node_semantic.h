@@ -424,110 +424,111 @@ namespace ast
                 if (!L || !R)
                     return nullptr;
 
-                pTypeTree pTTRet = getpTT();
+                pTypeTree pTTOP = LHS->getpTT();
 
                 switch (Op)
                 {
-                    case PLUS:
+                    case EKeyWords::PLUS:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFAdd(L, R, "fadd");
                             }
 
                             return mdl::Builder->CreateAdd(L, R, "add");
                         }
-                    case MINUS:
+                    case EKeyWords::MINUS:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFSub(L, R, "fsub");
                             }
 
                             return mdl::Builder->CreateSub(L, R, "sub");
                         }
-                    case STAR:
+                    case EKeyWords::STAR:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFMul(L, R, "fmul");
                             }
 
                             return mdl::Builder->CreateMul(L, R, "mul");
                         }
-                    case SLASH:
+                    case EKeyWords::SLASH:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFDiv(L, R, "fdiv");
                             }
 
-                            if (pTTRet->isSigned())
+                            if (pTTOP->isSigned())
                             {
                                 return mdl::Builder->CreateSDiv(L, R, "sdiv");
                             }
 
                             return mdl::Builder->CreateUDiv(L, R, "udiv");
                         }
-                    case EQ:
+                    case EKeyWords::EQ:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
+
                                 return mdl::Builder->CreateFCmpOEQ(L, R, "feq");
                             }
 
                             return mdl::Builder->CreateICmpEQ(L, R, "eq");
                         }
-                    case LT:
+                    case EKeyWords::LT:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFCmpOLT(L, R, "flt");
                             }
 
-                            if (pTTRet->isSigned())
+                            if (pTTOP->isSigned())
                             {
                                 return mdl::Builder->CreateICmpSLT(L, R, "slt");
                             }
 
                             return mdl::Builder->CreateICmpULT(L, R, "ult");
                         }
-                    case LE:
+                    case EKeyWords::LE:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFCmpOLE(L, R, "fle");
                             }
 
-                            if (pTTRet->isSigned())
+                            if (pTTOP->isSigned())
                             {
                                 return mdl::Builder->CreateICmpSLE(L, R, "sle");
                             }
 
                             return mdl::Builder->CreateICmpULE(L, R, "ule");
                         }
-                    case GT:
+                    case EKeyWords::GT:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFCmpOGT(L, R, "fgt");
                             }
 
-                            if (pTTRet->isSigned())
+                            if (pTTOP->isSigned())
                             {
                                 return mdl::Builder->CreateICmpSGT(L, R, "sgt");
                             }
 
                             return mdl::Builder->CreateICmpUGT(L, R, "ugt");
                         }
-                    case GE:
+                    case EKeyWords::GE:
                         {
-                            if (pTTRet->isFP())
+                            if (pTTOP->isFP())
                             {
                                 return mdl::Builder->CreateFCmpOGE(L, R, "fge");
                             }
 
-                            if (pTTRet->isSigned())
+                            if (pTTOP->isSigned())
                             {
                                 return mdl::Builder->CreateICmpSGE(L, R, "sge");
                             }
@@ -1118,7 +1119,7 @@ namespace ast
 
                 // CFG must be completed
                 mdl::Builder->CreateBr(condBB);
-                
+
                 BasicBlock *LoopBB = BasicBlock::Create(*mdl::TheContext, "loop", TheFunction);
                 BasicBlock *AfterBB = BasicBlock::Create(*mdl::TheContext, "afterloop", TheFunction);
 
