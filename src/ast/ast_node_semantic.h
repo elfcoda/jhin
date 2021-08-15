@@ -900,12 +900,13 @@ namespace ast
          */
         private:
             std::string VarName;
-            std::unique_ptr<ExprAST> Start, End, Step, Body;
+            std::unique_ptr<ExprAST> Start, End, Step;
+            std::unique_ptr<FormalsAST> Body;
 
         public:
             ForCmdAST(const std::string& VarName, std::unique_ptr<ExprAST> Start,
                        std::unique_ptr<ExprAST> End, std::unique_ptr<ExprAST> Step,
-                       std::unique_ptr<ExprAST> Body)
+                       std::unique_ptr<FormalsAST> Body)
                        : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
                        Step(std::move(Step)), Body(std::move(Body)) {}
 
@@ -1113,8 +1114,11 @@ namespace ast
             Value *codegen() override
             {
                 Function *TheFunction = mdl::Builder->GetInsertBlock()->getParent();
-
                 BasicBlock *condBB = BasicBlock::Create(*mdl::TheContext, "cond", TheFunction);
+
+                // CFG must be completed
+                mdl::Builder->CreateBr(condBB);
+                
                 BasicBlock *LoopBB = BasicBlock::Create(*mdl::TheContext, "loop", TheFunction);
                 BasicBlock *AfterBB = BasicBlock::Create(*mdl::TheContext, "afterloop", TheFunction);
 
@@ -1139,6 +1143,7 @@ namespace ast
 
                 return BodyV;
             }
+
             virtual std::string getName() override { return ""; }
 
             std::string toString() override { return ""; }
@@ -1641,9 +1646,11 @@ namespace ast
                     // Validate the generated code, checking for consistency.
                     verifyFunction(*TheFunction);
 
+outs() << "check function start\n";
+outs() << "We just constructed this LLVM module:\n" << *(mdl::TheModule.get());
                     // Run the optimizer on the function.
                     mdl::TheFPM->run(*TheFunction);
-
+outs() << "check function end\n";
                     symbolTable::pop_symbol_block();
 
                     return TheFunction;

@@ -47,15 +47,12 @@ using namespace llvm::orc;
 // Data layout should be set once in main function
 static void InitializeModuleAndPassManager()
 {
-    srand((unsigned)time(NULL));
-    
     // Open a new module.
     TheContext = std::make_unique<LLVMContext>();
     TheModule = std::make_unique<Module>("jhin test", *TheContext);
 
     // Create a new builder for the module.
     Builder = std::make_unique<IRBuilder<>>(*TheContext);
-
 
     // Try to initialize FPM
     // Create a new pass manager attached to it.
@@ -73,7 +70,6 @@ static void InitializeModuleAndPassManager()
     TheFPM->add(createCFGSimplificationPass());
 
     TheFPM->doInitialization();
-
 }
 
 //===----------------------------------------------------------------------===//
@@ -100,6 +96,8 @@ extern "C" DLLEXPORT float printd(float X) {
 
 int main()
 {
+    srand((unsigned)time(NULL));
+
     InitializeAllTargetInfos();
     InitializeAllTargets();
     InitializeAllTargetMCs();
@@ -149,6 +147,7 @@ int main()
     }
 
     pass.run(*TheModule);
+
     dest.flush();
 
     outs() << "Wrote " << Filename << "\n";
