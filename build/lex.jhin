@@ -16,10 +16,11 @@
 
 def func(): Float {
     x: Float <- 1.1
-    while (x == 1.0)
+    while (x >= 1.0)
     {
-
+        x <- x - 0.2
     }
+    printf(12)
     x
 }
 

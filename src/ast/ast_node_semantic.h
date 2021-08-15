@@ -626,6 +626,16 @@ namespace ast
         return nullptr;
     }
 
+    void declarePrintf()
+    {
+        Function *func_printf = mdl::TheModule->getFunction("printf");
+        if (!func_printf)
+        {
+            FunctionType *FT = FunctionType::get(Type::getInt8PtrTy(*mdl::TheContext), true);
+            Function::Create(FT, Function::ExternalLinkage, "printf", mdl::TheModule.get());
+        }
+    }
+
     /// CallExprAST - Expression class for function calls.
     class CallExprAST final : public ExprAST {
         private:
@@ -647,6 +657,18 @@ namespace ast
 
             Value *codegen() override
             {
+                if ("printf" == Callee)
+                {
+                    declarePrintf();
+                    Function *func_printf = mdl::TheModule->getFunction("printf");
+                    // create string ptr
+                    Value *str = mdl::Builder->CreateGlobalStringPtr("hello world test");
+                    
+                    mdl::Builder->CreateCall(func_printf, {str});
+
+                    return nullptr; //
+                }
+
                 Function *CalleeF = getFunction(Callee);
                 if (!CalleeF)
                 {
@@ -672,6 +694,12 @@ namespace ast
 
             virtual pTypeTree typeDecl() override
             {
+                if ("printf" == Callee)
+                {
+                    return nullptr; //
+                }
+
+
                 std::shared_ptr<symbolItem> item = symbolTable::find_symbol(Callee);
                 if (nullptr == item)
                 {
