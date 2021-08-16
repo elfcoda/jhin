@@ -671,6 +671,7 @@ namespace ast
                 }
                 else if ("pow" == Callee)
                 {
+                    // need to add more C lib functions in batch
                     Type *RetType = Type::getDoubleTy(*mdl::TheContext);
                     std::vector<Type *> ArgsType = {Type::getDoubleTy(*mdl::TheContext), Type::getDoubleTy(*mdl::TheContext)};
 

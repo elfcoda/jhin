@@ -22,6 +22,6 @@ def func(): Double {
     }
     printf(12)
     x
-    pow(10.0, 3.0)
+    pow(10.0, 4.0)
 }
 
