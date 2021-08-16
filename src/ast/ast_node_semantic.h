@@ -626,15 +626,16 @@ namespace ast
         return nullptr;
     }
 
-    void declarePrintf()
+    Function *declareCLib(std::string name, FunctionType *FT)
     {
-        Function *func_printf = mdl::TheModule->getFunction("printf");
+        Function *func_printf = mdl::TheModule->getFunction(name);
         if (!func_printf)
         {
-            FunctionType *FT = FunctionType::get(Type::getInt8PtrTy(*mdl::TheContext), true);
-            Function::Create(FT, Function::ExternalLinkage, "printf", mdl::TheModule.get());
+            func_printf = Function::Create(FT, Function::ExternalLinkage, name, mdl::TheModule.get());
         }
+        return func_printf;
     }
+
 
     /// CallExprAST - Expression class for function calls.
     class CallExprAST final : public ExprAST {
@@ -657,16 +658,33 @@ namespace ast
 
             Value *codegen() override
             {
+                // link to C lib
                 if ("printf" == Callee)
                 {
-                    declarePrintf();
-                    Function *func_printf = mdl::TheModule->getFunction("printf");
+                    Function *func_printf = declareCLib(Callee, FunctionType::get(Type::getInt8PtrTy(*mdl::TheContext), true));
                     // create string ptr
-                    Value *str = mdl::Builder->CreateGlobalStringPtr("hello world test");
+                    Value *str = mdl::Builder->CreateGlobalStringPtr("hello world!\n");
                     
                     mdl::Builder->CreateCall(func_printf, {str});
 
                     return nullptr; //
+                }
+                else if ("pow" == Callee)
+                {
+                    Type *RetType = Type::getDoubleTy(*mdl::TheContext);
+                    std::vector<Type *> ArgsType = {Type::getDoubleTy(*mdl::TheContext), Type::getDoubleTy(*mdl::TheContext)};
+
+                    Function *func_pow = declareCLib(Callee, FunctionType::get(RetType, ArgsType, false));
+
+                    std::vector<Value *> putsargs;
+                    for (const auto& item: Args)
+                    {
+                        putsargs.push_back(item->codegen());
+                    }
+
+                    Value* ret_pow = mdl::Builder->CreateCall(func_pow, putsargs);
+
+                    return ret_pow;
                 }
 
                 Function *CalleeF = getFunction(Callee);
@@ -696,7 +714,13 @@ namespace ast
             {
                 if ("printf" == Callee)
                 {
-                    return nullptr; //
+                    pTT = nullptr;
+                    return pTT; //
+                }
+                else if ("pow" == Callee)
+                {
+                    pTT = makeTrivial(SYMBOL_TYPE_DOUBLE);
+                    return pTT; 
                 }
 
 
