@@ -8,6 +8,7 @@
 #include "ast_client.h"
 #include "ts_client.h"
 #include "../../comm/log.h"
+#include "../../comm/jhin_assert.h"
 
 using namespace jhin;
 

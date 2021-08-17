@@ -22,6 +22,8 @@ def func(): Double {
     }
     printf(12)
     x
+    "assssss"
+    2.
     pow(10.0, 4.0)
 }
 

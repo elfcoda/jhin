@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <queue>
 #include <ctime>
+#include "llvm/Support/raw_ostream.h"
 #include "keywords.h"
 #include "nfa.h"
 #include "../../comm/dfa.h"
@@ -134,7 +135,7 @@ class Lex
 
                 /* backslash is false, handle char c */
                 c = switchChar(c);
-
+                
                 /* feed char c to next dfa node */
 handle_non_blank:
                 if (pCur->mEdges.find(c) == pCur->mEdges.end()) {
@@ -175,8 +176,12 @@ handle_non_blank:
                     parseStr.push_back(origin_c);
                     lastToken = pCur->terminalId;
                     if (lastToken == UINT_MAX) {
-                        return std::make_pair(false, getErrorMsg("unknown error, char: " + std::to_string(origin_c), filename));
-                    } else if (lastToken == static_cast<unsigned int>(ERR_ERROR)) {
+                        // Here is an invalid status when parsing, like "a
+                        if (status != LEX_STATUS_STRING)
+                        {
+                            return std::make_pair(false, getErrorMsg("unknown error, char: " + std::to_string(origin_c), filename));
+                        }
+                    } else if (lastToken == static_cast<unsigned>(ERR_ERROR)) {
                         /* match error node, aka. not in charset, return false */
                         return std::make_pair(false, getErrorMsg("not in charset error", filename));
                     }
