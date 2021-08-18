@@ -192,6 +192,7 @@ namespace ast
                 else if ("String" == typeName)
                 {
                     pTT = makeTrivial(SYMBOL_TYPE_STRING);
+                    pTT->setType();
                     JHIN_ASSERT_STR("typeName Error! string");
                 }
                 else if ("Bool" == typeName)
@@ -349,11 +350,18 @@ namespace ast
             std::string Val;
 
         public:
-            StringExprAST(std::string Val) : Val(Val)
+            StringExprAST(std::string Val)
             {
+                unsigned len = Val.length();
+                JHIN_ASSERT_BOOL(len >= 2);
+                this->Val = Val.substr(1, len - 2);
             }
 
-            Value *codegen() override { return nullptr; }
+            Value *codegen() override
+            {
+                Value *str = mdl::Builder->CreateGlobalStringPtr(Val);
+                return str;
+            }
 
             virtual pTypeTree typeDecl() override
             {
