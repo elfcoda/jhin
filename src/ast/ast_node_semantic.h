@@ -26,7 +26,6 @@ namespace jhin
 {
 namespace ast
 {
-
     /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
     /// the function.  This is used for mutable variables etc.
     static AllocaInst *CreateEntryBlockAlloca(Function *TheFunction, Type *tp, StringRef VarName)
@@ -156,6 +155,7 @@ namespace ast
     class ExprAST : public FormalAST
     {
         public:
+            virtual unsigned getLen() { return 0; }
             virtual Value *codegen() override = 0;
             virtual std::string getName() override = 0;
             virtual pTypeTree typeDecl() override = 0;
@@ -192,8 +192,7 @@ namespace ast
                 else if ("String" == typeName)
                 {
                     pTT = makeTrivial(SYMBOL_TYPE_STRING);
-                    pTT->setType();
-                    JHIN_ASSERT_STR("typeName Error! string");
+                    pTT->setType(ArrayType::get(Type::getInt8Ty(*mdl::TheContext), 0));
                 }
                 else if ("Bool" == typeName)
                 {
@@ -348,13 +347,20 @@ namespace ast
     {
         private:
             std::string Val;
+            unsigned len;
 
         public:
             StringExprAST(std::string Val)
             {
-                unsigned len = Val.length();
-                JHIN_ASSERT_BOOL(len >= 2);
-                this->Val = Val.substr(1, len - 2);
+                unsigned l = Val.length();
+                JHIN_ASSERT_BOOL(l >= 2);
+                len = l - 2;
+                this->Val = Val.substr(1, len);
+            }
+
+            virtual unsigned getLen() override
+            {
+                return len;
             }
 
             Value *codegen() override
@@ -671,9 +677,12 @@ namespace ast
                 {
                     Function *func_printf = declareCLib(Callee, FunctionType::get(Type::getInt8PtrTy(*mdl::TheContext), true));
                     // create string ptr
-                    Value *str = mdl::Builder->CreateGlobalStringPtr("hello world!\n");
-                    
-                    mdl::Builder->CreateCall(func_printf, {str});
+                    std::vector<Value *> fnArgs;
+                    for (const auto& item: Args)
+                    {
+                        fnArgs.push_back(item->codegen());
+                    }
+                    mdl::Builder->CreateCall(func_printf, fnArgs);
 
                     return nullptr; //
                 }
@@ -1450,6 +1459,19 @@ namespace ast
                     if (!isTypeEqual(pTTDecl, pTTVal))
                     {
                         JHIN_ASSERT_STR("Type doesn't match when declaring");
+                    }
+                }
+
+                if (type->getpTT()->getEST() == SYMBOL_TYPE_STRING)
+                {
+                    if (value == nullptr)
+                    {
+                        type->getpTT()->setType(ArrayType::get(Type::getInt8Ty(*mdl::TheContext), 0));
+                    }
+                    else
+                    {
+                        unsigned len = value->getLen();
+                        type->getpTT()->setType(ArrayType::get(Type::getInt8Ty(*mdl::TheContext), len));
                     }
                 }
 

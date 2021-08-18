@@ -14,16 +14,17 @@
 --     1.2
 -- }
 
-def func(): Double {
-    x: Float <- 1.1
-    while (x >= 1.0)
+def main(): Double {
+    x: Float <- 8000.0 + 2000.0
+    if (x > 10000.0)
     {
-        x <- x - 0.2
+        printf("10000 ")
+        1
+    } else {
+        printf("not 10000 error ")
+        12
     }
-    printf(12)
-    x
-    "assssss"
-    2.
+
     pow(10.0, 4.0)
 }
 
