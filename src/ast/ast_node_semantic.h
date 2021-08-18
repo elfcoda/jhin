@@ -882,11 +882,10 @@ namespace ast
                 std::unordered_map<std::string, pAssignmentData> PNAssignmentThen = {};
 
                 symbolTable::add_symbol_tag(ST_THEN_SCOPE);
-                Value *ThenV = Then->codegen();
+                Then->codegen();
                 symbolTable::pop_symbol_block();
 
                 std::swap(PNAssignment, PNAssignmentThen);
-                JHIN_ASSERT_BOOL(ThenV != nullptr);
                 mdl::Builder->CreateBr(MergeBB);
 
                 // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
@@ -899,11 +898,10 @@ namespace ast
                 std::unordered_map<std::string, pAssignmentData> PNAssignmentElse = {};
 
                 symbolTable::add_symbol_tag(ST_ELSE_SCOPE);
-                Value *ElseV = Else->codegen();
+                Else->codegen();
                 symbolTable::pop_symbol_block();
 
                 std::swap(PNAssignment, PNAssignmentElse);
-                JHIN_ASSERT_BOOL(ElseV != nullptr);
 
                 mdl::Builder->CreateBr(MergeBB);
 
@@ -1730,11 +1728,10 @@ namespace ast
                     // Validate the generated code, checking for consistency.
                     verifyFunction(*TheFunction);
 
-outs() << "check function start\n";
-outs() << "We just constructed this LLVM module:\n" << *(mdl::TheModule.get());
+                    outs() << "We just constructed this LLVM module before optimization:\n" << *(mdl::TheModule.get());
                     // Run the optimizer on the function.
                     mdl::TheFPM->run(*TheFunction);
-outs() << "check function end\n";
+
                     symbolTable::pop_symbol_block();
 
                     return TheFunction;

@@ -18,8 +18,7 @@ def main(): Double {
     x: Float <- 8000.0 + 2000.0
     if (x > 10000.0)
     {
-        printf("10000 ")
-        1
+        x <- 1.1
     } else {
         printf("not 10000 error ")
         12
