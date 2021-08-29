@@ -12,6 +12,45 @@
   
  ## [Installation 🥧](#anc_0)  
  ## [Tutorial 🥙](#anc_1)
+<h3>What is Jhin?</h3>  
+"烬" in Chinese, from the game League of Legends  
+Jhin is a simple Strong Static typed programming language  
+  
+<h3>Jhin Source Code: example.jn</h3>  
+-- This is a comment
+`def functionName(num: Int <- 1, pi: Float <- 3.14): Int -- function definition
+{
+    count: Int <- 7
+    while (count <= 10)
+    {
+        printf(count)   -- link to C lib
+        count <- count + 1
+    }
+
+    if (3.14 == pi)
+    {
+        return num
+    }
+
+    count
+}
+
+def main(): Int
+{
+    functionName(12, 2.18)
+    0
+}`
+  
+<h3>Run in compiler:</h3>  
+`./jhin example.jn`  
+`./output`  
+  
+<h3>Run in interpreter:</h3>  
+`./jhini example.jn`  
+  
+<h3>Run in REPL:</h3>  
+Waiting for the code  
+
  ## [Architecture 🥗](#anc_2)
  ## [Contribute 🍖](#anc_3)
  
