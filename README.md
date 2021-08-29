@@ -19,6 +19,7 @@
 <h2 name = "anc_0">Installation 🐇</h2>
 <h2 name = "anc_1">Tutorial 🐿</h2>
 <h2 name = "anc_2">Architecture 🐢</h2>
+<img alt="Arch" src="https://github.com/elfcoda/jhin/blob/master/pic/arch.png">
 <h2 name = "anc_3">Contribute 🦘</h2>
 
 Project built in C++17    
