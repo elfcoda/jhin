@@ -528,9 +528,12 @@ class AST
             } else if ("FnCall" == symbolStr) {
                 std::string fnName = pRoot->getChild(0)->getText();
 
-                std::unique_ptr<CallExprAST> FnCall = makeASTAndDeclType<CallExprAST, std::string>(fnName);
+                std::unique_ptr<CallExprAST> FnCall = std::make_unique<CallExprAST>(fnName);
                 pASTNode genArgs = pRoot->getChild(2)->getChild(0);
                 FnCall = updateFnCallArgs(std::move(FnCall), genArgs);
+
+                FnCall->typeDecl();
+                
                 return FnCall;
             } else {
                 JHIN_ASSERT_STR("Parse AST Error!");
