@@ -12,6 +12,12 @@
   
  ## [Installation 🥧](#anc_0)  
  ## [Tutorial 🥙](#anc_1)
+ ## [Architecture 🥗](#anc_2)
+ ## [Contribute 🍖](#anc_3)
+ 
+  
+<h2 name = "anc_0">Installation 🐇</h2>
+<h2 name = "anc_1">Tutorial 🐿</h2>
 <h3>What is Jhin?</h3>  
 "烬" in Chinese, from the game League of Legends  
 Jhin is a simple Strong Static typed programming language  
@@ -51,12 +57,6 @@ def main(): Int
 <h3>Run in REPL:</h3>  
 Waiting for the code  
 
- ## [Architecture 🥗](#anc_2)
- ## [Contribute 🍖](#anc_3)
- 
-  
-<h2 name = "anc_0">Installation 🐇</h2>
-<h2 name = "anc_1">Tutorial 🐿</h2>
 <h2 name = "anc_2">Architecture 🐢</h2>
 <img alt="Arch" src="https://github.com/elfcoda/jhin/blob/master/pic/arch.png">
 <h2 name = "anc_3">Contribute 🦘</h2>
