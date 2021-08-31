@@ -16,15 +16,17 @@
  ## [Contribute 🍖](#anc_3)
  
   
-<h2 name = "anc_0">Installation 🐇</h2>
-<h2 name = "anc_1">Tutorial 🐿</h2>
-<h3>What is Jhin?</h3>  
-"烬" in Chinese, from the game League of Legends  
-Jhin is a simple Strong Static typed programming language  
-  
-<h3>Jhin Source Code: example.jn</h3>  
+<h2 name = "anc_0">Installation 🐇</h2>  
+<h2 name = "anc_1">Tutorial 🐿</h2>  
+
+### What is Jhin?  
+"烬" in Chinese, from the game League of Legends   
+Jhin is a simple Strong Static typed programming language   
+   
+### Jhin Source Code: example.jn  
+``` python
 -- This is a comment
-`def functionName(num: Int <- 1, pi: Float <- 3.14): Int -- function definition
+def functionName(num: Int, pi: Float): Int -- function definition
 {
     count: Int <- 7
     while (count <= 10)
@@ -35,7 +37,7 @@ Jhin is a simple Strong Static typed programming language
 
     if (3.14 == pi)
     {
-        return num
+        num
     }
 
     count
@@ -45,20 +47,23 @@ def main(): Int
 {
     functionName(12, 2.18)
     0
-}`
+}
+```
   
-<h3>Run in compiler:</h3>  
+### Run in compiler:  
 `./jhin example.jn`  
 `./output`  
   
-<h3>Run in interpreter:</h3>  
+### Run in interpreter:  
 `./jhini example.jn`  
   
-<h3>Run in REPL:</h3>  
+### Run in REPL:  
 Waiting for the code  
 
 <h2 name = "anc_2">Architecture 🐢</h2>
+
 <img alt="Arch" src="https://github.com/elfcoda/jhin/blob/master/pic/arch.png">
+
 <h2 name = "anc_3">Contribute 🦘</h2>
 
 Project built in C++17    
