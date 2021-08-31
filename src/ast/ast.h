@@ -353,6 +353,7 @@ class AST
                 } else if ("Proc_ar" == procArgs0) {
                     std::string ArgName = node->getChild(0)->getText();
                     std::unique_ptr<TypeExprAST> ArgType = dynamic_cast_ast<TypeExprAST>(parseTree2LLVMAST(node->getChild(2)));
+                    outs() << "ArgName: " << ArgName << "\n";
                     auto uniqAST0 = std::make_unique<DeclarationAST>(ArgName, std::move(ArgType));
                     uniqAST0->typeDecl();
                     Args.push_back(std::move(uniqAST0));
@@ -390,6 +391,9 @@ class AST
                 pTypeTree pTTProto = FuncProto->typeDecl();
 
                 symbolTable::add_symbol(FunctionName, pTTProto, nullptr, ST_DEFAULT_SYMBOL);
+
+                // Add args to symbol table
+                FuncProto->addArgsToSymbolTable();
 
                 /// 2. make Body: Formals
                 std::unique_ptr<FormalsAST> FuncBody = dynamic_cast_ast<FormalsAST>(parseTree2LLVMAST(pRoot->getChild(8)));
@@ -470,8 +474,9 @@ class AST
             } else if ("Exp0" == symbolStr || "Exp1" == symbolStr || "Exp2" == symbolStr) {
                 // biOp: == < <= > >= + - * /
                 // std::string biOp = ast::getSymbolString(pRoot->getChild(1));
-                std::string biOp = pRoot->getChild(1)->getText();
 
+                std::string biOp = pRoot->getChild(1)->getText();
+                
                 std::unique_ptr<ExprAST> L = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(0)));
                 std::unique_ptr<ExprAST> R = dynamic_cast_ast<ExprAST>(parseTree2LLVMAST(pRoot->getChild(2)));
 

@@ -898,11 +898,14 @@ namespace ast
                 std::unordered_map<std::string, pAssignmentData> PNAssignmentElse = {};
 
                 symbolTable::add_symbol_tag(ST_ELSE_SCOPE);
-                Else->codegen();
+
+                if (Else != nullptr)
+                {
+                    Else->codegen();
+                }
+
                 symbolTable::pop_symbol_block();
-
                 std::swap(PNAssignment, PNAssignmentElse);
-
                 mdl::Builder->CreateBr(MergeBB);
 
                 // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
@@ -1584,6 +1587,35 @@ namespace ast
                 return nullptr;
             }
 
+            void addArgsToSymbolTable(Function *TheFunction)
+            {
+                // Args and TheFunction->args() should be in same pace
+
+                unsigned fnArgsIdx = 0;
+ 
+                for (auto& arg: TheFunction->args())
+                {
+                    // Create an alloca for this variable.
+                    AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Args[fnArgsIdx]->getType(), Args[fnArgsIdx]->getName());
+            
+                    // Store the initial value into the alloca.
+                    mdl::Builder->CreateStore(&arg, Alloca);
+
+                    // Add args to symbol table
+                    symbolTable::add_symbol(Args[fnArgsIdx]->getName(), Args[fnArgsIdx]->getDeclpTT(), Alloca, ST_DEFAULT_SYMBOL);
+
+                    fnArgsIdx ++;
+                }
+            }
+
+            void addArgsToSymbolTable()
+            {
+                for (const auto& arg: Args)
+                {
+                    symbolTable::add_symbol(arg->getName(), arg->getDeclpTT(), nullptr, ST_DEFAULT_SYMBOL);
+                }
+            }
+
             virtual std::string getName() override
             {
                 return Name;
@@ -1697,6 +1729,7 @@ namespace ast
             // code gen for function
             Function *codegenFunc()
             {
+
                 symbolTable::add_symbol_tag(ST_FUNCTION_SCOPE);
 
                 comm::Log::singleton(INFO) >> "testing codegenFunc" >> comm::newline;
@@ -1711,14 +1744,8 @@ namespace ast
                 BasicBlock *BB = BasicBlock::Create(*mdl::TheContext, "entry", TheFunction);
                 mdl::Builder->SetInsertPoint(BB);
 
-                for (auto &Arg : TheFunction->args())
-                {
-                    // Create an alloca for this variable.
-                    AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getType(), Arg.getName());
-
-                    // Store the initial value into the alloca.
-                    mdl::Builder->CreateStore(&Arg, Alloca);
-                }
+                // Add Args to Symbol Table
+                Proto->addArgsToSymbolTable(TheFunction);
 
                 if (Value *RetVal = Body->codegen())
                 {

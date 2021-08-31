@@ -1,30 +1,15 @@
--- class Animal inherits Life {
---     def fun1(x1: Int, x2: Int): Int {
---         xn: Int
---         xm: Int <- 6
---         xn <- xn + xm + 9
---         fu()
---         fun1(xn + 1, xm) + fu()
---         -- fun1(0, 1)
---         -- let i: Int in { 7 + i }
---     }
--- }
+-- This is a comment
 
--- def main(): Float {
---     1.2
--- }
-
-def main(): Double {
-    x: Float <- 8000.0 + 2000.0
-    if (x == 10000.0)
+def func(pi: Float): Int
+{
+    if (pi == 12.2)
     {
-        x <- 1.1
-        printf("10000 correct ")
-    } else {
-        printf("not 10000 error ")
-        12
+        1.2
     }
-
-    pow(10.0, 4.0)
+    1
 }
 
+def main(): Int
+{
+    0
+}
