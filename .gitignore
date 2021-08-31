@@ -4,3 +4,6 @@ build/
 # ignore __pycache__/
 __pycache__/
 
+# ignore graph.py
+/src/ast/graph.py
+
