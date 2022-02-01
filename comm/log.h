@@ -85,7 +85,7 @@ namespace comm
             //     return s;
             // }
 
-            /* new line case */
+            /* new line case, we can overload getWriteString(), no need to use template <> */
             std::string getWriteString(const LogNewLine& n)
             {
                 std::string s = "\n";
