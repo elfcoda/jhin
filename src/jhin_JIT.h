@@ -23,7 +23,6 @@ using namespace llvm::orc;
 class JhinJIT
 {
     private:
-        std::unique_ptr<ExecutorProcessControl> EPC;
         std::unique_ptr<ExecutionSession> ES;
 
         DataLayout DL;
@@ -35,12 +34,10 @@ class JhinJIT
         JITDylib &MainJD;
 
     public:
-        JhinJIT(std::unique_ptr<ExecutorProcessControl> EPC,
-                        std::unique_ptr<ExecutionSession> ES,
+        JhinJIT(std::unique_ptr<ExecutionSession> ES,
                         JITTargetMachineBuilder JTMB,
                         DataLayout DL)
-                      : EPC(std::move(EPC)),
-                        ES(std::move(ES)),
+                      : ES(std::move(ES)),
                         DL(std::move(DL)),
                         Mangle(*this->ES, this->DL),
                         ObjectLayer(*this->ES,
@@ -51,6 +48,11 @@ class JhinJIT
                         MainJD(this->ES->createBareJITDylib("<main>"))
         {
             MainJD.addGenerator(cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
+            if (JTMB.getTargetTriple().isOSBinFormatCOFF())
+            {
+                ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
+                ObjectLayer.setAutoClaimResponsibilityForObjectSymbols(true);
+            }
         }
 
         ~JhinJIT()
@@ -61,21 +63,22 @@ class JhinJIT
 
         static Expected<std::unique_ptr<JhinJIT>> Create()
         {
-            auto SSP = std::make_shared<SymbolStringPool>();
-            auto EPC = SelfExecutorProcessControl::Create(SSP);
+            auto EPC = SelfExecutorProcessControl::Create();
             if (!EPC)
                 return EPC.takeError();
 
-            auto ES = std::make_unique<ExecutionSession>(std::move(SSP));
+            auto ES = std::make_unique<ExecutionSession>(std::move(*EPC));
 
-            JITTargetMachineBuilder JTMB((*EPC)->getTargetTriple());
+            JITTargetMachineBuilder JTMB(
+                    ES->getExecutorProcessControl().getTargetTriple());
 
             auto DL = JTMB.getDefaultDataLayoutForTarget();
             if (!DL)
                 return DL.takeError();
 
-            return std::make_unique<JhinJIT>(std::move(*EPC), std::move(ES),
-                                                     std::move(JTMB), std::move(*DL));
+            return std::make_unique<JhinJIT>(std::move(ES),
+                                             std::move(JTMB),
+                                             std::move(*DL));
         }
 
         const DataLayout &getDataLayout() const { return DL; }

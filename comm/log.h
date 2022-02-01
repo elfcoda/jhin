@@ -86,8 +86,7 @@ namespace comm
             // }
 
             /* new line case */
-            template <>
-            std::string getWriteString<const LogNewLine&>(const LogNewLine& n)
+            std::string getWriteString(const LogNewLine& n)
             {
                 std::string s = "\n";
                 return s;

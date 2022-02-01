@@ -156,7 +156,7 @@ class TypeTree: public comm::tree<TypeTree>
         {
         }
 
-        void free()
+        void free() override
         {
             if (children != nullptr) {
                 delete children;
